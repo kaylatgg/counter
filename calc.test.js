@@ -103,6 +103,26 @@ test("covers 7.2 hrs at the target rate", function () {
   assert.strictEqual(calc.formatNumber(r.offer.hoursCovered), "7.2");
 });
 
+test("does not cover all the hours", function () {
+  assert.strictEqual(run().offer.coversAllHours, false);
+});
+
+test("a $1,000 offer covers all the hours", function () {
+  const r = run({ offer: "1000" });
+  closeTo(r.offer.hoursCovered, 39.2);
+  assert.strictEqual(r.offer.coversAllHours, true);
+});
+
+test("an offer of exactly expenses plus all hours at the rate covers all the hours", function () {
+  // $20 + 11.5 hrs x $25 = $307.50
+  assert.strictEqual(run({ offer: "307.50" }).offer.coversAllHours, true);
+  assert.strictEqual(run({ offer: "307.49" }).offer.coversAllHours, false);
+});
+
+test("an offer below expenses never covers all the hours", function () {
+  assert.strictEqual(run({ offer: "15" }).offer.coversAllHours, false);
+});
+
 test("estimate is $110 above the offer", function () {
   const r = run();
   closeTo(r.offer.gap, 110);

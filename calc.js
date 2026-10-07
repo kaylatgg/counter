@@ -16,6 +16,13 @@ const FIELDS = {
   quote: { label: "Price you'll send" },
 };
 
+// The fields the hours depend on. The page can show group totals
+// whenever these are fine, even if another field has an error.
+const HOURS_FIELDS = [
+  "pages", "rounds", "conceptHours", "pageHours",
+  "communicationHours", "roundHours", "deliveryHours",
+];
+
 // Digits with an optional decimal part. Commas are allowed only as
 // thousands separators ("1,000" or "12,500.50"), so "1,5" isn't misread as 15.
 const NUMBER_PATTERN = /^((\d{1,3}(,\d{3})+|\d+)(\.\d*)?|\.\d+)$/;
@@ -71,10 +78,7 @@ function validateInputs(raw) {
   const values = {};
   const errors = {};
 
-  const required = [
-    "pages", "rounds", "conceptHours", "pageHours",
-    "communicationHours", "roundHours", "deliveryHours", "rate", "expenses",
-  ];
+  const required = HOURS_FIELDS.concat(["rate", "expenses"]);
   required.forEach(function (name) {
     const result = parseNumber(raw[name], FIELDS[name]);
     if (result.error) {
@@ -134,22 +138,30 @@ function hourlyFor(price, expenses, totalHours) {
   };
 }
 
-// All the results. Expects values that passed validateInputs.
-// Full precision throughout: round only when displaying.
-function calculate(values) {
+// Hours for each type of work, and the total.
+function workHours(values) {
   const production = values.conceptHours + values.pages * values.pageHours;
   const communication = values.communicationHours;
   const revisions = values.rounds * values.roundHours;
   const delivery = values.deliveryHours;
-  const total = production + communication + revisions + delivery;
-
-  const hours = {
+  return {
     production: production,
     communication: communication,
     revisions: revisions,
     delivery: delivery,
-    total: total,
+    total: production + communication + revisions + delivery,
   };
+}
+
+// All the results. Expects values that passed validateInputs.
+// Full precision throughout: round only when displaying.
+function calculate(values) {
+  const hours = workHours(values);
+  const production = hours.production;
+  const communication = hours.communication;
+  const revisions = hours.revisions;
+  const delivery = hours.delivery;
+  const total = hours.total;
 
   // Zero hours: nothing per hour can be worked out.
   if (total === 0) {
@@ -188,6 +200,10 @@ function calculate(values) {
       // Only when the offer covers expenses. Never negative hours.
       hoursCovered: belowExpenses ? null : (offer - values.expenses) / values.rate,
     };
+    // True when the offer pays for every hour of the job at the target rate.
+    // The tolerance stops floating point noise from deciding an exact match.
+    result.offer.coversAllHours =
+      result.offer.hoursCovered !== null && result.offer.hoursCovered >= total - 1e-9;
   }
 
   // A custom quote never changes the estimate or the target rate.
@@ -247,17 +263,20 @@ function formatPrice(amount) {
   return hasCents ? formatMoney(amount) : formatWholeMoney(Math.round(amount));
 }
 
-if (typeof module !== "undefined") {
-  module.exports = {
-    FIELDS,
-    parseNumber,
-    validateInputs,
-    roundUpToFive,
-    calculate,
-    formatMoney,
-    formatWholeMoney,
-    formatNumber,
-    formatHours,
-    formatPrice,
-  };
-}
+// One object holding everything, so the page can call calc.calculate(...) and so on.
+const calc = {
+  FIELDS,
+  HOURS_FIELDS,
+  parseNumber,
+  validateInputs,
+  roundUpToFive,
+  workHours,
+  calculate,
+  formatMoney,
+  formatWholeMoney,
+  formatNumber,
+  formatHours,
+  formatPrice,
+};
+
+if (typeof module !== "undefined") module.exports = calc;
