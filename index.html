@@ -191,33 +191,51 @@
       <p class="empty-state" id="empty-state" hidden>Add some hours to see your estimate.</p>
       <p class="empty-state" id="error-state" hidden>Fix the fields with errors to see your result.</p>
 
-      <!-- B. Where the hours come from -->
+      <!-- B. Your hours, and where the money runs out -->
       <section class="chart" id="hours-chart" aria-labelledby="hours-title">
-        <h3 id="hours-title">Where the hours come from</h3>
+        <div class="chart-head">
+          <h3 id="hours-title">Your 11.5 hours, and where the money runs out</h3>
+          <p class="chart-flag" id="hours-flag" hidden></p>
+          <p class="chart-unit" id="block-unit">1 block = 30 min</p>
+        </div>
 
-        <div class="stacked-bar" id="hours-bar" aria-hidden="true"></div>
+        <div class="blocks" id="blocks" aria-hidden="true">
+          <div class="runs-out" id="runs-out" hidden><span class="runs-out-label" id="runs-out-label"></span></div>
+        </div>
 
-        <ul class="legend" id="hours-legend">
-          <li data-group="production"><span class="swatch" aria-hidden="true"></span> <span class="legend-name">Production</span> <span class="legend-hours">6 hrs</span> <span class="legend-percent">52%</span></li>
-          <li data-group="communication"><span class="swatch" aria-hidden="true"></span> <span class="legend-name">Communication</span> <span class="legend-hours">1.5 hrs</span> <span class="legend-percent">13%</span></li>
-          <li data-group="revisions"><span class="swatch" aria-hidden="true"></span> <span class="legend-name">Revisions</span> <span class="legend-hours">3 hrs</span> <span class="legend-percent">26%</span></li>
-          <li data-group="delivery"><span class="swatch" aria-hidden="true"></span> <span class="legend-name">Delivery</span> <span class="legend-hours">1 hr</span> <span class="legend-percent">9%</span></li>
+        <ul class="visually-hidden" id="hours-list">
+          <li>Production: 6 hrs</li>
+          <li>Communication: 1.5 hrs</li>
+          <li>Revisions: 3 hrs</li>
+          <li>Delivery: 1 hr</li>
         </ul>
 
-        <p class="chart-summary" id="hours-summary">5.5 of the 11.5 hrs are communication, revisions, and delivery, not production.</p>
+        <p class="chart-summary" id="hours-summary"><strong>4.3 hours</strong> go unpaid, and <strong>5.5 hours</strong> are work outside the design itself.</p>
       </section>
 
-      <!-- C. How the offer compares, per hour -->
+      <!-- C. Pay per hour -->
       <section class="chart" id="offer-chart" aria-labelledby="offer-chart-title">
-        <h3 id="offer-chart-title">How the offer compares, per hour</h3>
+        <h3 id="offer-chart-title">Pay per hour</h3>
 
-        <ul class="bar-list" id="offer-bars">
-          <li><span class="bar-label">Offer, before expenses</span> <span class="bar-value">$17.39/hr</span><span class="bar" aria-hidden="true"></span></li>
-          <li><span class="bar-label">Offer, after $20.00 expenses</span> <span class="bar-value">$15.65/hr</span><span class="bar" aria-hidden="true"></span></li>
-          <li><span class="bar-label">Your target rate</span> <span class="bar-value">$25.00/hr</span><span class="bar" aria-hidden="true"></span></li>
+        <div class="ruler" id="ruler" aria-hidden="true">
+          <div class="ruler-line"></div>
+          <div class="ruler-ticks" id="ruler-ticks"></div>
+          <div class="gap-band" id="gap-band"></div>
+          <span class="ruler-label gap-label" id="gap-label"></span>
+          <span class="ruler-label over-label" id="over-label"></span>
+          <div class="target-mark" id="target-mark"></div>
+          <span class="ruler-label target-label" id="target-label"></span>
+          <div class="dot dot-after" id="dot-after"></div>
+          <span class="ruler-label after-label" id="after-label"></span>
+          <div class="dot dot-offer" id="dot-offer"></div>
+          <span class="ruler-label offer-label" id="offer-label"></span>
+        </div>
+
+        <ul class="visually-hidden" id="pay-list">
+          <li>Offer, before expenses: $17.39/hr</li>
+          <li>Offer, after $20.00 expenses: $15.65/hr</li>
+          <li>Your target rate: $25.00/hr</li>
         </ul>
-
-        <div class="axis" id="offer-axis" aria-hidden="true"></div>
 
         <p class="chart-summary" id="offer-summary">Before expenses, the offer pays $7.61 an hour less than your target.</p>
       </section>

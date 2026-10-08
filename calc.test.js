@@ -390,5 +390,80 @@ test("prices: whole dollars when there are no cents", function () {
   assert.strictEqual(calc.formatPrice(1000), "$1,000");
 });
 
+group("Hours chart: blocks");
+
+test("a block is 30 min up to 24 hrs, 1 hr up to 48, then 2 hrs", function () {
+  assert.strictEqual(calc.blockUnit(11.5), 0.5);
+  assert.strictEqual(calc.blockUnit(24), 0.5);
+  assert.strictEqual(calc.blockUnit(24.5), 1);
+  assert.strictEqual(calc.blockUnit(48), 1);
+  assert.strictEqual(calc.blockUnit(48.5), 2);
+});
+
+test("the example splits into 12, 3, 6, and 2 blocks of 30 min", function () {
+  const r = run();
+  const unit = calc.blockUnit(r.hours.total);
+  assert.strictEqual(calc.splitIntoBlocks(r.hours.production, unit).length, 12);
+  assert.strictEqual(calc.splitIntoBlocks(r.hours.communication, unit).length, 3);
+  assert.strictEqual(calc.splitIntoBlocks(r.hours.revisions, unit).length, 6);
+  assert.strictEqual(calc.splitIntoBlocks(r.hours.delivery, unit).length, 2);
+});
+
+test("an uneven group ends with a narrower block", function () {
+  assert.deepStrictEqual(calc.splitIntoBlocks(1.25, 0.5), [1, 1, 0.5]);
+  assert.deepStrictEqual(calc.splitIntoBlocks(0.2, 0.5).length, 1);
+  closeTo(calc.splitIntoBlocks(0.2, 0.5)[0], 0.4);
+});
+
+test("0 hrs gives no blocks, and float noise doesn't add a sliver", function () {
+  assert.deepStrictEqual(calc.splitIntoBlocks(0, 0.5), []);
+  assert.deepStrictEqual(calc.splitIntoBlocks(0.1 + 0.2, 0.1).length, 3);
+});
+
+group("Hours chart: unpaid hours");
+
+test("$200 leaves 4.3 hrs unpaid", function () {
+  closeTo(run().offer.unpaidHours, 4.3);
+  assert.strictEqual(calc.formatNumber(run().offer.unpaidHours), "4.3");
+});
+
+test("an offer below expenses leaves every hour unpaid", function () {
+  closeTo(run({ offer: "15" }).offer.unpaidHours, 11.5);
+});
+
+test("an offer that covers all the hours leaves none unpaid", function () {
+  assert.strictEqual(run({ offer: "1000" }).offer.unpaidHours, 0);
+});
+
+group("Pay per hour: ruler scale");
+
+test("the example ($17.39, $15.65, $25) gives $0, $10, $20, $30", function () {
+  assert.deepStrictEqual(calc.rulerScale(25).ticks, [0, 10, 20, 30]);
+});
+
+test("$5 steps up to $20", function () {
+  assert.deepStrictEqual(calc.rulerScale(12).ticks, [0, 5, 10, 15]);
+  assert.deepStrictEqual(calc.rulerScale(19.99).ticks, [0, 5, 10, 15, 20]);
+});
+
+test("the max is always a little above the largest value", function () {
+  assert.strictEqual(calc.rulerScale(20).max, 30);
+  assert.strictEqual(calc.rulerScale(30).max, 40);
+});
+
+test("larger values use $25, $50, $100 steps", function () {
+  assert.deepStrictEqual(calc.rulerScale(86.96).ticks, [0, 25, 50, 75, 100]);
+  assert.deepStrictEqual(calc.rulerScale(130).ticks, [0, 50, 100, 150]);
+  assert.strictEqual(calc.rulerScale(1000).step, 250);
+});
+
+test("never more than 6 ticks", function () {
+  [0.5, 3, 7, 19, 21, 33, 49, 51, 99, 101, 240, 499, 777, 2600, 9999].forEach(function (value) {
+    const scale = calc.rulerScale(value);
+    assert.ok(scale.ticks.length <= 6, value + " gave " + scale.ticks.length + " ticks");
+    assert.ok(scale.max > value, value + " is not below the max " + scale.max);
+  });
+});
+
 console.log("\n" + passed + " passed, " + failed + " failed");
 if (failed > 0) process.exitCode = 1;

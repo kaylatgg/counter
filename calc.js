@@ -209,6 +209,15 @@ function calculate(values) {
     // The tolerance stops floating point noise from deciding an exact match.
     result.offer.coversAllHours =
       result.offer.hoursCovered !== null && result.offer.hoursCovered >= total - 1e-9;
+    // Hours the offer doesn't pay for at the target rate. All of them if it
+    // doesn't even cover expenses, none if it covers everything.
+    if (belowExpenses) {
+      result.offer.unpaidHours = total;
+    } else if (result.offer.coversAllHours) {
+      result.offer.unpaidHours = 0;
+    } else {
+      result.offer.unpaidHours = total - result.offer.hoursCovered;
+    }
   }
 
   // A custom quote never changes the estimate or the target rate.
@@ -224,6 +233,50 @@ function calculate(values) {
   };
 
   return result;
+}
+
+// Chart math
+
+// Hours per block in the hours chart: 30 min up to 24 hrs, 1 hr up to 48, then 2 hrs.
+function blockUnit(totalHours) {
+  if (totalHours <= 24) return 0.5;
+  if (totalHours <= 48) return 1;
+  return 2;
+}
+
+// Splits each group's hours into blocks. Each block is a fraction of one unit:
+// 1 for a full block, less for the narrower last block of an uneven group.
+// Example: 1.25 hrs at 30 min per block gives [1, 1, 0.5].
+function splitIntoBlocks(hours, unit) {
+  const units = hours / unit;
+  const full = Math.floor(units + 1e-9);
+  const blocks = [];
+  for (let i = 0; i < full; i++) blocks.push(1);
+  const rest = units - full;
+  if (rest > 1e-9) blocks.push(rest);
+  return blocks;
+}
+
+// The dollars-per-hour ruler: from $0 to a rounded max a little above the largest value.
+// Steps of $5 while the max is $20 or less, then $10, $25, $50, $100, $250, and so on.
+// At most 6 ticks (5 steps).
+function rulerScale(largest) {
+  const steps = [5, 10, 25, 50];
+  let step = null;
+  let max = 0;
+  for (let i = 0; step === null; i++) {
+    const candidate = steps[i % 4] * Math.pow(10, Math.floor(i / 4));
+    const candidateMax = (Math.floor(largest / candidate + 1e-9) + 1) * candidate;
+    const fits = candidateMax / candidate <= 5;
+    const fiveOnlyToTwenty = candidate !== 5 || candidateMax <= 20;
+    if (fits && fiveOnlyToTwenty) {
+      step = candidate;
+      max = candidateMax;
+    }
+  }
+  const ticks = [];
+  for (let value = 0; value <= max + 1e-9; value += step) ticks.push(value);
+  return { max: max, step: step, ticks: ticks };
 }
 
 // Display helpers. These are the only places numbers get rounded.
@@ -277,6 +330,9 @@ const calc = {
   roundUpToFive,
   workHours,
   calculate,
+  blockUnit,
+  splitIntoBlocks,
+  rulerScale,
   formatMoney,
   formatWholeMoney,
   formatNumber,

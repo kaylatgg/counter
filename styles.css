@@ -644,40 +644,271 @@ footer p {
   color: var(--night-text);
 }
 
-/* Charts (redesigned in Step 5): plain rows for now. */
+/* Charts */
 
 .chart h3 {
-  margin-bottom: 18px;
-}
-
-.legend li,
-.bar-list li {
-  display: flex;
-  gap: 12px;
-  padding: 6px 0;
-  border-bottom: 1px solid var(--night-line);
-  color: var(--night-2);
-}
-
-.legend .swatch {
-  display: none;
-}
-
-.legend-name,
-.bar-label {
-  flex: 1;
-}
-
-.legend-hours,
-.bar-value {
-  color: var(--night-text);
-  font-weight: 600;
+  margin: 0;
 }
 
 .chart-summary {
-  margin-top: 16px;
+  margin-top: 22px;
+  max-width: 40em;
   font-size: 14px;
   color: var(--night-2);
+}
+
+.chart-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 16px;
+}
+
+.chart-flag {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--lime);
+}
+
+.chart-unit {
+  margin-left: auto;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--night-mute);
+}
+
+/* Chart 1: blocks of time.
+   Room above for the line's label, room below for the group labels. */
+.blocks {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  column-gap: 14px;
+  row-gap: 80px;
+  margin-top: 14px;
+  padding-top: 34px;
+  /* Room for each row of group labels (set by app.js). */
+  padding-bottom: calc(10px + var(--label-rows, 1) * 20px);
+}
+
+.block-group {
+  position: relative;
+}
+
+.block-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.block {
+  flex: none;
+  height: 56px;
+  outline: 1.5px solid var(--night-text);
+  outline-offset: -1.5px;
+}
+
+.block-group[data-group="production"] .block {
+  background: var(--night-text);
+}
+
+.block-group[data-group="communication"] .block {
+  background: repeating-linear-gradient(135deg, var(--night-text) 0 1.5px, transparent 1.5px 5px);
+}
+
+.block-group[data-group="revisions"] .block {
+  background: repeating-linear-gradient(45deg, var(--night-text) 0 1.5px, transparent 1.5px 5px);
+}
+
+.block-group[data-group="delivery"] .block {
+  background: radial-gradient(circle, var(--night-text) 1.1px, transparent 1.4px) 0 0 / 5px 5px;
+}
+
+/* Time the offer doesn't pay for drops to 28% opacity. */
+.block.unpaid {
+  opacity: 0.28;
+}
+
+/* A block the line passes through: paid on the left, dimmed on the right. */
+.block.split {
+  -webkit-mask-image: linear-gradient(to right, #000 var(--paid), rgba(0, 0, 0, 0.28) var(--paid));
+  mask-image: linear-gradient(to right, #000 var(--paid), rgba(0, 0, 0, 0.28) var(--paid));
+}
+
+.group-label {
+  position: absolute;
+  top: calc(66px + var(--row, 0) * 20px);
+  left: 0;
+  white-space: nowrap;
+  font-size: 12px;
+  color: var(--night-2);
+}
+
+.group-label b {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--night-text);
+}
+
+/* Where the money runs out: a 2px lime line, label at its top right. */
+.runs-out {
+  position: absolute;
+  z-index: 1;
+  width: 2px;
+  margin-left: -1px;
+  background: var(--lime);
+}
+
+.runs-out-label {
+  position: absolute;
+  top: -3px;
+  left: 10px;
+  white-space: nowrap;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--lime);
+}
+
+.runs-out.flip .runs-out-label {
+  left: auto;
+  right: 10px;
+}
+
+/* Chart 2: one ruler in dollars per hour. Line at 40px from the top. */
+.ruler {
+  position: relative;
+  height: 96px;
+  margin-top: 30px;
+}
+
+.ruler-line {
+  position: absolute;
+  top: 40px;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: var(--night-line);
+}
+
+.tick {
+  position: absolute;
+  top: 40px;
+  width: 1px;
+  height: 6px;
+  background: var(--night-tick);
+}
+
+.tick span {
+  position: absolute;
+  top: 34px;
+  left: 0;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--night-mute);
+}
+
+.tick.first span {
+  transform: none;
+}
+
+.tick.last span {
+  transform: translateX(-100%);
+}
+
+.gap-band {
+  position: absolute;
+  top: 36px;
+  height: 9px;
+  background: repeating-linear-gradient(90deg, var(--lime) 0 4px, transparent 4px 7px);
+}
+
+.target-mark {
+  position: absolute;
+  z-index: 1;
+  top: 28px;
+  width: 4px;
+  height: 25px;
+  margin-left: -2px;
+  background: var(--lime);
+}
+
+.dot {
+  position: absolute;
+  z-index: 2;
+  top: 33px;
+  width: 15px;
+  height: 15px;
+  margin-left: -7.5px;
+  border-radius: 50%;
+}
+
+.dot-offer {
+  background: var(--night-text);
+}
+
+.dot-after {
+  border: 2px solid var(--night-text);
+  background: var(--night);
+}
+
+.ruler-label {
+  position: absolute;
+  top: 6px;
+  white-space: nowrap;
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.offer-label {
+  font-weight: 600;
+  color: var(--night-text);
+}
+
+.after-label {
+  color: var(--night-2);
+}
+
+.target-label {
+  font-weight: 600;
+  color: var(--lime);
+}
+
+.gap-label,
+.over-label,
+.after-label.below,
+.offer-label.below {
+  top: 52px;
+}
+
+.gap-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--lime);
+}
+
+.over-label {
+  color: var(--night-2);
+}
+
+/* Motion: only after the first render, 180ms ease-out. Off for reduced motion (below). */
+.charts-ready .block {
+  transition: width 180ms ease-out, opacity 180ms ease-out;
+}
+
+.charts-ready .runs-out,
+.charts-ready .dot,
+.charts-ready .target-mark,
+.charts-ready .tick,
+.charts-ready .ruler-label {
+  transition: left 180ms ease-out;
+}
+
+.charts-ready .gap-band {
+  transition: left 180ms ease-out, width 180ms ease-out;
 }
 
 /* How we calculated this */

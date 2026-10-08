@@ -216,43 +216,351 @@ function renderHero(r) {
   }
 }
 
+const GROUP_NAMES = {
+  production: "Production",
+  communication: "Communication",
+  revisions: "Revisions",
+  delivery: "Delivery",
+};
+
+// Chart sizes from docs/DESIGN.md, in px.
+const BLOCK_GAP = 4;
+const GROUP_GAP = 14;
+const BLOCK_MIN = 8;
+const BLOCK_MAX = 22;
+const BLOCK_HEIGHT = 56;
+const LINE_ABOVE = 34;
+const LABEL_SPACE = 12;
+const BAND_LABEL_MIN = 64;
+
+function isOne(amount) {
+  return calc.formatNumber(amount) === "1";
+}
+
+// Makes a parent hold exactly `count` children of one kind, reusing the ones
+// already there, so values can animate from their old state.
+function ensureChildren(parent, count, make) {
+  while (parent.children.length < count) parent.appendChild(make());
+  while (parent.children.length > count) parent.lastElementChild.remove();
+  return Array.prototype.slice.call(parent.children);
+}
+
+// Chart 1: Your hours, and where the money runs out
+
 function renderHoursChart(r) {
-  const legend = byId("hours-legend");
-  WORK_GROUPS.forEach(function (group) {
-    const item = legend.querySelector('[data-group="' + group + '"]');
-    const hours = r.hours[group];
-    item.querySelector(".legend-hours").textContent = calc.formatHours(hours);
-    item.querySelector(".legend-percent").textContent =
-      Math.round((hours / r.hours.total) * 100) + "%";
+  const total = r.hours.total;
+  const offer = r.offer;
+  byId("hours-title").textContent = offer
+    ? "Your " + hoursInWords(total) + ", and where the money runs out"
+    : "Your " + hoursInWords(total);
+
+  const unit = calc.blockUnit(total);
+  byId("block-unit").textContent = "1 block = " + (unit === 0.5 ? "30 min" : calc.formatHours(unit));
+
+  // No line in these two cases, so the label sits next to the title.
+  let flag = "";
+  if (offer && offer.belowExpenses) {
+    flag = calc.formatPrice(offer.amount) + " doesn't cover your expenses";
+  } else if (offer && offer.coversAllHours) {
+    flag = calc.formatPrice(offer.amount) + " covers all " + calc.formatHours(total);
+  }
+  byId("hours-flag").textContent = flag;
+  show(byId("hours-flag"), flag !== "");
+
+  // What screen readers get instead of the blocks.
+  const items = ensureChildren(byId("hours-list"), WORK_GROUPS.length, function () {
+    return document.createElement("li");
+  });
+  WORK_GROUPS.forEach(function (group, i) {
+    items[i].textContent = GROUP_NAMES[group] + ": " + calc.formatHours(r.hours[group]);
   });
 
-  const total = calc.formatHours(r.hours.total);
-  byId("hours-summary").textContent = r.outsideProduction === 0
-    ? "All " + total + " are production."
-    : calc.formatNumber(r.outsideProduction) + " of the " + total +
-      " are communication, revisions, and delivery, not production.";
+  const parts = [];
+  const unpaid = offer ? offer.unpaidHours : 0;
+  if (unpaid > 1e-9) {
+    parts.push([hoursInWords(unpaid)], isOne(unpaid) ? " goes unpaid, and " : " go unpaid, and ");
+  }
+  if (r.outsideProduction > 0) {
+    parts.push([hoursInWords(r.outsideProduction)],
+      isOne(r.outsideProduction) ? " is work outside the design itself." : " are work outside the design itself.");
+  } else {
+    parts.push(parts.length ? "all " : "All ", [hoursInWords(total)], " are production.");
+  }
+  setRichText(byId("hours-summary"), parts);
+
+  layoutBlocks(r);
 }
+
+// Draws the blocks, dims what the offer doesn't pay for, and places the lime line.
+function layoutBlocks(r) {
+  const container = byId("blocks");
+  const width = container.clientWidth;
+  if (!width) return;
+
+  const total = r.hours.total;
+  const unit = calc.blockUnit(total);
+  const groups = WORK_GROUPS.filter(function (group) { return r.hours[group] > 1e-9; });
+  const blocksByGroup = groups.map(function (group) {
+    return calc.splitIntoBlocks(r.hours[group], unit);
+  });
+
+  // Block width fills the space: (width minus gaps) divided by blocks, 8px to 22px.
+  let gaps = (groups.length - 1) * GROUP_GAP;
+  blocksByGroup.forEach(function (blocks) { gaps += (blocks.length - 1) * BLOCK_GAP; });
+  const blockWidth = Math.min(BLOCK_MAX, Math.max(BLOCK_MIN, (width - gaps) / (total / unit)));
+
+  // Where the money runs out, in hours from the start. Infinity means never.
+  const offer = r.offer;
+  let covered = Infinity;
+  if (offer && offer.belowExpenses) covered = 0;
+  else if (offer && !offer.coversAllHours) covered = offer.hoursCovered;
+  const showLine = Boolean(offer) && !offer.belowExpenses && !offer.coversAllHours;
+
+  // Reuse the group elements that exist, in the fixed order.
+  const line = byId("runs-out");
+  container.querySelectorAll(".block-group").forEach(function (element) {
+    if (groups.indexOf(element.dataset.group) === -1) element.remove();
+  });
+
+  let start = 0;
+  let lineBlock = null;
+  let lineFraction = 0;
+
+  groups.forEach(function (group, g) {
+    let element = container.querySelector('.block-group[data-group="' + group + '"]');
+    if (!element) {
+      element = document.createElement("div");
+      element.className = "block-group";
+      element.dataset.group = group;
+      element.innerHTML = '<div class="block-row"></div><p class="group-label"><b></b> <span></span></p>';
+    }
+    container.appendChild(element);
+    element.querySelector(".group-label b").textContent = calc.formatNumber(r.hours[group]) + "h";
+    element.querySelector(".group-label span").textContent = GROUP_NAMES[group];
+
+    const sizes = blocksByGroup[g];
+    const blocks = ensureChildren(element.querySelector(".block-row"), sizes.length, function () {
+      const block = document.createElement("div");
+      block.className = "block";
+      return block;
+    });
+
+    blocks.forEach(function (block, i) {
+      const end = start + sizes[i] * unit;
+      block.style.width = (sizes[i] * blockWidth) + "px";
+
+      // Fully paid, fully unpaid (28% opacity), or split by the line.
+      const paid = end <= covered + 1e-9;
+      const unpaid = start >= covered - 1e-9;
+      block.classList.toggle("unpaid", unpaid && !paid);
+      if (!paid && !unpaid) {
+        const percent = ((covered - start) / (end - start)) * 100;
+        block.style.setProperty("--paid", percent.toFixed(2) + "%");
+        block.classList.add("split");
+      } else {
+        block.classList.remove("split");
+      }
+
+      if (showLine && !lineBlock && covered >= start - 1e-9 && covered <= end + 1e-9) {
+        lineBlock = block;
+        lineFraction = (covered - start) / (end - start);
+      }
+      start = end;
+    });
+  });
+
+  show(line, showLine && Boolean(lineBlock));
+  if (showLine && lineBlock) {
+    // Measured from the chart's own edge, since blocks sit inside their group.
+    const box = container.getBoundingClientRect();
+    const blockBox = lineBlock.getBoundingClientRect();
+    const x = blockBox.left - box.left + lineFraction * blockBox.width;
+    line.style.left = x + "px";
+    line.style.top = (blockBox.top - box.top - LINE_ABOVE) + "px";
+    line.style.height = (LINE_ABOVE + BLOCK_HEIGHT) + "px";
+    byId("runs-out-label").textContent = calc.formatPrice(offer.amount) + " runs out at " +
+      calc.formatHours(offer.hoursCovered);
+    // The label sits right of the line, unless that would run past the edge.
+    const label = byId("runs-out-label");
+    line.classList.remove("flip");
+    if (x + LABEL_SPACE + label.offsetWidth > width) line.classList.add("flip");
+  }
+
+  placeGroupLabels(container);
+}
+
+// Group labels may run past their group, but never into another label.
+// A label that would collide moves down to the first row where it fits.
+const LABEL_ROW_HEIGHT = 20;
+
+function placeGroupLabels(container) {
+  const width = container.clientWidth;
+  const rowEnds = [];
+  container.querySelectorAll(".block-group").forEach(function (element) {
+    const label = element.querySelector(".group-label");
+    // Shift left if the label would run past the chart's right edge.
+    const shift = Math.min(0, width - (element.offsetLeft + label.offsetWidth));
+    label.style.left = shift + "px";
+    const left = element.offsetLeft + shift;
+
+    let row = 0;
+    while (row < rowEnds.length && left < rowEnds[row] + LABEL_SPACE) row++;
+    rowEnds[row] = left + label.offsetWidth;
+    label.style.setProperty("--row", row);
+  });
+  container.style.setProperty("--label-rows", Math.max(1, rowEnds.length));
+}
+
+// Chart 2: Pay per hour
 
 function renderOfferChart(r) {
   const chart = byId("offer-chart");
   show(chart, Boolean(r.offer));
   if (!r.offer) return;
+  const offer = r.offer;
 
-  const rows = byId("offer-bars").children;
-  rows[0].querySelector(".bar-value").textContent = calc.formatMoney(r.offer.hourlyBefore) + "/hr";
-  rows[1].querySelector(".bar-label").textContent =
-    "Offer, after " + calc.formatMoney(r.expenses) + " expenses";
-  rows[1].querySelector(".bar-value").textContent = calc.formatMoney(r.offer.hourlyAfter) + "/hr";
-  rows[2].querySelector(".bar-value").textContent = calc.formatMoney(r.rate) + "/hr";
+  const items = byId("pay-list").children;
+  items[0].textContent = "Offer, before expenses: " + calc.formatMoney(offer.hourlyBefore) + "/hr";
+  items[1].textContent = "Offer, after " + calc.formatMoney(r.expenses) + " expenses: " +
+    calc.formatMoney(offer.hourlyAfter) + "/hr";
+  items[2].textContent = "Your target rate: " + calc.formatMoney(r.rate) + "/hr";
 
-  let summary = r.offer.meetsTarget
+  let summary = offer.meetsTarget
     ? "Before expenses, the offer meets your target rate."
-    : "Before expenses, the offer pays " + calc.formatMoney(r.offer.shortPerHour) +
+    : "Before expenses, the offer pays " + calc.formatMoney(offer.shortPerHour) +
       " an hour less than your target.";
-  if (r.offer.hourlyAfter < 0) {
+  if (offer.hourlyAfter < 0) {
     summary += " After expenses, it pays less than $0 an hour, so you would lose money on this job.";
   }
   byId("offer-summary").textContent = summary;
+
+  layoutRuler(r);
+}
+
+// Puts a label left or right of x. Returns its left and right edges.
+function placeSide(label, x, side, width) {
+  const w = label.offsetWidth;
+  let left = side === "right" ? x + LABEL_SPACE - 2 : x - LABEL_SPACE + 2 - w;
+  left = Math.max(0, Math.min(width - w, left));
+  label.style.left = left + "px";
+  return { left: left, right: left + w };
+}
+
+function placeCentered(label, x, width) {
+  const w = label.offsetWidth;
+  const left = Math.max(0, Math.min(width - w, x - w / 2));
+  label.style.left = left + "px";
+  return { left: left, right: left + w };
+}
+
+function overlaps(a, b) {
+  return a.left < b.right + 6 && b.left < a.right + 6;
+}
+
+function layoutRuler(r) {
+  const ruler = byId("ruler");
+  const width = ruler.clientWidth;
+  if (!width) return;
+  const offer = r.offer;
+
+  const scale = calc.rulerScale(Math.max(offer.hourlyBefore, offer.hourlyAfter, r.rate));
+  // Below $0 draws at $0 and keeps its negative label.
+  function x(value) {
+    return (Math.max(0, value) / scale.max) * width;
+  }
+
+  // Ticks and their labels: first label left-aligned, last right-aligned.
+  const ticks = ensureChildren(byId("ruler-ticks"), scale.ticks.length, function () {
+    const tick = document.createElement("div");
+    tick.className = "tick";
+    tick.innerHTML = "<span></span>";
+    return tick;
+  });
+  ticks.forEach(function (tick, i) {
+    tick.style.left = x(scale.ticks[i]) + "px";
+    tick.className = "tick" + (i === 0 ? " first" : "") + (i === ticks.length - 1 ? " last" : "");
+    tick.querySelector("span").textContent = calc.formatWholeMoney(scale.ticks[i]);
+  });
+
+  const offerX = x(offer.hourlyBefore);
+  const afterX = x(offer.hourlyAfter);
+  const targetX = x(r.rate);
+  byId("dot-offer").style.left = offerX + "px";
+  byId("dot-after").style.left = afterX + "px";
+  byId("target-mark").style.left = targetX + "px";
+
+  // The gap: a dashed lime band from the offer to the target.
+  const band = byId("gap-band");
+  const gapLabel = byId("gap-label");
+  const bandWidth = targetX - offerX;
+  show(band, !offer.meetsTarget);
+  if (!offer.meetsTarget) {
+    band.style.left = offerX + "px";
+    band.style.width = bandWidth + "px";
+    gapLabel.textContent = "-" + calc.formatMoney(offer.shortPerHour) + "/hr";
+  }
+  show(gapLabel, !offer.meetsTarget && bandWidth >= BAND_LABEL_MIN);
+  if (!offer.meetsTarget) placeCentered(gapLabel, offerX + bandWidth / 2, width);
+
+  // Above the target: a small "+$X/hr" between the target and the offer.
+  const overLabel = byId("over-label");
+  const overCents = Math.round((offer.hourlyBefore - r.rate) * 100);
+  const showOver = overCents > 0 && offerX - targetX >= BAND_LABEL_MIN;
+  show(overLabel, showOver);
+  if (showOver) {
+    overLabel.textContent = "+" + calc.formatMoney(overCents / 100) + "/hr";
+    placeCentered(overLabel, (targetX + offerX) / 2, width);
+  }
+
+  // Labels above the ruler: target centered, offer to the right, after expenses to the left.
+  const targetLabel = byId("target-label");
+  const offerLabel = byId("offer-label");
+  const afterLabel = byId("after-label");
+  targetLabel.textContent = "target " + calc.formatPrice(r.rate);
+  offerLabel.textContent = "offer " + calc.formatMoney(offer.hourlyBefore);
+  afterLabel.textContent = "after expenses " + calc.formatMoney(offer.hourlyAfter);
+
+  const targetBox = placeCentered(targetLabel, targetX, width);
+
+  // The offer label goes right of its dot, or left if that collides with the target.
+  // If the offer sits right on the target, it drops below the ruler.
+  offerLabel.classList.remove("below");
+  let offerBox = placeSide(offerLabel, offerX, "right", width);
+  if (overlaps(offerBox, targetBox)) offerBox = placeSide(offerLabel, offerX, "left", width);
+  if (overlaps(offerBox, targetBox)) {
+    offerLabel.classList.add("below");
+    offerBox = placeSide(offerLabel, offerX, "right", width);
+  }
+  const aboveBoxes = [targetBox];
+  const belowBoxes = [];
+  if (offerLabel.classList.contains("below")) belowBoxes.push(offerBox);
+  else aboveBoxes.push(offerBox);
+  if (!gapLabel.hidden) belowBoxes.push(boxOf(gapLabel));
+
+  // If labels would overlap, the after-expenses label moves below the ruler.
+  afterLabel.classList.remove("below");
+  let afterBox = placeBeside(afterLabel, afterX, width);
+  if (aboveBoxes.some(function (box) { return overlaps(afterBox, box); })) {
+    afterLabel.classList.add("below");
+    afterBox = placeBeside(afterLabel, afterX, width);
+  }
+  if (afterLabel.classList.contains("below")) belowBoxes.push(afterBox);
+
+  // "+$X/hr" is optional, so it gives way to any label it would touch.
+  if (!overLabel.hidden && belowBoxes.some(function (box) { return overlaps(boxOf(overLabel), box); })) {
+    show(overLabel, false);
+  }
+}
+
+// Left of the dot, or right of it when there's no room on the left.
+function placeBeside(label, x, width) {
+  if (x - LABEL_SPACE - label.offsetWidth < 0) return placeSide(label, x, "right", width);
+  return placeSide(label, x, "left", width);
+}
+
+function boxOf(label) {
+  const left = parseFloat(label.style.left) || 0;
+  return { left: left, right: left + label.offsetWidth };
 }
 
 // "1 page", "2 pages"
@@ -365,11 +673,21 @@ function update(commit) {
   }
 
   showResultState("result");
+  lastResult = r;
   renderHero(r);
   renderHoursChart(r);
   renderOfferChart(r);
   renderReceipt(r, checked.values);
   if (!errors.quote || shownErrors.quote) renderQuote(r, errors.quote);
+}
+
+// Charts measure the page, so they redraw when the size or font changes.
+let lastResult = null;
+
+function relayoutCharts() {
+  if (!lastResult) return;
+  layoutBlocks(lastResult);
+  if (lastResult.offer) layoutRuler(lastResult);
 }
 
 // Typing updates right away, then commits after about 1 second without typing.
@@ -427,5 +745,22 @@ document.querySelectorAll('input[name="offerStatus"]').forEach(function (radio) 
   });
 });
 
+let resizeFrame = null;
+window.addEventListener("resize", function () {
+  cancelAnimationFrame(resizeFrame);
+  resizeFrame = requestAnimationFrame(relayoutCharts);
+});
+
+if (document.fonts && document.fonts.ready) {
+  document.fonts.ready.then(relayoutCharts);
+}
+
 showOfferField();
 update(true);
+
+// Bars and dots animate only after the first render, never on load.
+requestAnimationFrame(function () {
+  requestAnimationFrame(function () {
+    document.body.classList.add("charts-ready");
+  });
+});
