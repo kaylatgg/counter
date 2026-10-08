@@ -304,29 +304,11 @@ function layoutBlocks(r) {
     return calc.splitIntoBlocks(r.hours[group], unit);
   });
 
-  // Block width fills the space: (width minus gaps) divided by blocks, 8px to 22px.
-  let gaps = (groups.length - 1) * GROUP_GAP;
-  blocksByGroup.forEach(function (blocks) { gaps += (blocks.length - 1) * BLOCK_GAP; });
-  const blockWidth = Math.min(BLOCK_MAX, Math.max(BLOCK_MIN, (width - gaps) / (total / unit)));
-
-  // Where the money runs out, in hours from the start. Infinity means never.
-  const offer = r.offer;
-  let covered = Infinity;
-  if (offer && offer.belowExpenses) covered = 0;
-  else if (offer && !offer.coversAllHours) covered = offer.hoursCovered;
-  const showLine = Boolean(offer) && !offer.belowExpenses && !offer.coversAllHours;
-
-  // Reuse the group elements that exist, in the fixed order.
-  const line = byId("runs-out");
+  // Reuse the group elements that exist, in the fixed order, and fill in their labels.
   container.querySelectorAll(".block-group").forEach(function (element) {
     if (groups.indexOf(element.dataset.group) === -1) element.remove();
   });
-
-  let start = 0;
-  let lineBlock = null;
-  let lineFraction = 0;
-
-  groups.forEach(function (group, g) {
+  const elements = groups.map(function (group) {
     let element = container.querySelector('.block-group[data-group="' + group + '"]');
     if (!element) {
       element = document.createElement("div");
@@ -337,7 +319,47 @@ function layoutBlocks(r) {
     container.appendChild(element);
     element.querySelector(".group-label b").textContent = calc.formatNumber(r.hours[group]) + "h";
     element.querySelector(".group-label span").textContent = GROUP_NAMES[group];
+    return element;
+  });
+  const labelWidths = elements.map(function (element) {
+    return element.querySelector(".group-label").offsetWidth;
+  });
 
+  // Block width fills the space: (width minus gaps) divided by blocks, 8px to 22px.
+  // Gaps between groups are 14px, or wider where a group's label needs the room,
+  // so a label never reaches into the next group. Widening the gaps narrows the
+  // blocks, which can need more room again, so this settles over a few passes.
+  let innerGaps = 0;
+  blocksByGroup.forEach(function (blocks) { innerGaps += (blocks.length - 1) * BLOCK_GAP; });
+  let blockWidth = BLOCK_MAX;
+  let extras = groups.map(function () { return 0; });
+  for (let pass = 0; pass < 4; pass++) {
+    const groupGaps = extras.reduce(function (sum, extra) { return sum + extra; },
+      (groups.length - 1) * GROUP_GAP);
+    blockWidth = Math.min(BLOCK_MAX, Math.max(BLOCK_MIN,
+      (width - innerGaps - groupGaps) / (total / unit)));
+    extras = blocksByGroup.map(function (blocks, g) {
+      if (g === groups.length - 1) return 0;
+      const blocksWidth = (total === 0 ? 0 : blocks.reduce(function (sum, size) {
+        return sum + size * blockWidth;
+      }, 0)) + (blocks.length - 1) * BLOCK_GAP;
+      return Math.max(0, labelWidths[g] + LABEL_SPACE - (blocksWidth + GROUP_GAP));
+    });
+  }
+
+  // Where the money runs out, in hours from the start. Infinity means never.
+  const offer = r.offer;
+  let covered = Infinity;
+  if (offer && offer.belowExpenses) covered = 0;
+  else if (offer && !offer.coversAllHours) covered = offer.hoursCovered;
+  const showLine = Boolean(offer) && !offer.belowExpenses && !offer.coversAllHours;
+
+  let start = 0;
+  let lineBlock = null;
+  let lineFraction = 0;
+
+  elements.forEach(function (element, g) {
+    element.style.marginRight = extras[g] + "px";
     const sizes = blocksByGroup[g];
     const blocks = ensureChildren(element.querySelector(".block-row"), sizes.length, function () {
       const block = document.createElement("div");
@@ -367,8 +389,13 @@ function layoutBlocks(r) {
       }
       start = end;
     });
+
+    // The last label stays inside the chart's right edge.
+    const label = element.querySelector(".group-label");
+    label.style.left = Math.min(0, width - (element.offsetLeft + labelWidths[g])) + "px";
   });
 
+  const line = byId("runs-out");
   show(line, showLine && Boolean(lineBlock));
   if (showLine && lineBlock) {
     // Measured from the chart's own edge, since blocks sit inside their group.
@@ -385,30 +412,6 @@ function layoutBlocks(r) {
     line.classList.remove("flip");
     if (x + LABEL_SPACE + label.offsetWidth > width) line.classList.add("flip");
   }
-
-  placeGroupLabels(container);
-}
-
-// Group labels may run past their group, but never into another label.
-// A label that would collide moves down to the first row where it fits.
-const LABEL_ROW_HEIGHT = 20;
-
-function placeGroupLabels(container) {
-  const width = container.clientWidth;
-  const rowEnds = [];
-  container.querySelectorAll(".block-group").forEach(function (element) {
-    const label = element.querySelector(".group-label");
-    // Shift left if the label would run past the chart's right edge.
-    const shift = Math.min(0, width - (element.offsetLeft + label.offsetWidth));
-    label.style.left = shift + "px";
-    const left = element.offsetLeft + shift;
-
-    let row = 0;
-    while (row < rowEnds.length && left < rowEnds[row] + LABEL_SPACE) row++;
-    rowEnds[row] = left + label.offsetWidth;
-    label.style.setProperty("--row", row);
-  });
-  container.style.setProperty("--label-rows", Math.max(1, rowEnds.length));
 }
 
 // Chart 2: Pay per hour
@@ -589,6 +592,8 @@ function renderReceipt(r, values) {
     ["Estimated project price", "", calc.formatWholeMoney(r.estimate), "total"],
   ];
 
+  byId("math-estimate").textContent = calc.formatWholeMoney(r.estimate);
+
   const body = byId("receipt-rows");
   body.textContent = "";
   rows.forEach(function (row) {
@@ -627,6 +632,50 @@ function renderQuote(r, quoteError) {
       (difference < 0 ? " below" : " above") + " your estimate.";
   }
   line.textContent = text;
+}
+
+// Reply
+
+// The draft from CLAUDE.md, using the quote if there is one, or the estimate.
+function buildReply(r, values) {
+  const price = calc.formatPrice(r.quote.amount);
+  const pages = calc.formatNumber(values.pages) + "-page menu";
+  const rounds = countOf(values.rounds, "round", "rounds") + " of changes";
+  let text = "Hi! Thanks for reaching out about the menu. For a " + pages + " with " + rounds +
+    " and print-ready files, my price is " + price + ".";
+  if (r.offer && r.quote.amount > r.offer.amount) {
+    text += " I know that's more than the " + calc.formatPrice(r.offer.amount) +
+      " you mentioned, so I'm happy to talk about what would fit your budget.";
+  }
+  return text + " Let me know if you have any questions!";
+}
+
+// Once the person edits the reply, it's never overwritten. If the numbers
+// change after that, a notice offers to update the draft instead.
+let currentDraft = "";
+let draftWhenEdited = null;
+
+function renderReply(r, values) {
+  currentDraft = buildReply(r, values);
+  const reply = byId("reply");
+  if (draftWhenEdited === null) {
+    reply.value = currentDraft;
+  }
+  show(byId("reply-notice"), draftWhenEdited !== null && draftWhenEdited !== currentDraft);
+}
+
+function onReplyEdit() {
+  if (draftWhenEdited === null) draftWhenEdited = currentDraft;
+  // Typing it back to exactly the draft counts as not edited.
+  if (byId("reply").value === currentDraft) draftWhenEdited = null;
+  show(byId("reply-notice"), draftWhenEdited !== null && draftWhenEdited !== currentDraft);
+}
+
+function updateDraft() {
+  draftWhenEdited = null;
+  byId("reply").value = currentDraft;
+  show(byId("reply-notice"), false);
+  byId("reply").focus();
 }
 
 // Which parts of the result are visible: the full result, "add hours," or "fix errors."
@@ -678,6 +727,7 @@ function update(commit) {
   renderHoursChart(r);
   renderOfferChart(r);
   renderReceipt(r, checked.values);
+  if (!errors.quote) renderReply(r, checked.values);
   if (!errors.quote || shownErrors.quote) renderQuote(r, errors.quote);
 }
 
@@ -744,6 +794,9 @@ document.querySelectorAll('input[name="offerStatus"]').forEach(function (radio) 
     update(true);
   });
 });
+
+byId("reply").addEventListener("input", onReplyEdit);
+byId("update-draft").addEventListener("click", updateDraft);
 
 let resizeFrame = null;
 window.addEventListener("resize", function () {

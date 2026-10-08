@@ -242,31 +242,41 @@
 
       <!-- D. How we calculated this -->
       <section class="receipt" id="receipt-section" aria-labelledby="receipt-title">
-        <h3 id="receipt-title">How we calculated this</h3>
+        <h3 id="receipt-title" class="visually-hidden">How we calculated this</h3>
 
-        <table id="receipt">
-          <thead>
-            <tr>
-              <th scope="col"><span class="visually-hidden">Item</span></th>
-              <th scope="col"><span class="visually-hidden">Math</span></th>
-              <th scope="col"><span class="visually-hidden">Amount</span></th>
-            </tr>
-          </thead>
-          <tbody id="receipt-rows">
-            <tr><th scope="row">Production</th><td>2 + 2 pages x 2</td><td>6 hrs</td></tr>
-            <tr><th scope="row">Communication</th><td></td><td>1.5 hrs</td></tr>
-            <tr><th scope="row">Revisions</th><td>2 rounds x 1.5</td><td>3 hrs</td></tr>
-            <tr><th scope="row">Delivery</th><td></td><td>1 hr</td></tr>
-            <tr class="sum"><th scope="row">Total hours</th><td></td><td>11.5 hrs</td></tr>
-            <tr><th scope="row">Your time</th><td>11.5 x $25.00</td><td>$287.50</td></tr>
-            <tr><th scope="row">Expenses</th><td></td><td>$20.00</td></tr>
-            <tr class="sum"><th scope="row">Subtotal</th><td></td><td>$307.50</td></tr>
-            <tr><th scope="row">Rounded up to nearest $5</th><td></td><td>+$2.50</td></tr>
-            <tr class="total"><th scope="row" colspan="2">Estimated project price</th><td>$310</td></tr>
-          </tbody>
-        </table>
+        <details class="math">
+          <summary>
+            <span class="math-toggle">
+              <svg class="chevron" width="12" height="12" viewBox="0 0 12 12" aria-hidden="true" focusable="false"><path d="M4 2.5 7.5 6 4 9.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              <span class="when-closed">Show the math</span><span class="when-open">Hide the math</span>
+            </span>
+            <span class="math-estimate" id="math-estimate">$310</span>
+          </summary>
 
-        <p class="receipt-note">Taxes are not included. None of these numbers are take-home pay.</p>
+          <table id="receipt">
+            <thead>
+              <tr>
+                <th scope="col"><span class="visually-hidden">Item</span></th>
+                <th scope="col"><span class="visually-hidden">Math</span></th>
+                <th scope="col"><span class="visually-hidden">Amount</span></th>
+              </tr>
+            </thead>
+            <tbody id="receipt-rows">
+              <tr><th scope="row">Production</th><td>2 + 2 pages x 2</td><td>6 hrs</td></tr>
+              <tr><th scope="row">Communication</th><td></td><td>1.5 hrs</td></tr>
+              <tr><th scope="row">Revisions</th><td>2 rounds x 1.5</td><td>3 hrs</td></tr>
+              <tr><th scope="row">Delivery</th><td></td><td>1 hr</td></tr>
+              <tr class="sum"><th scope="row">Total hours</th><td></td><td>11.5 hrs</td></tr>
+              <tr><th scope="row">Your time</th><td>11.5 x $25.00</td><td>$287.50</td></tr>
+              <tr><th scope="row">Expenses</th><td></td><td>$20.00</td></tr>
+              <tr class="sum"><th scope="row">Subtotal</th><td></td><td>$307.50</td></tr>
+              <tr><th scope="row">Rounded up to nearest $5</th><td></td><td>+$2.50</td></tr>
+              <tr class="total"><th scope="row" colspan="2">Estimated project price</th><td>$310</td></tr>
+            </tbody>
+          </table>
+
+          <p class="receipt-note">Taxes are not included. None of these numbers are take-home pay.</p>
+        </details>
       </section>
 
       <!-- 6 Your quote -->
@@ -292,7 +302,7 @@
 
         <div class="field">
           <label for="reply">Your reply to the client</label>
-          <textarea id="reply" name="reply" rows="8">Hi! Thanks for reaching out about the menu. For a 2-page menu with 2 rounds of changes and print-ready files, my price is $310. I know that's more than the $200 you mentioned, so I'm happy to talk about what would fit your budget. Let me know if you have any questions!</textarea>
+          <textarea id="reply" name="reply" rows="6" autocomplete="off">Hi! Thanks for reaching out about the menu. For a 2-page menu with 2 rounds of changes and print-ready files, my price is $310. I know that's more than the $200 you mentioned, so I'm happy to talk about what would fit your budget. Let me know if you have any questions!</textarea>
         </div>
 
         <div class="reply-actions">
