@@ -1,0 +1,970 @@
+/* Counter design system: "Split" (docs/DESIGN.md).
+   White input side on the left, black result side on the right.
+   Every color is a token, so themes can change in one place. */
+
+:root {
+  /* Light side (inputs) */
+  --paper: #FFFFFF;
+  --ink: #0E0F12;      /* 19:1 */
+  --muted: #5F646D;    /* labels, hints. 6:1 */
+  --line: #E3E5E8;     /* hairlines, decorative */
+  --control: #8A9099;  /* 3.2:1, only for outlines that must be visible */
+
+  /* Dark side (results) */
+  --night: #0C0D0F;
+  --night-text: #F4F4F2;  /* 17.6:1 */
+  --night-2: #B9BCC2;     /* secondary text. 10:1 */
+  --night-mute: #8B9098;  /* captions, axis labels. 6:1 */
+  --night-dim: #5E626A;   /* ONLY the dimmed cents of the hero number (large text). 3.2:1 */
+  --night-tick: #6E737B;  /* axis ticks. 4:1 */
+  --night-line: #26282D;  /* hairlines, decorative */
+  --lime: #D4FF3F;        /* the signal. 16.8:1 on night */
+
+  /* States */
+  --error: #B42318;  /* errors, light side only, always with an icon. 6.5:1 */
+  --hover-paper: #F1F2F4;  /* outline circles and pills on hover */
+  --hover-ink: #2A2C31;    /* solid ink circles and pills on hover */
+  --hover-lime: #E2FF6B;   /* "Copy reply" on hover */
+  --hover-night: #1A1C20;  /* outline pills on the dark side on hover */
+
+  --font: "Geist", system-ui, sans-serif;
+}
+
+/* Base */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font);
+  font-size: 15px;
+  line-height: 1.5;
+  font-variant-numeric: tabular-nums;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3,
+p,
+ul,
+table {
+  margin: 0;
+}
+
+ul {
+  padding: 0;
+  list-style: none;
+}
+
+input,
+button,
+textarea {
+  font: inherit;
+  color: inherit;
+  letter-spacing: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+.visually-hidden {
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Focus on the light side: 2px ink outline, 3px offset. */
+:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 3px;
+}
+
+.skip-link {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: 10;
+  padding: 10px 16px;
+  background: var(--ink);
+  color: var(--paper);
+  font-weight: 600;
+  border-radius: 999px;
+  transform: translateY(-200%);
+}
+
+.skip-link:focus {
+  transform: none;
+}
+
+/* Header */
+
+header,
+form,
+footer {
+  padding-left: 20px;
+  padding-right: 20px;
+}
+
+header {
+  padding-top: 30px;
+}
+
+.wordmark {
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  text-transform: lowercase;
+}
+
+h1 {
+  margin-top: 44px;
+  font-size: 46px;
+  font-weight: 700;
+  letter-spacing: -0.045em;
+  line-height: 0.98;
+}
+
+.headline-break {
+  display: block;
+}
+
+.lede {
+  margin-top: 18px;
+  font-size: 16px;
+  max-width: 34em;
+}
+
+.example-note {
+  margin-top: 6px;
+  color: var(--muted);
+}
+
+/* Sections: a hairline above, a 17px title with a muted step number. */
+
+fieldset {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+legend {
+  padding: 0;
+}
+
+.section {
+  margin-top: 32px;
+  padding-top: 24px;
+  border-top: 1px solid var(--line);
+}
+
+/* Floating the legend keeps it inside the fieldset, under the hairline. */
+.section > legend {
+  float: left;
+  width: 100%;
+  margin-bottom: 18px;
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.section > legend + * {
+  clear: both;
+}
+
+.step {
+  margin-right: 6px;
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.hint {
+  margin-top: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+/* 1 The job */
+
+.job-name {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.tag {
+  padding: 2px 9px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+.steppers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px 36px;
+  margin-top: 22px;
+}
+
+.stepper-field > label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+.stepper {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Each button is a 44px touch target holding a 40px circle. */
+.stepper button {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--ink);
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1;
+  isolation: isolate;
+}
+
+.stepper button::before {
+  content: "";
+  position: absolute;
+  inset: 2px;
+  z-index: -1;
+  border-radius: 50%;
+  border: 1.5px solid var(--ink);
+}
+
+.stepper button[data-step="1"] {
+  color: var(--paper);
+}
+
+.stepper button[data-step="1"]::before {
+  background: var(--ink);
+}
+
+.stepper input {
+  width: 2.2ch;
+  min-width: 2.2ch;
+  padding: 2px 0;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  font-size: 24px;
+  font-weight: 700;
+  text-align: center;
+}
+
+@supports (field-sizing: content) {
+  .stepper input {
+    field-sizing: content;
+    width: auto;
+    padding-inline: 0.3ch;
+  }
+}
+
+.stepper input[aria-invalid="true"] {
+  border-bottom-color: var(--error);
+}
+
+#scope-hint {
+  margin-top: 12px;
+}
+
+/* 2 The work */
+
+.work-group {
+  margin-top: 22px;
+}
+
+.work-group:first-of-type {
+  margin-top: 0;
+}
+
+.work-group > legend {
+  float: left;
+  width: 100%;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.work-group > legend output {
+  float: right;
+  font-weight: 400;
+  color: var(--muted);
+}
+
+.work-group > legend + * {
+  clear: both;
+}
+
+.work-row {
+  display: grid;
+  grid-template-columns: 1fr 88px;
+  column-gap: 16px;
+  align-items: end;
+  padding: 10px 0 9px;
+  border-bottom: 1px solid var(--line);
+}
+
+.work-row > label {
+  font-size: 15px;
+  padding-bottom: 4px;
+}
+
+.work-row > .hint,
+.work-row > .error {
+  grid-column: 1 / -1;
+}
+
+/* Hours inputs: no box, a 2px bottom border, "hrs" after the value. */
+.work-row .unit-input {
+  display: flex;
+  align-items: baseline;
+  justify-content: flex-end;
+  gap: 6px;
+  border-bottom: 2px solid var(--ink);
+}
+
+.work-row .unit-input input {
+  width: 100%;
+  min-width: 0;
+  padding: 2px 0 3px;
+  border: 0;
+  background: transparent;
+  font-size: 17px;
+  font-weight: 600;
+  text-align: right;
+}
+
+.work-row .unit {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* The box shows focus, so the field itself doesn't need its own outline. */
+.unit-input input:focus-visible {
+  outline: none;
+}
+
+.unit-input:focus-within {
+  outline: 2px solid var(--ink);
+  outline-offset: 3px;
+  border-bottom-width: 3px;
+  margin-bottom: -1px;
+}
+
+.unit-input:has([aria-invalid="true"]) {
+  border-bottom-color: var(--error);
+}
+
+/* 3 Your numbers and 4 Their offer: big values in two equal columns. */
+
+.field-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px;
+  align-items: start;
+}
+
+.field > label {
+  display: block;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+.field-row .unit-input {
+  display: flex;
+  align-items: baseline;
+  margin-top: 6px;
+  border-bottom: 2px solid var(--ink);
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  cursor: text;
+}
+
+.field-row .unit-input input {
+  width: 100%;
+  min-width: 0;
+  padding: 2px 0 4px;
+  border: 0;
+  background: transparent;
+}
+
+/* Where supported, the field hugs its value so "$25/hr" reads as one. */
+@supports (field-sizing: content) {
+  .field-row .unit-input input {
+    field-sizing: content;
+    width: auto;
+    min-width: 1ch;
+  }
+}
+
+/* Offer choice: real radios, drawn as two pills. */
+
+.offer-choice {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 22px;
+}
+
+.radio-choice input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+}
+
+.radio-choice label {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 18px;
+  border: 1.5px solid var(--ink);
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.radio-choice input:checked + label {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.radio-choice input:focus-visible + label {
+  outline: 2px solid var(--ink);
+  outline-offset: 3px;
+}
+
+/* Errors: icon plus message under the row. */
+
+.error {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin-top: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--error);
+}
+
+.error .icon {
+  flex: none;
+  margin-top: 1px;
+}
+
+/* Footer */
+
+footer {
+  padding-top: 40px;
+  padding-bottom: 30px;
+}
+
+footer p {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* Dark side: results */
+
+.result {
+  background: var(--night);
+  color: var(--night-text);
+  padding: 30px 20px 48px;
+}
+
+.result :focus-visible,
+.result .unit-input:focus-within {
+  outline-color: var(--lime);
+}
+
+/* Content stays at most 760px wide, aligned left, so numbers stay near their labels. */
+.result > * {
+  max-width: 760px;
+}
+
+/* Each block after the hero gets a hairline with 34px above and below. */
+.result > .chart,
+.result > .receipt,
+.result > .result-block {
+  margin-top: 34px;
+  padding-top: 34px;
+  border-top: 1px solid var(--night-line);
+}
+
+.result h3,
+.result-block > legend {
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--night-text);
+}
+
+.result .step {
+  color: var(--night-mute);
+}
+
+.empty-state {
+  font-size: 16px;
+  color: var(--night-2);
+}
+
+/* Hero */
+
+.hero-label {
+  font-size: 14px;
+  color: var(--night-2);
+  margin-bottom: 22px;
+}
+
+.hero-number {
+  font-size: clamp(112px, 11.5vw, 168px);
+  font-weight: 700;
+  letter-spacing: -0.065em;
+  line-height: 0.8;
+}
+
+.hero-cents {
+  color: var(--night-dim);
+}
+
+.hero-unit {
+  margin-left: 10px;
+  font-size: 28px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--night-2);
+}
+
+.hero-sentence {
+  margin-top: 28px;
+  max-width: 34em;
+  font-size: 16px;
+  color: var(--night-2);
+}
+
+.result strong {
+  font-weight: 600;
+  color: var(--night-text);
+}
+
+.result strong.signal {
+  color: var(--lime);
+}
+
+.warning {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 28px;
+  padding-left: 12px;
+  border-left: 2px solid var(--lime);
+  font-size: 16px;
+  color: var(--night-text);
+}
+
+.warning .icon {
+  flex: none;
+  margin-top: 3px;
+}
+
+/* Metrics row: three items split by thin vertical lines. */
+.metrics {
+  display: flex;
+  flex-wrap: wrap;
+  margin: 34px 0 0;
+}
+
+.metrics > div {
+  padding: 0 32px;
+  border-left: 1px solid var(--night-line);
+}
+
+.metrics > div:first-child {
+  padding-left: 0;
+  border-left: 0;
+}
+
+.metrics dt {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--night-mute);
+}
+
+.metrics dd {
+  margin: 6px 0 0;
+  font-size: 26px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  color: var(--night-text);
+}
+
+/* Charts (redesigned in Step 5): plain rows for now. */
+
+.chart h3 {
+  margin-bottom: 18px;
+}
+
+.legend li,
+.bar-list li {
+  display: flex;
+  gap: 12px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--night-line);
+  color: var(--night-2);
+}
+
+.legend .swatch {
+  display: none;
+}
+
+.legend-name,
+.bar-label {
+  flex: 1;
+}
+
+.legend-hours,
+.bar-value {
+  color: var(--night-text);
+  font-weight: 600;
+}
+
+.chart-summary {
+  margin-top: 16px;
+  font-size: 14px;
+  color: var(--night-2);
+}
+
+/* How we calculated this */
+
+.receipt h3 {
+  margin-bottom: 14px;
+}
+
+.receipt table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.receipt th,
+.receipt td {
+  padding: 8px 0;
+  border-bottom: 1px solid var(--night-line);
+  text-align: left;
+  vertical-align: baseline;
+}
+
+.receipt thead th {
+  padding: 0;
+  border: 0;
+}
+
+.receipt tbody th {
+  font-weight: 400;
+  color: var(--night-2);
+}
+
+/* The math column. Not in the final row, where the second cell is the amount. */
+.receipt td:nth-child(2):not(:last-child) {
+  padding-left: 16px;
+  padding-right: 16px;
+  color: var(--night-mute);
+  text-align: right;
+  white-space: nowrap;
+}
+
+.receipt td:last-child,
+.receipt tr.total td {
+  color: var(--night-text);
+  text-align: right;
+  white-space: nowrap;
+}
+
+.receipt tr.sum > * {
+  border-top: 1px solid var(--night-2);
+}
+
+.receipt tr.total > * {
+  white-space: nowrap;
+  padding-top: 14px;
+  border-bottom: 0;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--night-text);
+}
+
+.receipt-note {
+  margin-top: 14px;
+  font-size: 12px;
+  color: var(--night-mute);
+}
+
+/* Your quote and your reply: light-side inputs, reversed. */
+
+.result-block > legend {
+  float: left;
+  width: 100%;
+  margin-bottom: 18px;
+}
+
+.result-block .field > label {
+  color: var(--night-mute);
+}
+
+.result-block .unit-input {
+  display: flex;
+  align-items: baseline;
+  max-width: 220px;
+  margin-top: 6px;
+  border-bottom: 2px solid var(--night-text);
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  cursor: text;
+}
+
+.result-block .unit-input input {
+  width: 100%;
+  min-width: 0;
+  padding: 2px 0 4px;
+  border: 0;
+  background: transparent;
+  color: var(--night-text);
+}
+
+.result-block .unit-input input::placeholder {
+  color: var(--night-mute);
+  opacity: 1;
+}
+
+.result-block .hint {
+  color: var(--night-mute);
+}
+
+.link-button {
+  min-height: 44px;
+  margin-top: 4px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--lime);
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+#quote-result {
+  margin-top: 14px;
+  font-size: 14px;
+  color: var(--night-2);
+}
+
+textarea {
+  display: block;
+  width: 100%;
+  margin-top: 8px;
+  padding: 14px 16px;
+  border: 1px solid var(--night-tick);
+  border-radius: 12px;
+  background: transparent;
+  color: var(--night-text);
+  font-size: 16px;
+  line-height: 1.5;
+  resize: vertical;
+}
+
+.reply-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 16px;
+  margin-top: 16px;
+}
+
+.notice {
+  flex-basis: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 16px;
+  font-size: 14px;
+  color: var(--night-2);
+}
+
+#copy-reply,
+#update-draft {
+  min-height: 48px;
+  padding: 0 24px;
+  border-radius: 999px;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+#copy-reply {
+  border: 0;
+  background: var(--lime);
+  color: var(--night);
+}
+
+#update-draft {
+  border: 1.5px solid var(--night-text);
+  background: transparent;
+  color: var(--night-text);
+}
+
+#copy-status {
+  font-size: 13px;
+  color: var(--night-2);
+}
+
+/* Hover: subtle fills, 120ms. Only on controls, never on rows or text. */
+
+.stepper button::before,
+.radio-choice label,
+#copy-reply,
+#update-draft {
+  transition: background-color 120ms ease-out;
+}
+
+.link-button {
+  transition: text-decoration-thickness 120ms ease-out;
+}
+
+@media (hover: hover) {
+  .stepper button:hover::before,
+  .radio-choice input:not(:checked) + label:hover {
+    background: var(--hover-paper);
+  }
+
+  .stepper button[data-step="1"]:hover::before,
+  .radio-choice input:checked + label:hover {
+    background: var(--hover-ink);
+  }
+
+  #copy-reply:hover {
+    background: var(--hover-lime);
+  }
+
+  #update-draft:hover {
+    background: var(--hover-night);
+  }
+
+  .link-button:hover {
+    text-decoration-thickness: 2px;
+  }
+}
+
+/* Desktop: white 500px input side, black result side filling the rest. */
+
+@media (min-width: 960px) {
+  body {
+    display: grid;
+    grid-template-columns: 500px minmax(0, 1fr);
+    grid-template-rows: auto 1fr auto;
+    min-height: 100vh;
+  }
+
+  header,
+  form,
+  footer {
+    padding-left: 48px;
+    padding-right: 48px;
+  }
+
+  header {
+    grid-column: 1;
+    grid-row: 1;
+    position: relative;
+    z-index: 1;
+  }
+
+  footer {
+    grid-column: 1;
+    grid-row: 3;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* main spans the whole page and shares the body's columns and rows,
+     so the form sits under the header and the result fills the right side. */
+  main {
+    grid-column: 1 / -1;
+    grid-row: 1 / -1;
+    display: grid;
+    grid-template-columns: subgrid;
+    grid-template-rows: subgrid;
+  }
+
+  form {
+    grid-column: 1;
+    grid-row: 2;
+  }
+
+  .result {
+    grid-column: 2;
+    grid-row: 1 / -1;
+    align-self: start;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+    padding: 30px 64px 64px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition: none !important;
+    animation: none !important;
+  }
+}

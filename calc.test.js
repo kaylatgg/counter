@@ -103,6 +103,21 @@ test("covers 7.2 hrs at the target rate", function () {
   assert.strictEqual(calc.formatNumber(r.offer.hoursCovered), "7.2");
 });
 
+test("is $7.61 an hour under the $25 target", function () {
+  const r = run();
+  assert.strictEqual(r.offer.meetsTarget, false);
+  assert.strictEqual(calc.formatMoney(r.offer.shortPerHour), "$7.61");
+});
+
+test("an hourly within half a cent of the target meets it", function () {
+  // 1 page, 1 round: $200 / 8 hrs = exactly $25.00/hr.
+  const exact = run({ pages: "1", rounds: "1" });
+  assert.strictEqual(exact.offer.meetsTarget, true);
+  // $287.49 / 11.5 hrs = $24.9991/hr, which displays as $25.00.
+  assert.strictEqual(run({ offer: "287.49" }).offer.meetsTarget, true);
+  assert.strictEqual(run({ offer: "287.30" }).offer.meetsTarget, false);
+});
+
 test("does not cover all the hours", function () {
   assert.strictEqual(run().offer.coversAllHours, false);
 });

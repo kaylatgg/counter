@@ -38,6 +38,13 @@ function readForm() {
 
 // Error messages
 
+// 16px alert icon shown before every error. Decorative: the message says it all.
+const ALERT_ICON =
+  '<svg class="icon" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" focusable="false">' +
+  '<circle cx="8" cy="8" r="7" fill="none" stroke="currentColor" stroke-width="1.5"/>' +
+  '<path d="M8 4.5v4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>' +
+  '<circle cx="8" cy="11.4" r="0.95" fill="currentColor"/></svg>';
+
 // Shows or clears one field's error. The message goes right under the field,
 // is linked with aria-describedby, and the field gets aria-invalid.
 function setFieldError(input, message) {
@@ -52,10 +59,11 @@ function setFieldError(input, message) {
       error = document.createElement("p");
       error.className = "error";
       error.id = errorId;
+      error.innerHTML = ALERT_ICON + '<span class="error-text"></span>';
       const box = input.closest(".unit-input, .stepper") || input;
       box.insertAdjacentElement("afterend", error);
     }
-    error.textContent = message;
+    error.querySelector(".error-text").textContent = message;
     input.setAttribute("aria-invalid", "true");
     describedBy.unshift(errorId);
   } else {
@@ -100,80 +108,112 @@ function clearGroupTotals() {
   });
 }
 
-function renderHero(r) {
-  const total = calc.formatHours(r.hours.total);
-  const target = calc.formatMoney(r.rate) + "/hr";
-
-  if (r.offer) {
-    byId("hero-label").textContent = "This offer pays";
-    byId("hero-value").textContent = calc.formatMoney(r.offer.hourlyBefore);
-    byId("hero-unit").textContent = "/hr";
-    byId("hero-detail").textContent =
-      "before expenses, for " + total + " of work. Your target is " + target + ".";
-  } else {
-    let detail = total + " at your " + target + " target, plus " +
-      calc.formatMoney(r.expenses) + " in expenses.";
-    if (r.rounding > 0) {
-      detail += " Rounded up from " + calc.formatMoney(r.subtotal) + ".";
-    }
-    byId("hero-label").textContent = "Estimated project price";
-    byId("hero-value").textContent = calc.formatWholeMoney(r.estimate);
-    byId("hero-unit").textContent = "";
-    byId("hero-detail").textContent = detail;
-  }
+// "11.5 hours", "1 hour"
+function hoursInWords(amount) {
+  const text = calc.formatNumber(amount);
+  return text + (text === "1" ? " hour" : " hours");
 }
 
-function renderStatus(r) {
-  const list = byId("status-lines");
-  const warning = byId("offer-warning");
-  list.textContent = "";
-
-  if (!r.offer) {
-    show(list, false);
-    show(warning, false);
-    return;
-  }
-
-  const total = calc.formatHours(r.hours.total);
-  const lines = [
-    "After your " + calc.formatMoney(r.expenses) + " in expenses: " +
-      calc.formatMoney(r.offer.hourlyAfter) + "/hr.",
-  ];
-  if (r.offer.coversAllHours) {
-    lines.push("At your target rate, the offer covers all " + total + ".");
-  } else if (r.offer.hoursCovered !== null) {
-    lines.push("At your target rate, the offer pays for " +
-      calc.formatNumber(r.offer.hoursCovered) + " of the " + total + ".");
-  }
-  lines.forEach(function (text) {
-    const item = document.createElement("li");
-    item.textContent = text;
-    list.appendChild(item);
+// Fills an element with text and emphasized numbers.
+// Parts are plain strings, or [text, className] for a <strong>.
+function setRichText(element, parts) {
+  element.textContent = "";
+  parts.forEach(function (part) {
+    if (typeof part === "string") {
+      element.append(part);
+    } else {
+      const strong = document.createElement("strong");
+      strong.textContent = part[0];
+      if (part[1]) strong.className = part[1];
+      element.appendChild(strong);
+    }
   });
+}
 
-  const estimate = calc.formatWholeMoney(r.estimate);
-  let comparison;
-  if (r.offer.gap > 0) {
-    comparison = "Your estimate of " + estimate + " is " +
-      calc.formatPrice(r.offer.gap) + " above the offer.";
-  } else if (r.offer.gap === 0) {
-    comparison = "Your estimate of " + estimate + " matches the offer.";
+function renderMetrics(items) {
+  const list = byId("metrics");
+  list.textContent = "";
+  items.forEach(function (item) {
+    const group = document.createElement("div");
+    const label = document.createElement("dt");
+    label.textContent = item[0];
+    const value = document.createElement("dd");
+    value.textContent = item[1];
+    group.append(label, value);
+    list.appendChild(group);
+  });
+}
+
+function renderHero(r) {
+  const sentence = byId("hero-sentence");
+  const warning = byId("offer-warning");
+
+  if (r.offer) {
+    // "$17.39" shows as "$17" plus dimmed ".39". Screen readers get it in one piece.
+    const money = calc.formatMoney(r.offer.hourlyBefore);
+    const point = money.lastIndexOf(".");
+    byId("hero-label").textContent = "This offer pays";
+    byId("hero-whole").textContent = money.slice(0, point);
+    byId("hero-cents").textContent = money.slice(point);
+    byId("hero-unit").textContent = "/hr";
+    byId("hero-spoken").textContent = money + " per hour";
+
+    const target = calc.formatPrice(r.rate);
+    if (r.offer.meetsTarget) {
+      setRichText(sentence, ["for ", [hoursInWords(r.hours.total)],
+        " of real work. That meets your " + target + " target."]);
+    } else {
+      setRichText(sentence, ["for ", [hoursInWords(r.hours.total)],
+        " of real work. That's ", [calc.formatMoney(r.offer.shortPerHour) + " an hour", "signal"],
+        " under your " + target + " target."]);
+    }
+
+    // Below expenses, the warning takes the sentence's place.
+    if (r.offer.belowExpenses) {
+      warning.innerHTML = ALERT_ICON + "<span></span>";
+      warning.querySelector("span").textContent = "This offer is " +
+        calc.formatMoney(r.offer.shortfall) + " less than your expenses alone.";
+    }
+    show(sentence, !r.offer.belowExpenses);
+    show(warning, r.offer.belowExpenses);
+
+    let comparison;
+    if (r.offer.gap > 0) {
+      comparison = ["Above the offer", "+" + calc.formatPrice(r.offer.gap)];
+    } else if (r.offer.gap < 0) {
+      comparison = ["Below the offer", "-" + calc.formatPrice(-r.offer.gap)];
+    } else {
+      comparison = ["Matches the offer", "$0"];
+    }
+    renderMetrics([
+      ["After expenses", calc.formatMoney(r.offer.hourlyAfter) + "/hr"],
+      ["Your estimate", calc.formatWholeMoney(r.estimate)],
+      comparison,
+    ]);
   } else {
-    comparison = "Your estimate of " + estimate + " fits within the offer, with " +
-      calc.formatPrice(-r.offer.gap) + " to spare.";
-  }
-  const last = document.createElement("li");
-  const strong = document.createElement("strong");
-  strong.textContent = comparison;
-  last.appendChild(strong);
-  list.appendChild(last);
-  show(list, true);
+    const estimate = calc.formatWholeMoney(r.estimate);
+    byId("hero-label").textContent = "Estimated project price";
+    byId("hero-whole").textContent = estimate;
+    byId("hero-cents").textContent = "";
+    byId("hero-unit").textContent = "";
+    byId("hero-spoken").textContent = estimate;
 
-  if (r.offer.belowExpenses) {
-    warning.textContent = "This offer is " + calc.formatMoney(r.offer.shortfall) +
-      " less than your expenses alone. You would lose money before counting any of your time.";
+    const parts = [[calc.formatHours(r.hours.total)], " at your ",
+      [calc.formatMoney(r.rate) + "/hr"], " target, plus ",
+      [calc.formatMoney(r.expenses)], " in expenses."];
+    if (r.rounding > 0) {
+      parts.push(" Rounded up from ", [calc.formatMoney(r.subtotal)], ".");
+    }
+    setRichText(sentence, parts);
+    show(sentence, true);
+    show(warning, false);
+
+    renderMetrics([
+      ["Total hours", calc.formatNumber(r.hours.total)],
+      ["Your time", calc.formatMoney(r.timeCost)],
+      ["Expenses", calc.formatMoney(r.expenses)],
+    ]);
   }
-  show(warning, r.offer.belowExpenses);
 }
 
 function renderHoursChart(r) {
@@ -205,12 +245,10 @@ function renderOfferChart(r) {
   rows[1].querySelector(".bar-value").textContent = calc.formatMoney(r.offer.hourlyAfter) + "/hr";
   rows[2].querySelector(".bar-value").textContent = calc.formatMoney(r.rate) + "/hr";
 
-  // Compare to the cent, so $24.999 doesn't read as "less than your target."
-  const shortCents = Math.round((r.rate - r.offer.hourlyBefore) * 100);
-  let summary = shortCents > 0
-    ? "Before expenses, the offer pays " + calc.formatMoney(shortCents / 100) +
-      " an hour less than your target."
-    : "Before expenses, the offer meets your target rate.";
+  let summary = r.offer.meetsTarget
+    ? "Before expenses, the offer meets your target rate."
+    : "Before expenses, the offer pays " + calc.formatMoney(r.offer.shortPerHour) +
+      " an hour less than your target.";
   if (r.offer.hourlyAfter < 0) {
     summary += " After expenses, it pays less than $0 an hour, so you would lose money on this job.";
   }
@@ -251,11 +289,17 @@ function renderReceipt(r, values) {
     const th = document.createElement("th");
     th.scope = "row";
     th.textContent = row[0];
-    const math = document.createElement("td");
-    math.textContent = row[1];
     const amount = document.createElement("td");
     amount.textContent = row[2];
-    tr.append(th, math, amount);
+    // The final row has no math, so its larger label can use that column too.
+    if (row[3] === "total") {
+      th.colSpan = 2;
+      tr.append(th, amount);
+    } else {
+      const math = document.createElement("td");
+      math.textContent = row[1];
+      tr.append(th, math, amount);
+    }
     body.appendChild(tr);
   });
 }
@@ -322,7 +366,6 @@ function update(commit) {
 
   showResultState("result");
   renderHero(r);
-  renderStatus(r);
   renderHoursChart(r);
   renderOfferChart(r);
   renderReceipt(r, checked.values);
