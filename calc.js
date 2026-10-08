@@ -10,44 +10,49 @@ const FIELDS = {
   itemHours: { name: "design, per page", hours: true },
   communicationHours: { name: "emails, calls, and meetings", hours: true },
   roundHours: { name: "each round of changes", hours: true },
-  deliveryHours: { name: "file prep and export", hours: true },
+  deliveryHours: { name: "print setup and export", hours: true },
   rate: { name: "your target hourly rate" },
   expenses: { name: "project expenses" },
   offer: { name: "the amount they offered" },
   quote: { name: "your price" },
 };
 
-// Graphic design jobs. Each one names its item ("pages", "concepts") and its
-// setup row, and brings provisional example numbers. Production is always
+// Graphic design jobs. Each one names its item ("pages", "concepts"), its
+// setup row, its delivery row, and brings provisional example numbers. Production is always
 // setup + count x hours per item, so the math is the same for every job.
 const JOBS = {
   menu: {
     name: "Restaurant menu", phrase: "a restaurant menu", about: "menu",
     item: "page", items: "pages", setup: "Concepts and sketches",
+    delivery: "Print setup and export",
     example: { count: 2, rounds: 2, setupHours: 2, itemHours: 2,
       communicationHours: 1.5, roundHours: 1.5, deliveryHours: 1 },
   },
   logo: {
     name: "Logo", phrase: "a logo", about: "logo",
     item: "concept", items: "concepts", setup: "Research and sketches",
+    delivery: "Formats and color versions",
     example: { count: 3, rounds: 2, setupHours: 2, itemHours: 1.5,
       communicationHours: 1.5, roundHours: 1, deliveryHours: 1.5 },
   },
   social: {
-    name: "Social media posts", phrase: "a set of social media posts", about: "posts",
+    name: "Social posts", phrase: "a set of social media posts", about: "posts",
     item: "post", items: "posts", setup: "Template and style",
+    delivery: "Resizing and export",
     example: { count: 6, rounds: 2, setupHours: 2, itemHours: 0.5,
       communicationHours: 1, roundHours: 1, deliveryHours: 0.5 },
   },
   poster: {
     name: "Poster or flyer", phrase: "a poster or flyer", about: "poster",
     item: "size", items: "sizes", setup: "Concept and layout",
+    delivery: "Print setup and export",
     example: { count: 2, rounds: 2, setupHours: 3, itemHours: 0.75,
       communicationHours: 1, roundHours: 1, deliveryHours: 1 },
   },
   custom: {
     name: "Custom project", phrase: "a custom project", about: "project",
     item: "piece", items: "pieces", setup: "Setup",
+    delivery: "File prep and export",
     example: { count: 1, rounds: 0, setupHours: 0, itemHours: 0,
       communicationHours: 0, roundHours: 0, deliveryHours: 0 },
   },
@@ -60,6 +65,7 @@ function fieldsFor(jobKey) {
     count: { name: job.items, whole: true },
     setupHours: { name: job.setup.toLowerCase(), hours: true },
     itemHours: { name: "design, per " + job.item, hours: true },
+    deliveryHours: { name: job.delivery.toLowerCase(), hours: true },
   });
 }
 

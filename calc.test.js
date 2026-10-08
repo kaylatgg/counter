@@ -269,7 +269,7 @@ test("rate that isn't a number keeps the number message", function () {
 
 test("negative hours", function () {
   assert.deepStrictEqual(errorsFor({ deliveryHours: "-1" }), {
-    deliveryHours: "File prep and export can't be less than 0.",
+    deliveryHours: "Print setup and export can't be less than 0.",
   });
 });
 
@@ -616,6 +616,16 @@ test("messages name the job's item and setup row", function () {
     itemHours: "Enter the hours for design, per concept. Use 0 if there are none.",
     setupHours: "Research and sketches can't be less than 0.",
   });
+});
+
+test("the delivery row follows the job", function () {
+  const raw = jobExample("social");
+  raw.deliveryHours = "";
+  assert.strictEqual(calc.validateInputs(raw, "social").errors.deliveryHours,
+    "Enter the hours for resizing and export. Use 0 if there are none.");
+  raw.deliveryHours = "x";
+  assert.strictEqual(calc.validateInputs(raw, "logo").errors.deliveryHours,
+    "Use a number for formats and color versions.");
 });
 
 test("with no job given, messages use the menu's names", function () {

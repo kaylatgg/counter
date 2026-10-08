@@ -150,7 +150,7 @@ function renderHero(r) {
   const warning = byId("offer-warning");
 
   if (r.offer) {
-    // "$17.39" shows as "$17" plus dimmed ".39". Screen readers get it in one piece.
+    // "$17.39" shows as "$17" plus small raised ".39". Screen readers get it in one piece.
     const money = calc.formatMoney(r.offer.hourlyBefore);
     const point = money.lastIndexOf(".");
     byId("hero-label").textContent = "This offer pays";
@@ -165,7 +165,7 @@ function renderHero(r) {
         " of real work. That meets your " + target + " target."]);
     } else {
       setRichText(sentence, ["for ", [hoursInWords(r.hours.total)],
-        " of real work. That's ", [calc.formatMoney(r.offer.shortPerHour) + " an hour", "signal"],
+        " of real work. That's ", [calc.formatMoney(r.offer.shortPerHour) + " an hour"],
         " under your " + target + " target."]);
     }
 
@@ -178,18 +178,22 @@ function renderHero(r) {
     show(sentence, !r.offer.belowExpenses);
     show(warning, r.offer.belowExpenses);
 
+    // No plus or minus signs: the label says which way the difference goes.
     let comparison;
     if (r.offer.gap > 0) {
-      comparison = ["Over their offer", "+" + calc.formatPrice(r.offer.gap)];
+      comparison = ["More than they offered", calc.formatPrice(r.offer.gap)];
     } else if (r.offer.gap < 0) {
-      comparison = ["Under their offer", "-" + calc.formatPrice(-r.offer.gap)];
+      comparison = ["Less than they offered", calc.formatPrice(-r.offer.gap)];
     } else {
       comparison = ["Same as their offer", "$0"];
     }
+    // "7.2 of 11.5". Below expenses the offer pays for none of it.
+    const covered = r.offer.belowExpenses ? 0 : Math.min(r.offer.hoursCovered, r.hours.total);
     renderMetrics([
-      ["After expenses", calc.formatMoney(r.offer.hourlyAfter) + "/hr"],
       ["Your estimate", calc.formatWholeMoney(r.estimate)],
       comparison,
+      ["Hours the offer pays for",
+        calc.formatNumber(covered) + " of " + calc.formatNumber(r.hours.total)],
     ]);
   } else {
     const estimate = calc.formatWholeMoney(r.estimate);
@@ -225,19 +229,21 @@ const GROUP_NAMES = {
 };
 
 // Chart sizes from docs/DESIGN.md, in px.
-const BLOCK_GAP = 4;
-const GROUP_GAP = 14;
+const BLOCK_GAP = 5;
+const GROUP_GAP = 26;
 const BLOCK_MIN = 8;
 
 // Reveal timing, in ms. The CSS uses these through custom properties.
-const REVEAL_BLOCKS_START_MS = 150;
+const REVEAL_BLOCKS_START_MS = 300;
 const REVEAL_STAGGER_MS = 18;
 const REVEAL_FILL_MS = 400;
 const REVEAL_BLOCK_MS = 220;
-const BLOCK_HEIGHT = 64;
-const LINE_ABOVE = 34;
-const LABEL_SPACE = 12;
-const BAND_LABEL_MIN = 64;
+const BLOCK_HEIGHT = 72;
+const LINE_ABOVE = 30;
+const LABEL_SPACE = 10;
+
+// The three groups people usually forget get a tag under their blocks.
+const FORGOTTEN_GROUPS = ["communication", "revisions", "delivery"];
 
 function isOne(amount) {
   return calc.formatNumber(amount) === "1";
@@ -261,7 +267,7 @@ function renderHoursChart(r) {
     : "Your " + hoursInWords(total);
 
   const unit = calc.blockUnit(total);
-  byId("block-unit").textContent = "1 block = " + (unit === 0.5 ? "30 min" : calc.formatHours(unit));
+  byId("block-unit").textContent = "1 block = " + blockUnitText(unit);
 
   // No line in these two cases, so the label sits next to the title.
   let flag = "";
@@ -297,7 +303,7 @@ function renderHoursChart(r) {
   layoutBlocks(r);
 }
 
-// Draws the blocks, dims what the offer doesn't pay for, and places the lime line.
+// Draws the blocks, dims what the offer doesn't pay for, and places the runs-out line.
 function layoutBlocks(r) {
   const container = byId("blocks");
   const width = container.clientWidth;
@@ -320,7 +326,8 @@ function layoutBlocks(r) {
       element = document.createElement("div");
       element.className = "block-group";
       element.dataset.group = group;
-      element.innerHTML = '<div class="block-row"></div><p class="group-label"><b></b> <span></span></p>';
+      element.innerHTML = '<div class="block-row"></div><p class="group-label"><b></b> <span></span>' +
+        (FORGOTTEN_GROUPS.indexOf(group) === -1 ? "" : ' <span class="tag">Usually forgotten</span>') + "</p>";
     }
     container.appendChild(element);
     element.querySelector(".group-label b").textContent = calc.formatHours(r.hours[group]);
@@ -364,7 +371,7 @@ function layoutBlocks(r) {
   let lineFraction = 0;
 
   // For the reveal: blocks fill in left to right, about 0.4 seconds in all,
-  // then the lime line drops in.
+  // then the runs-out line drops in.
   const blockCount = blocksByGroup.reduce(function (sum, blocks) { return sum + blocks.length; }, 0);
   const stagger = Math.min(REVEAL_STAGGER_MS, REVEAL_FILL_MS / Math.max(1, blockCount));
   container.style.setProperty("--stagger", stagger.toFixed(1) + "ms");
@@ -492,18 +499,25 @@ function layoutRuler(r) {
     return (Math.max(0, value) / scale.max) * width;
   }
 
-  // Ticks and their labels: first label left-aligned, last right-aligned.
-  const ticks = ensureChildren(byId("ruler-ticks"), scale.ticks.length, function () {
+  // Ticks every $5 while that's 10 steps or fewer, otherwise the scale's own steps.
+  let tickValues = scale.ticks;
+  if (scale.max / 5 <= 10) {
+    tickValues = [];
+    for (let value = 0; value <= scale.max + 1e-9; value += 5) tickValues.push(value);
+  }
+
+  // Tick labels sit under the line: first left-aligned, last right-aligned.
+  const ticks = ensureChildren(byId("ruler-ticks"), tickValues.length, function () {
     const tick = document.createElement("div");
     tick.className = "tick";
     tick.innerHTML = "<span></span>";
     return tick;
   });
   ticks.forEach(function (tick, i) {
-    tick.style.left = x(scale.ticks[i]) + "px";
+    tick.style.left = x(tickValues[i]) + "px";
     tick.className = "tick" + (i === 0 ? " first" : "") + (i === ticks.length - 1 ? " last" : "");
     // The last tick carries the unit for the whole ruler.
-    tick.querySelector("span").textContent = calc.formatWholeMoney(scale.ticks[i]) +
+    tick.querySelector("span").textContent = calc.formatWholeMoney(tickValues[i]) +
       (i === ticks.length - 1 ? "/hr" : "");
   });
 
@@ -514,49 +528,42 @@ function layoutRuler(r) {
   byId("dot-after").style.left = afterX + "px";
   byId("target-mark").style.left = targetX + "px";
 
-  // The gap: a dashed lime band from the offer to the target.
+  // The gap: a dashed ink band from the offer to the target.
   const band = byId("gap-band");
-  const gapLabel = byId("gap-label");
   const bandWidth = targetX - offerX;
   show(band, !offer.meetsTarget);
   if (!offer.meetsTarget) {
     band.style.left = offerX + "px";
     band.style.width = bandWidth + "px";
-    gapLabel.textContent = "-" + calc.formatMoney(offer.shortPerHour) + "/hr";
   }
-  show(gapLabel, !offer.meetsTarget && bandWidth >= BAND_LABEL_MIN);
 
-  // Above the target: a small "+$X/hr" between the target and the offer.
+  const gapLabel = byId("gap-label");
   const overLabel = byId("over-label");
-  const overCents = Math.round((offer.hourlyBefore - r.rate) * 100);
-  show(overLabel, overCents > 0 && offerX - targetX >= BAND_LABEL_MIN);
-  if (overCents > 0) overLabel.textContent = "+" + calc.formatMoney(overCents / 100) + "/hr";
-
   const targetLabel = byId("target-label");
   const offerLabel = byId("offer-label");
   const afterLabel = byId("after-label");
-  targetLabel.textContent = "target " + calc.formatPrice(r.rate) + "/hr";
-  offerLabel.textContent = "offer " + calc.formatMoney(offer.hourlyBefore) + "/hr";
-  afterLabel.textContent = "after expenses " + calc.formatMoney(offer.hourlyAfter) + "/hr";
+  gapLabel.textContent = calc.formatMoney(offer.shortPerHour) + "/hr short";
+  show(gapLabel, !offer.meetsTarget);
+  const overCents = Math.round((offer.hourlyBefore - r.rate) * 100);
+  overLabel.textContent = calc.formatMoney(overCents / 100) + "/hr over";
+  show(overLabel, overCents > 0);
+  targetLabel.textContent = "your target " + calc.formatPrice(r.rate);
+  offerLabel.textContent = "this offer " + calc.formatMoney(offer.hourlyBefore);
+  afterLabel.textContent = "after expenses " + calc.formatMoney(offer.hourlyAfter);
 
-  // Above the ruler: the offer label left of its dot, the target label centered on its mark.
-  placeRow([
-    { label: offerLabel, left: function (w) { return offerX - LABEL_SPACE - w; } },
-    { label: targetLabel, left: function (w) { return targetX - w / 2; } },
-  ], width);
-
-  // Below the ruler: the gap amount under the band's center, and the optional
-  // "+$X/hr" between the target and the offer.
+  // Above the line: the gap amount over the band's center, the target label to
+  // the right of its mark, and the optional "$X/hr over" between the target and the offer.
   placeRow([
     { label: gapLabel, left: function (w) { return offerX + bandWidth / 2 - w / 2; } },
+    { label: targetLabel, left: function () { return targetX + LABEL_SPACE; } },
     { label: overLabel, optional: true, left: function (w) { return (targetX + offerX) / 2 - w / 2; } },
   ], width);
 
-  // "after expenses" sits under its dot. If that's closer than 8px to another label
-  // below the ruler, it moves to a second row, and the tick labels move down with it.
+  // "after expenses" sits above, left of its dot. If that's closer than 8px to
+  // another label above the line, it moves up to a second row.
   const afterWidth = afterLabel.offsetWidth;
-  const afterLeft = Math.max(0, Math.min(width - afterWidth, afterX - afterWidth / 2));
-  const others = [gapLabel, overLabel].filter(function (label) { return !label.hidden; })
+  const afterLeft = Math.max(0, Math.min(width - afterWidth, afterX - LABEL_SPACE - afterWidth));
+  const others = [gapLabel, targetLabel, overLabel].filter(function (label) { return !label.hidden; })
     .map(function (label) {
       const left = parseFloat(label.style.left) || 0;
       return { left: left, right: left + label.offsetWidth };
@@ -565,6 +572,22 @@ function layoutRuler(r) {
   afterLabel.style.left = afterLeft + "px";
   afterLabel.classList.toggle("second-row", secondRow);
   ruler.classList.toggle("has-second-row", secondRow);
+
+  // Under the line: "this offer" centered under its dot. Tick labels it would
+  // touch step aside, since the offer matters more than the scale.
+  const offerWidth = offerLabel.offsetWidth;
+  const offerLeft = Math.max(0, Math.min(width - offerWidth, offerX - offerWidth / 2));
+  offerLabel.style.left = offerLeft + "px";
+  const offerBox = { left: offerLeft, right: offerLeft + offerWidth };
+  // From layout, not the screen, so a moving tick is measured where it lands.
+  ticks.forEach(function (tick, i) {
+    const span = tick.querySelector("span");
+    const w = span.offsetWidth;
+    const tickX = x(tickValues[i]);
+    const left = i === 0 ? tickX : (i === ticks.length - 1 ? tickX - w : tickX - w / 2);
+    const crowded = calc.isCrowded({ left: left, right: left + w }, [offerBox], LABEL_GAP);
+    span.style.visibility = crowded ? "hidden" : "";
+  });
 }
 
 // "1 page", "2 concepts"
@@ -682,8 +705,67 @@ function updateDraft() {
 
 // Screen 1 extras: the work total and the button's live preview
 
+// The tally box: the total, the hours usually forgotten, and a strip of every block.
 function renderTotals(hours) {
-  byId("total-hours").textContent = hours ? calc.formatHours(hours.total) : "";
+  byId("total-hours").textContent = hours ? calc.formatNumber(hours.total) : "";
+  byId("total-unit").textContent = hours && isOne(hours.total) ? "hr" : "hrs";
+  byId("tally-forgotten").textContent = hours ? calc.formatHours(hours.total - hours.production) : "";
+  show(byId("tally-forgotten-line"), Boolean(hours));
+}
+
+// "30 min", "1 hr", "2 hrs"
+function blockUnitText(unit) {
+  return unit === 0.5 ? "30 min" : calc.formatHours(unit);
+}
+
+// Each work row's own hours, so its mini blocks stack up while you type.
+const WORK_ROWS = [
+  { id: "setup-hours", group: "production", hours: function (v) { return v.setupHours; } },
+  { id: "item-hours", group: "production", hours: function (v) { return v.count * v.itemHours; } },
+  { id: "communication-hours", group: "communication", hours: function (v) { return v.communicationHours; } },
+  { id: "round-hours", group: "revisions", hours: function (v) { return v.rounds * v.roundHours; } },
+  { id: "delivery-hours", group: "delivery", hours: function (v) { return v.deliveryHours; } },
+];
+
+// Block sizes from docs/DESIGN.md, in px. A row shows at most 60 mini blocks.
+const MINI_BLOCK_WIDTH = 7;
+const TALLY_BLOCK_WIDTH = 12;
+const MINI_BLOCK_MAX = 60;
+
+function fillBlocks(container, sizes, width, className, group) {
+  const blocks = ensureChildren(container, sizes.length, function () {
+    return document.createElement("span");
+  });
+  blocks.forEach(function (block, i) {
+    block.className = className;
+    block.dataset.group = group;
+    block.style.width = (sizes[i] * width) + "px";
+  });
+}
+
+// Screen 1's blocks: the mini blocks in each work row and the tally strip.
+// They use the same block size as the chart on screen 2.
+function renderWorkBlocks(values, hours) {
+  if (!hours) {
+    WORK_ROWS.forEach(function (row) { byId("mini-" + row.id).textContent = ""; });
+    byId("tally-strip").textContent = "";
+    return;
+  }
+  const unit = calc.blockUnit(hours.total);
+  byId("work-unit").textContent = "1 block = " + blockUnitText(unit);
+  WORK_ROWS.forEach(function (row) {
+    const sizes = calc.splitIntoBlocks(row.hours(values), unit).slice(0, MINI_BLOCK_MAX);
+    fillBlocks(byId("mini-" + row.id), sizes, MINI_BLOCK_WIDTH, "mini-block", row.group);
+  });
+  const groups = WORK_GROUPS.filter(function (group) { return hours[group] > 1e-9; });
+  const strip = ensureChildren(byId("tally-strip"), groups.length, function () {
+    const element = document.createElement("span");
+    element.className = "tally-group";
+    return element;
+  });
+  groups.forEach(function (group, i) {
+    fillBlocks(strip[i], calc.splitIntoBlocks(hours[group], unit), TALLY_BLOCK_WIDTH, "tally-block", group);
+  });
 }
 
 // "11.5 hrs of work for $200", or "11.5 hrs of work at $25/hr" with no offer.
@@ -824,6 +906,7 @@ function renderJob() {
   byId("steppers-items").textContent = items;
   byId("setup-label").textContent = j.setup;
   byId("item-label").textContent = "Design, per " + j.item;
+  byId("delivery-label").textContent = j.delivery;
   document.querySelectorAll('button[data-target="count"]').forEach(function (button) {
     button.setAttribute("aria-label",
       (button.dataset.step === "1" ? "One more " : "One less ") + j.item);
@@ -901,9 +984,11 @@ function update(commit) {
       const hours = calc.workHours(checked.values);
       renderGroupTotals(hours);
       renderTotals(hours);
+      renderWorkBlocks(checked.values, hours);
     } else {
       clearGroupTotals();
       renderTotals(null);
+      renderWorkBlocks(null, null);
     }
     renderCheckButton(checked.values, null);
     renderErrorState(errors);
@@ -914,6 +999,7 @@ function update(commit) {
   const r = calc.calculate(checked.values);
   renderGroupTotals(r.hours);
   renderTotals(r.hours);
+  renderWorkBlocks(checked.values, r.hours);
   renderCheckButton(checked.values, r.hours);
   if (!r.hasHours) {
     showResultState("no-hours");
@@ -1013,7 +1099,7 @@ function countUpHero(r) {
   }, COUNT_UP_MS + 100);
 }
 
-// Screens: inputs (white) and results (black), one at a time, no reload.
+// Screens: inputs and results, one at a time, no reload.
 
 function showScreen(name) {
   const results = name === "results";
@@ -1064,12 +1150,12 @@ function checkOffer() {
 }
 
 // The reveal plays once per press of "Check the offer", about 1 second in all:
-// screen 1 fades out as the page turns black, screen 2 fades in, the hero counts
-// up, the blocks fill in, and the lime line drops in last. Under reduced motion,
+// screen 1 fades out, the lime band grows down from the top, the hero counts up,
+// the blocks fill in, and the runs-out line drops in last. Under reduced motion,
 // the final state shows right away. Later changes use the normal transitions.
 const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
-const REVEAL_FADE_MS = 100;
-const REVEAL_TOTAL_MS = 1100;
+const REVEAL_FADE_MS = 150;
+const REVEAL_TOTAL_MS = 1200;
 
 function revealResults() {
   const body = document.body;
@@ -1077,15 +1163,11 @@ function revealResults() {
     openResults();
     return;
   }
-  const results = byId("result");
   body.classList.add("revealing", "reveal-out");
   setTimeout(function () {
-    results.classList.add("reveal-hidden");
     body.classList.remove("reveal-out");
     openResults();
     if (lastResult && !byId("result-summary").hidden) countUpHero(lastResult);
-    void results.offsetWidth;
-    results.classList.remove("reveal-hidden");
     setTimeout(function () { body.classList.remove("revealing"); }, REVEAL_TOTAL_MS);
   }, REVEAL_FADE_MS);
 }

@@ -1,34 +1,29 @@
-/* Counter design system: "Two screens" (docs/DESIGN.md v3).
-   Screen 1 is white, where you enter the job. Screen 2 is black, with the result.
-   Every color is a token, so themes can change in one place. */
+/* Counter design system: "Lime reveal" (docs/DESIGN.md v4).
+   Both screens are light. Lime is only ever a background: the result band and
+   the arrow square on the button. Every color is a token. */
 
 :root {
-  /* Light side (inputs) */
   --paper: #FFFFFF;
-  --ink: #0E0F12;      /* 19:1 */
-  --muted: #5F646D;    /* labels, hints. 6:1 */
-  --line: #E3E5E8;     /* hairlines, decorative */
-  --control: #8A9099;  /* 3.2:1, only for outlines that must be visible */
+  --bar: #F3F4F5;      /* screen 2 control bar */
+  --ink: #0E0F12;      /* 19:1 on white, 16.6:1 on lime */
+  --ink-2: #4A4F57;    /* secondary text. 8.2:1 white, 7.1:1 lime */
+  --muted: #5F646D;    /* labels, hints. 6:1 white, 5.2:1 lime */
+  --line: #E3E5E8;     /* hairlines on white, decorative */
+  --control: #8A9099;  /* outlines that must be seen on white. 3.2:1 */
+  --tag: #C9CDD3;      /* tag border, decorative */
+  --lime: #D4FF3F;     /* the brand color, backgrounds only */
+  --error: #B42318;    /* 6.5:1 on white, always with an icon */
 
-  /* Dark side (results) */
-  --night: #0C0D0F;
-  --night-text: #F4F4F2;  /* 17.6:1 */
-  --night-2: #B9BCC2;     /* secondary text. 10:1 */
-  --night-mute: #8B9098;  /* captions, axis labels. 6:1 */
-  --night-dim: #5E626A;   /* ONLY the dimmed cents of the hero number (large text). 3.2:1 */
-  --night-tick: #6E737B;  /* axis ticks. 4:1 */
-  --night-line: #26282D;  /* hairlines, decorative */
-  --lime: #D4FF3F;        /* the signal. 16.8:1 on night */
+  /* The live line on the button ("11.5 hrs of work for $200"), on ink. */
+  --button-hint: #8B9098;
 
   /* States */
-  --error: #B42318;  /* errors, light side only, always with an icon. 6.5:1 */
-  --hover-paper: #F1F2F4;  /* outline circles and pills on hover */
-  --hover-ink: #2A2C31;    /* solid ink circles and pills on hover */
-  --hover-lime: #E2FF6B;   /* "Copy reply" on hover */
-  --hover-night: #1A1C20;  /* outline pills and the screen 1 button on hover */
-  --night-bar: #15171A;    /* control bar on screen 2 */
+  --hover-paper: #F1F2F4;  /* outline controls on hover */
+  --hover-ink: #2A2C31;    /* solid ink controls on hover */
 
   --font: "Geist", system-ui, sans-serif;
+  /* Big numbers only: the tally total, the hero, the metric values. */
+  --font-numbers: "Archivo", "Geist", system-ui, sans-serif;
   /* Longest comfortable line: about 75 characters. */
   --measure: 36em;
 }
@@ -48,7 +43,7 @@ html {
 }
 
 html:has(body.on-results) {
-  scroll-padding-top: 120px;
+  scroll-padding-top: 116px;
 }
 
 body {
@@ -120,7 +115,17 @@ h3 {
   border: 0;
 }
 
-/* Focus on the light side: 2px ink outline, 3px offset. */
+/* Big numbers: Archivo, wide and heavy. The numbers are the product. */
+.tally-total output,
+.hero-digits,
+.metrics dd {
+  font-family: var(--font-numbers);
+  font-stretch: 118%;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+/* Focus: 2px ink outline, 3px offset. Ink reads on white, the bar, and lime. */
 :focus-visible {
   outline: 2px solid var(--ink);
   outline-offset: 3px;
@@ -135,7 +140,7 @@ h3 {
   background: var(--ink);
   color: var(--paper);
   font-weight: 600;
-  border-radius: 999px;
+  border-radius: 4px;
   transform: translateY(-200%);
 }
 
@@ -143,7 +148,7 @@ h3 {
   transform: none;
 }
 
-/* Header: 56px, sticky, on both screens. White on screen 1, black on screen 2. */
+/* Header: 56px, white, sticky, on both screens. */
 
 .topbar {
   position: sticky;
@@ -157,8 +162,6 @@ h3 {
   border-bottom: 1px solid var(--line);
 }
 
-/* The same 1312px content width as both screens, so the wordmark lines up
-   with the headline on screen 1 and the hero on screen 2. */
 .topbar-inner {
   display: flex;
   align-items: baseline;
@@ -173,22 +176,13 @@ h3 {
   font-weight: 800;
   letter-spacing: -0.04em;
   text-transform: lowercase;
-  color: var(--ink);
 }
 
+/* The job name shows on screen 2 only. */
 .topbar-job {
   display: none;
   font-size: 13px;
-  color: var(--night-2);
-}
-
-.on-results .topbar {
-  background: var(--night);
-  border-bottom-color: var(--night-line);
-}
-
-.on-results .wordmark {
-  color: var(--night-text);
+  color: var(--ink-2);
 }
 
 .on-results .topbar-job {
@@ -199,7 +193,7 @@ h3 {
 
 .screen-inputs,
 .site-footer {
-  max-width: 1440px;
+  max-width: 1312px;
   margin: 0 auto;
   padding-left: 24px;
   padding-right: 24px;
@@ -209,20 +203,14 @@ h3 {
   padding-top: 40px;
 }
 
-
-/* Headline left, intro right, a hairline under both. */
+/* Headline, then the intro right under it, then the example note. */
 .inputs-top {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 24px 56px;
-  padding-bottom: 40px;
+  padding-bottom: 24px;
   border-bottom: 1px solid var(--line);
 }
 
 h1 {
-  font-size: 56px;
+  font-size: 60px;
   font-weight: 700;
   letter-spacing: -0.05em;
   line-height: 0.95;
@@ -232,17 +220,11 @@ h1:focus {
   outline: none;
 }
 
-.headline-break {
-  display: block;
-}
-
-.intro {
-  max-width: 380px;
-}
-
 .lede {
-  font-size: 16px;
-  color: var(--ink);
+  max-width: 36em;
+  margin-top: 24px;
+  font-size: 18px;
+  line-height: 1.45;
 }
 
 .example-note {
@@ -251,15 +233,13 @@ h1:focus {
   color: var(--muted);
 }
 
-/* Two columns: 1 and 2 on the left, 3 and 4 and the button on the right. */
+/* Two columns: 1 and 2 on the left; the tally, 3, 4, and the button on the right. */
 .inputs-columns {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: 0 64px;
-  padding-top: 28px;
+  gap: 0 72px;
+  padding-top: 32px;
 }
-
-/* Sections: a hairline above, a 17px title with a muted step number. */
 
 fieldset {
   min-width: 0;
@@ -279,13 +259,17 @@ legend {
   border-top: 1px solid var(--line);
 }
 
+.tally + .section {
+  margin-top: 28px;
+}
+
 /* Floating the legend keeps it inside the fieldset, under the hairline. */
 .section > legend {
   float: left;
   width: 100%;
-  margin-bottom: 16px;
-  font-size: 17px;
-  font-weight: 600;
+  margin-bottom: 12px;
+  font-size: 18px;
+  font-weight: 700;
   letter-spacing: -0.01em;
 }
 
@@ -310,15 +294,64 @@ legend {
 /* "Example hours…" under 2 The work. */
 .section-hint {
   margin: 0 0 24px;
+  font-size: 13px;
 }
 
-/* 1 The job: five job pills, then the steppers. */
-
-.pill-choice.job-choice {
-  margin-bottom: 0;
+/* "Usually forgotten": Counter's thesis, right where people make the mistake. */
+.tag {
+  display: inline-block;
+  padding: 0 6px;
+  border: 1px solid var(--tag);
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 16px;
+  color: var(--muted);
+  white-space: nowrap;
+  vertical-align: 2px;
 }
 
-/* "Replace your numbers with the Logo example?" under the pills. */
+/* 1 The job: text tabs on real radios. Tabs say "pick one" and never wrap. */
+
+.job-tabs {
+  display: flex;
+  gap: 28px;
+  border-bottom: 1px solid var(--line);
+}
+
+.tab-choice input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+}
+
+.tab-choice label {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  margin-bottom: -1px;
+  border-bottom: 2.5px solid transparent;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--muted);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.tab-choice input:checked + label {
+  border-bottom-color: var(--ink);
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.tab-choice input:focus-visible + label {
+  outline: 2px solid var(--ink);
+  outline-offset: 3px;
+}
+
+/* "Replace your numbers with the Logo example?" under the tabs. */
 .job-replace {
   margin-top: 16px;
   font-size: 14px;
@@ -332,25 +365,24 @@ legend {
   margin-top: 12px;
 }
 
-.pill-button {
+/* Actions are rectangles, so they never look like choices. */
+.action-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
   min-height: 44px;
   padding: 0 16px;
   border: 1.5px solid var(--ink);
-  border-radius: 999px;
+  border-radius: 4px;
   background: var(--ink);
   color: var(--paper);
   font-size: 14px;
   font-weight: 600;
 }
 
-.pill-button.outline {
+.action-button.outline {
   background: var(--paper);
   color: var(--ink);
-}
-
-.pill-button:focus-visible {
-  outline: 2px solid var(--ink);
-  outline-offset: 3px;
 }
 
 .steppers {
@@ -449,13 +481,16 @@ legend {
 
 .work-group > legend {
   float: left;
+  display: flex;
+  align-items: center;
+  gap: 8px;
   width: 100%;
   font-size: 12px;
   font-weight: 700;
 }
 
 .work-group > legend output {
-  float: right;
+  margin-left: auto;
   font-weight: 400;
   color: var(--muted);
 }
@@ -464,17 +499,22 @@ legend {
   clear: both;
 }
 
+/* Label, then the live mini blocks, then the hours input. */
 .work-row {
   display: grid;
-  grid-template-columns: 1fr 88px;
+  grid-template-columns: minmax(0, 1fr) auto 84px;
   column-gap: 16px;
-  align-items: baseline;
-  padding: 12px 0 8px;
+  align-items: center;
+  padding: 8px 0;
   border-bottom: 1px solid var(--line);
 }
 
-.work-row > label {
+.row-label {
   font-size: 15px;
+}
+
+.row-label .tag {
+  margin-left: 8px;
 }
 
 .work-row > .hint,
@@ -482,7 +522,7 @@ legend {
   grid-column: 1 / -1;
 }
 
-/* Hours inputs: no box, a 2px bottom border, "hrs" after the value. */
+/* Hours inputs: no box, a 2px ink underline, "hrs" after the value. */
 .work-row .unit-input {
   display: flex;
   align-items: baseline;
@@ -515,12 +555,165 @@ legend {
 .unit-input:focus-within {
   outline: 2px solid var(--ink);
   outline-offset: 3px;
-  border-bottom-width: 3px;
-  margin-bottom: -1px;
 }
 
 .unit-input:has([aria-invalid="true"]) {
   border-bottom-color: var(--error);
+}
+
+/* Time blocks: one language on both screens. Production solid ink,
+   Communication 135° lines, Revisions 45° lines, Delivery dots. */
+
+.swatch,
+.mini-block,
+.tally-block,
+.block {
+  flex: none;
+  background: var(--paper);
+}
+
+[data-group="production"] .swatch,
+.mini-block[data-group="production"],
+.tally-block[data-group="production"],
+.block-group[data-group="production"] .block {
+  background: var(--ink);
+}
+
+[data-group="communication"] .swatch,
+.mini-block[data-group="communication"],
+.tally-block[data-group="communication"],
+.block-group[data-group="communication"] .block {
+  background: repeating-linear-gradient(135deg, var(--ink) 0 1px, var(--paper) 1px 3.5px);
+}
+
+[data-group="revisions"] .swatch,
+.mini-block[data-group="revisions"],
+.tally-block[data-group="revisions"],
+.block-group[data-group="revisions"] .block {
+  background: repeating-linear-gradient(45deg, var(--ink) 0 1px, var(--paper) 1px 3.5px);
+}
+
+[data-group="delivery"] .swatch,
+.mini-block[data-group="delivery"],
+.tally-block[data-group="delivery"],
+.block-group[data-group="delivery"] .block {
+  background: radial-gradient(circle, var(--ink) 0.8px, var(--paper) 1.1px) 0 0 / 3.5px 3.5px;
+}
+
+/* The bigger chart blocks get roomier textures. */
+.block-group[data-group="communication"] .block {
+  background: repeating-linear-gradient(135deg, var(--ink) 0 1.5px, var(--paper) 1.5px 6px);
+}
+
+.block-group[data-group="revisions"] .block {
+  background: repeating-linear-gradient(45deg, var(--ink) 0 1.5px, var(--paper) 1.5px 6px);
+}
+
+.block-group[data-group="delivery"] .block {
+  background: radial-gradient(circle, var(--ink) 1.1px, var(--paper) 1.4px) 0 0 / 5px 5px;
+}
+
+.tally-block[data-group="communication"] {
+  background: repeating-linear-gradient(135deg, var(--ink) 0 1px, var(--paper) 1px 4px);
+}
+
+.tally-block[data-group="revisions"] {
+  background: repeating-linear-gradient(45deg, var(--ink) 0 1px, var(--paper) 1px 4px);
+}
+
+.tally-block[data-group="delivery"] {
+  background: radial-gradient(circle, var(--ink) 0.9px, var(--paper) 1.2px) 0 0 / 4px 4px;
+}
+
+.swatch {
+  width: 10px;
+  height: 10px;
+  outline: 1px solid var(--ink);
+  outline-offset: -1px;
+}
+
+/* Mini blocks in each work row: 7 x 16px, 2px gaps. You see the hours stack up. */
+.mini-blocks {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 2px;
+  max-width: 180px;
+  max-height: 52px;
+  overflow: hidden;
+}
+
+.mini-block {
+  height: 16px;
+  outline: 1px solid var(--ink);
+  outline-offset: -1px;
+}
+
+/* The tally box: the only box on the page, because it's the only thing
+   that sums everything up. */
+.tally {
+  padding: 22px 24px;
+  border: 1.5px solid var(--ink);
+}
+
+.tally-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.tally-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.tally-forgotten {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.tally-forgotten strong {
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.tally-total {
+  margin-top: 4px;
+  line-height: 1;
+}
+
+.tally-total output {
+  font-size: 56px;
+  line-height: 1;
+}
+
+.tally-unit {
+  margin-left: 4px;
+  font-size: 20px;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+.tally-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 8px;
+  min-height: 30px;
+  margin-top: 12px;
+}
+
+.tally-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+}
+
+.tally-block {
+  height: 30px;
+  outline: 1px solid var(--ink);
+  outline-offset: -1px;
 }
 
 /* 3 Your numbers and 4 Their offer: big values in two equal columns. */
@@ -532,25 +725,29 @@ legend {
   align-items: start;
 }
 
-.field > label {
+.field > label,
+.field-label {
   display: block;
   font-size: 12px;
   font-weight: 500;
   color: var(--muted);
 }
 
-.field-row .unit-input {
+.field-row .unit-input,
+.result-block .unit-input {
   display: flex;
   align-items: baseline;
   margin-top: 8px;
   border-bottom: 2px solid var(--ink);
-  font-size: 22px;
+  font-size: 24px;
   font-weight: 700;
   letter-spacing: -0.02em;
+  line-height: 1.2;
   cursor: text;
 }
 
-.field-row .unit-input input {
+.field-row .unit-input input,
+.result-block .unit-input input {
   width: 100%;
   min-width: 0;
   padding: 2px 0 4px;
@@ -558,7 +755,6 @@ legend {
   background: transparent;
 }
 
-/* Where supported, the field hugs its value so "$25/hr" reads as one. */
 @supports (field-sizing: content) {
   .field-row .unit-input input {
     field-sizing: content;
@@ -567,16 +763,16 @@ legend {
   }
 }
 
-/* Job and offer choices: real radios, drawn as pills. */
-
-.pill-choice {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 24px;
+/* "Did they offer an amount?": a yes/no question, so a pill switch. */
+.switch {
+  display: inline-flex;
+  margin-top: 8px;
+  padding: 3px;
+  border: 1.5px solid var(--ink);
+  border-radius: 999px;
 }
 
-.radio-choice input {
+.switch input {
   position: absolute;
   opacity: 0;
   width: 1px;
@@ -584,26 +780,25 @@ legend {
   margin: 0;
 }
 
-.radio-choice label {
+.switch label {
   display: inline-flex;
   align-items: center;
-  min-height: 44px;
+  min-height: 34px;
   padding: 0 16px;
-  border: 1.5px solid var(--ink);
   border-radius: 999px;
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
 }
 
-.radio-choice input:checked + label {
+.switch input:checked + label {
   background: var(--ink);
   color: var(--paper);
 }
 
-.radio-choice input:focus-visible + label {
+.switch input:focus-visible + label {
   outline: 2px solid var(--ink);
-  outline-offset: 3px;
+  outline-offset: 2px;
 }
 
 /* Errors: icon plus message under the row. */
@@ -623,36 +818,19 @@ legend {
   margin-top: 1px;
 }
 
-/* 2 The work: a total row under the groups. */
-.work-total {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  margin-top: 16px;
-  padding-top: 16px;
-  border-top: 2px solid var(--ink);
-  font-size: 15px;
-  font-weight: 700;
-}
-
-.work-total output {
-  font-size: 22px;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-}
-
-/* The button: a square black block with a lime arrow square at the end. */
+/* The button: ink, square corners, a lime square with the arrow at the end.
+   The lime square previews the answer. */
 .check-button {
   display: flex;
   align-items: stretch;
   width: 100%;
   height: 76px;
-  margin-top: 40px;
+  margin-top: 32px;
   padding: 0;
   border: 0;
   border-radius: 0;
-  background: var(--night);
-  color: var(--night-text);
+  background: var(--ink);
+  color: var(--paper);
   text-align: left;
 }
 
@@ -663,7 +841,6 @@ legend {
   justify-content: center;
   gap: 2px;
   padding-left: 24px;
-  transition: background-color 120ms ease-out;
 }
 
 .check-title {
@@ -675,7 +852,7 @@ legend {
 
 .check-preview {
   font-size: 12px;
-  color: var(--night-mute);
+  color: var(--button-hint);
 }
 
 .check-arrow {
@@ -684,15 +861,14 @@ legend {
   place-items: center;
   width: 76px;
   background: var(--lime);
-  color: var(--night);
+  color: var(--ink);
 }
 
-/* Footer: a hairline, then the disclaimer. On screen 2 it's full width and muted. */
+/* Footer: a hairline, then the disclaimer. */
 .site-footer {
   padding-bottom: 40px;
 }
 
-/* The hairline spans the content width; the text keeps to the measure. */
 .site-footer::before {
   content: "";
   display: block;
@@ -708,73 +884,34 @@ legend {
   color: var(--muted);
 }
 
+.on-results .site-footer {
+  max-width: 1440px;
+}
+
 .on-results .site-footer::before {
   margin-top: 0;
-  background: var(--night-line);
 }
 
-.on-results .site-footer p {
-  color: var(--night-mute);
-}
-
-/* Screen 2: results (black) */
-
-.on-results {
-  background: var(--night);
-}
-
-.screen-results {
-  color: var(--night-text);
-}
-
-.screen-results :focus-visible,
-.screen-results .unit-input:focus-within,
-.on-results .topbar :focus-visible {
-  outline-color: var(--lime);
-}
-
-/* Screen 2 content is capped at 1440px wide and centered, like screen 1. */
-.results-body {
-  max-width: 1440px;
-  margin: 0 auto;
-  padding: 0 24px 64px;
-}
-
-.screen-results h3,
-.result-block > legend {
-  font-size: 20px;
-  font-weight: 600;
-  letter-spacing: -0.02em;
-  color: var(--night-text);
-}
-
-.screen-results .step {
-  color: var(--night-mute);
-}
-
-.empty-state {
-  padding-top: 40px;
-  font-size: 16px;
-  color: var(--night-2);
-}
-
-.empty-state:focus {
-  outline: none;
-}
+/* Screen 2: result */
 
 /* Control bar: the key numbers, live, sticky under the header. */
 .control-bar {
   position: sticky;
   top: 56px;
   z-index: 9;
+  background: var(--bar);
+  border-bottom: 1px solid var(--line);
+}
+
+.control-bar-inner {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 8px 28px;
-  min-height: 64px;
+  min-height: 60px;
+  max-width: 1440px;
+  margin: 0 auto;
   padding: 8px 24px;
-  background: var(--night-bar);
-  border-bottom: 1px solid var(--night-line);
 }
 
 .back-button {
@@ -787,21 +924,21 @@ legend {
   background: none;
   font-size: 13px;
   font-weight: 600;
-  color: var(--night-2);
+  color: var(--ink);
 }
 
 .bar-divider {
   align-self: stretch;
   width: 1px;
   margin: 8px 0;
-  background: var(--night-line);
+  background: var(--tag);
 }
 
 .bar-stepper,
 .bar-field {
   display: flex;
   flex-wrap: wrap;
-  align-items: baseline;
+  align-items: center;
   gap: 0 4px;
 }
 
@@ -813,8 +950,8 @@ legend {
   gap: 8px;
   margin-top: 4px;
   font-size: 12px;
-  font-weight: 500;
-  color: var(--night-text);
+  font-weight: 600;
+  color: var(--error);
 }
 
 .bar-error .icon {
@@ -829,7 +966,7 @@ legend {
   margin-right: 8px;
   font-size: 12px;
   font-weight: 500;
-  color: var(--night-mute);
+  color: var(--muted);
 }
 
 /* Each bar stepper button is a 44px touch target holding a 30px circle. */
@@ -845,7 +982,7 @@ legend {
   border: 0;
   border-radius: 50%;
   background: transparent;
-  color: var(--night-2);
+  color: var(--ink);
   font-size: 15px;
   font-weight: 600;
   line-height: 1;
@@ -857,17 +994,15 @@ legend {
   inset: 7px;
   z-index: -1;
   border-radius: 50%;
-  border: 1.5px solid var(--night-2);
-  transition: background-color 120ms ease-out;
+  border: 1.5px solid var(--ink);
 }
 
 .bar-stepper button[data-step="1"] {
-  color: var(--night);
+  color: var(--paper);
 }
 
 .bar-stepper button[data-step="1"]::before {
-  border-color: var(--night-text);
-  background: var(--night-text);
+  background: var(--ink);
 }
 
 .bar-stepper input {
@@ -875,7 +1010,6 @@ legend {
   padding: 0 8px;
   border: 0;
   background: transparent;
-  color: var(--night-text);
   font-size: 18px;
   font-weight: 700;
   text-align: center;
@@ -884,15 +1018,14 @@ legend {
 .bar-input {
   display: inline-flex;
   align-items: baseline;
-  border-bottom: 2px solid var(--night-text);
+  border-bottom: 2px solid var(--ink);
   font-size: 18px;
   font-weight: 700;
   letter-spacing: -0.02em;
-  color: var(--night-text);
 }
 
 .bar-input:focus-within {
-  outline: 2px solid var(--lime);
+  outline: 2px solid var(--ink);
   outline-offset: 3px;
 }
 
@@ -901,17 +1034,10 @@ legend {
   padding: 2px 0 3px;
   border: 0;
   background: transparent;
-  color: var(--night-text);
 }
 
-.bar-input input:focus-visible,
-.bar-stepper input:focus-visible {
+.bar-input input:focus-visible {
   outline: none;
-}
-
-.bar-stepper input:focus-visible {
-  outline: 2px solid var(--lime);
-  outline-offset: 3px;
 }
 
 @supports (field-sizing: content) {
@@ -923,154 +1049,292 @@ legend {
   }
 }
 
-.bar-note {
-  margin-left: auto;
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--night-mute);
+/* The lime band: full bleed, holds the whole answer. */
+.band {
+  background: var(--lime);
 }
 
-/* Row 1: hero left, stacked metrics right, a hairline below. */
-.hero-row {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 32px 64px;
-  padding: 40px 0 28px;
-  border-bottom: 1px solid var(--night-line);
+.band-inner {
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 30px 24px 26px;
 }
-
-.hero-label:focus {
-  outline: none;
-}
-
-/* Row 2: the two charts side by side. */
-.charts-row {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 40px 56px;
-  padding-top: 32px;
-}
-
-/* Row 3: Show the math across the full width, then your price and your reply
-   side by side. Each row has a hairline above with 32px around it. */
-.results-more > .receipt,
-.results-pair {
-  margin-top: 32px;
-  padding-top: 32px;
-  border-top: 1px solid var(--night-line);
-}
-
-.results-pair {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 32px 64px;
-  align-items: start;
-}
-
-/* Hero */
 
 .hero-label {
   font-size: 14px;
-  color: var(--night-2);
-  margin-bottom: 24px;
+  color: var(--ink-2);
+}
+
+.hero-label:focus,
+.empty-state:focus {
+  outline: none;
+}
+
+/* The number and its meaning read together: the sentence sits to the right,
+   on the number's baseline side. */
+.hero-main {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 16px 32px;
+  margin-top: 12px;
 }
 
 .hero-number {
-  font-size: clamp(96px, 9.5vw, 136px);
-  font-weight: 700;
-  letter-spacing: -0.065em;
+  font-size: 140px;
   line-height: 0.8;
 }
 
+.hero-digits {
+  display: inline-flex;
+  align-items: stretch;
+  letter-spacing: -0.035em;
+}
+
+/* Cents are smaller and raised, never grayed: gray cents at full size pulled
+   attention to the least important digits. "/hr" sits under them. */
+.hero-side {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  margin-left: 0.04em;
+}
+
 .hero-cents {
-  color: var(--night-dim);
+  font-size: 45%;
+  line-height: 0.8;
 }
 
 .hero-unit {
-  margin-left: 12px;
-  font-size: 28px;
+  font-family: var(--font);
+  font-stretch: normal;
+  font-size: 26px;
   font-weight: 600;
   letter-spacing: -0.01em;
-  color: var(--night-2);
+  line-height: 1;
+  color: var(--ink-2);
+  text-align: center;
+}
+
+.hero-text {
+  max-width: 30em;
+  padding-bottom: 6px;
 }
 
 .hero-sentence {
-  margin-top: 28px;
-  max-width: 34em;
-  font-size: 16px;
-  color: var(--night-2);
+  font-size: 18px;
+  line-height: 1.45;
+  color: var(--ink-2);
 }
 
-.screen-results strong {
+.band strong {
   font-weight: 600;
-  color: var(--night-text);
+  color: var(--ink);
 }
 
-.screen-results strong.signal {
-  color: var(--lime);
-}
-
+/* Below expenses: the warning takes the sentence's place. Ink on lime. */
 .warning {
   display: flex;
   align-items: flex-start;
   gap: 8px;
-  margin-top: 28px;
-  padding-left: 12px;
-  border-left: 2px solid var(--lime);
-  font-size: 16px;
-  color: var(--night-text);
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1.45;
+  color: var(--ink);
 }
 
 .warning .icon {
   flex: none;
-  margin-top: 3px;
+  margin-top: 5px;
 }
 
-/* Metrics: stacked, split by hairlines. */
+.empty-state {
+  font-size: 18px;
+  color: var(--ink);
+}
+
+/* Pay per hour: one ruler on lime. Ink line, ink-2 ticks (gray falls below
+   3:1 on lime). Labels above at 0 to 16px, the line at 36px, below at 52px. */
+.pay-chart {
+  margin-top: 40px;
+}
+
+.ruler {
+  position: relative;
+  height: 70px;
+}
+
+.ruler.has-second-row {
+  margin-top: 20px;
+}
+
+.ruler-line {
+  position: absolute;
+  top: 36px;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: var(--ink);
+}
+
+.tick {
+  position: absolute;
+  top: 36px;
+  width: 1px;
+  height: 6px;
+  background: var(--ink-2);
+}
+
+.tick span {
+  position: absolute;
+  top: 14px;
+  left: 0;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+.tick.first span {
+  transform: none;
+}
+
+.tick.last span {
+  transform: translateX(-100%);
+}
+
+/* The gap: a 12px dashed ink band from the offer to the target. */
+.gap-band {
+  position: absolute;
+  top: 30px;
+  height: 12px;
+  background: repeating-linear-gradient(90deg, var(--ink) 0 3px, transparent 3px 6px);
+}
+
+.target-mark {
+  position: absolute;
+  z-index: 1;
+  top: 20px;
+  width: 4px;
+  height: 32px;
+  margin-left: -2px;
+  background: var(--ink);
+}
+
+.dot {
+  position: absolute;
+  z-index: 2;
+  top: 27px;
+  width: 18px;
+  height: 18px;
+  margin-left: -9px;
+  border-radius: 50%;
+}
+
+.dot-offer {
+  background: var(--ink);
+}
+
+.dot-after {
+  border: 2px solid var(--ink);
+  background: var(--lime);
+}
+
+.ruler-label {
+  position: absolute;
+  top: 0;
+  white-space: nowrap;
+  font-size: 13px;
+  line-height: 16px;
+  color: var(--ink);
+}
+
+.after-label {
+  color: var(--ink-2);
+}
+
+/* "after expenses" moves up to its own row when it would crowd another label. */
+.after-label.second-row {
+  top: -20px;
+}
+
+.target-label {
+  font-weight: 700;
+}
+
+.gap-label {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.over-label {
+  font-weight: 600;
+}
+
+/* "this offer $17.39" sits under the line, with lime behind it so the axis
+   doesn't cross the text. */
+.offer-label {
+  top: 50px;
+  z-index: 3;
+  padding: 0 4px;
+  margin-left: -4px;
+  background: var(--lime);
+  font-weight: 600;
+}
+
+/* Metrics: no repeated numbers, no plus sign. The last one leads into the chart below. */
 .metrics {
-  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px 0;
+  margin: 36px 0 0;
 }
 
 .metrics > div {
-  padding: 16px 0;
-  border-top: 1px solid var(--night-line);
+  position: relative;
+  padding: 0 40px;
 }
 
 .metrics > div:first-child {
-  padding-top: 0;
-  border-top: 0;
+  padding-left: 0;
 }
 
-.metrics > div:last-child {
-  padding-bottom: 0;
+.metrics > div + div::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 1px;
+  background: var(--ink-2);
+  opacity: 0.3;
 }
 
 .metrics dt {
   font-size: 12px;
   font-weight: 500;
-  color: var(--night-mute);
+  color: var(--muted);
 }
 
 .metrics dd {
-  margin: 8px 0 0;
+  margin: 4px 0 0;
   font-size: 30px;
+  line-height: 1.1;
+}
+
+/* Below the band, on white. */
+.results-body {
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 40px 24px 64px;
+}
+
+.chart h3,
+.result-block > legend {
+  font-size: 20px;
   font-weight: 600;
   letter-spacing: -0.02em;
-  line-height: 1.1;
-  color: var(--night-text);
-}
-
-/* Charts */
-
-.chart h3 {
-  margin: 0;
-}
-
-.chart-summary {
-  margin-top: 24px;
-  max-width: var(--measure);
-  font-size: 14px;
-  color: var(--night-2);
 }
 
 .chart-head {
@@ -1082,30 +1346,40 @@ legend {
 
 .chart-flag {
   font-size: 13px;
-  font-weight: 600;
-  color: var(--lime);
+  font-weight: 700;
 }
 
 .chart-unit {
   margin-left: auto;
   font-size: 12px;
   font-weight: 500;
-  color: var(--night-mute);
+  color: var(--muted);
 }
 
-/* Chart 1: blocks of time.
-   Room above for the line's label, room below for the group labels. */
+.chart-summary {
+  margin-top: 16px;
+  max-width: var(--measure);
+  font-size: 14px;
+  color: var(--ink-2);
+}
+
+.chart-summary strong {
+  font-weight: 600;
+  color: var(--ink);
+}
+
+/* Your hours: blocks across the full width. Room above for the line's label,
+   room below for the group labels. */
 .blocks {
   position: relative;
   display: flex;
   flex-wrap: wrap;
   align-items: flex-start;
-  column-gap: 14px;
-  row-gap: 80px;
+  column-gap: 26px;
+  row-gap: 96px;
   margin-top: 16px;
-  padding-top: 34px;
-  /* Room for the two-line group labels. */
-  padding-bottom: 44px;
+  padding-top: 30px;
+  padding-bottom: 72px;
 }
 
 .block-group {
@@ -1115,30 +1389,13 @@ legend {
 .block-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px;
+  gap: 5px;
 }
 
 .block {
-  flex: none;
-  height: 64px;
-  outline: 1.5px solid var(--night-text);
+  height: 72px;
+  outline: 1.5px solid var(--ink);
   outline-offset: -1.5px;
-}
-
-.block-group[data-group="production"] .block {
-  background: var(--night-text);
-}
-
-.block-group[data-group="communication"] .block {
-  background: repeating-linear-gradient(135deg, var(--night-text) 0 1.5px, transparent 1.5px 5px);
-}
-
-.block-group[data-group="revisions"] .block {
-  background: repeating-linear-gradient(45deg, var(--night-text) 0 1.5px, transparent 1.5px 5px);
-}
-
-.block-group[data-group="delivery"] .block {
-  background: radial-gradient(circle, var(--night-text) 1.1px, transparent 1.4px) 0 0 / 5px 5px;
 }
 
 /* Time the offer doesn't pay for drops to 28% opacity. */
@@ -1154,11 +1411,11 @@ legend {
 
 .group-label {
   position: absolute;
-  top: 72px;
+  top: 84px;
   left: 0;
   white-space: nowrap;
   font-size: 12px;
-  color: var(--night-2);
+  color: var(--ink-2);
 }
 
 .group-label b,
@@ -1166,24 +1423,29 @@ legend {
   display: block;
 }
 
+.group-label b {
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--ink);
+}
+
 .group-label span {
   line-height: 1.3;
 }
 
-.group-label b {
-  line-height: 1.35;
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--night-text);
+.group-label .tag {
+  display: inline-block;
+  margin-top: 6px;
 }
 
-/* Where the money runs out: a 2px lime line, label at its top right. */
+/* Where the money runs out: a 2px ink line, label at its top right. */
 .runs-out {
   position: absolute;
   z-index: 1;
   width: 2px;
   margin-left: -1px;
-  background: var(--lime);
+  background: var(--ink);
 }
 
 .runs-out-label {
@@ -1192,146 +1454,13 @@ legend {
   left: 10px;
   white-space: nowrap;
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 700;
   line-height: 1.2;
-  color: var(--lime);
 }
 
 .runs-out.flip .runs-out-label {
   left: auto;
   right: 10px;
-}
-
-/* Chart 2: one ruler in dollars per hour. Line at 40px from the top. */
-.ruler {
-  position: relative;
-  height: 96px;
-  margin-top: 32px;
-}
-
-.ruler-line {
-  position: absolute;
-  top: 40px;
-  left: 0;
-  right: 0;
-  height: 1px;
-  background: var(--night-line);
-}
-
-.tick {
-  position: absolute;
-  top: 40px;
-  width: 1px;
-  height: 6px;
-  background: var(--night-tick);
-}
-
-.tick span {
-  position: absolute;
-  top: 34px;
-  left: 0;
-  transform: translateX(-50%);
-  white-space: nowrap;
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--night-mute);
-}
-
-.tick.first span {
-  transform: none;
-}
-
-.tick.last span {
-  transform: translateX(-100%);
-}
-
-.gap-band {
-  position: absolute;
-  top: 36px;
-  height: 9px;
-  background: repeating-linear-gradient(90deg, var(--lime) 0 4px, transparent 4px 7px);
-}
-
-.target-mark {
-  position: absolute;
-  z-index: 1;
-  top: 28px;
-  width: 4px;
-  height: 25px;
-  margin-left: -2px;
-  background: var(--lime);
-}
-
-.dot {
-  position: absolute;
-  z-index: 2;
-  top: 33px;
-  width: 15px;
-  height: 15px;
-  margin-left: -7.5px;
-  border-radius: 50%;
-}
-
-.dot-offer {
-  background: var(--night-text);
-}
-
-.dot-after {
-  border: 2px solid var(--night-text);
-  background: var(--night);
-}
-
-.ruler-label {
-  position: absolute;
-  top: 6px;
-  white-space: nowrap;
-  font-size: 12px;
-  line-height: 16px;
-}
-
-.offer-label {
-  font-weight: 600;
-  color: var(--night-text);
-}
-
-.after-label {
-  color: var(--night-2);
-}
-
-.target-label {
-  font-weight: 600;
-  color: var(--lime);
-}
-
-/* Below the ruler: after expenses, the gap amount, and "+$X/hr". */
-.gap-label,
-.over-label,
-.after-label {
-  top: 52px;
-}
-
-/* "after expenses" on its own second row when it would crowd another label.
-   The ruler grows and the tick labels move below it. */
-.after-label.second-row {
-  top: 72px;
-}
-
-.ruler.has-second-row {
-  height: 116px;
-}
-
-.ruler.has-second-row .tick span {
-  top: 56px;
-}
-
-.gap-label {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--lime);
-}
-
-.over-label {
-  color: var(--night-2);
 }
 
 /* Motion: only after the first render, 180ms ease-out. Off for reduced motion (below). */
@@ -1355,7 +1484,20 @@ legend {
   transition: left 180ms ease-out, width 180ms ease-out;
 }
 
-/* How we calculated this */
+/* Show the math, then your price and your reply. Each has a hairline above. */
+.results-more > .receipt,
+.results-pair {
+  margin-top: 32px;
+  padding-top: 32px;
+  border-top: 1px solid var(--line);
+}
+
+.results-pair {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 32px 72px;
+  align-items: start;
+}
 
 /* Show the math: a collapsed receipt. */
 .math summary {
@@ -1368,7 +1510,6 @@ legend {
   cursor: pointer;
   font-size: 15px;
   font-weight: 600;
-  color: var(--night-text);
 }
 
 .math summary::-webkit-details-marker {
@@ -1411,7 +1552,7 @@ legend {
 .receipt th,
 .receipt td {
   padding: 8px 0;
-  border-bottom: 1px solid var(--night-line);
+  border-bottom: 1px solid var(--line);
   text-align: left;
   vertical-align: baseline;
 }
@@ -1423,27 +1564,25 @@ legend {
 
 .receipt tbody th {
   font-weight: 400;
-  color: var(--night-2);
+  color: var(--ink-2);
 }
 
 /* The math column. Not in the final row, where the second cell is the amount. */
 .receipt td:nth-child(2):not(:last-child) {
   padding-left: 16px;
   padding-right: 16px;
-  color: var(--night-mute);
+  color: var(--muted);
   text-align: right;
   white-space: nowrap;
 }
 
-.receipt td:last-child,
-.receipt tr.total td {
-  color: var(--night-text);
+.receipt td:last-child {
   text-align: right;
   white-space: nowrap;
 }
 
 .receipt tr.sum > * {
-  border-top: 1px solid var(--night-2);
+  border-top: 1px solid var(--ink);
 }
 
 .receipt tr.total > * {
@@ -1453,16 +1592,17 @@ legend {
   font-size: 22px;
   font-weight: 700;
   letter-spacing: -0.02em;
-  color: var(--night-text);
+  color: var(--ink);
 }
 
 .receipt-note {
+  max-width: var(--measure);
   margin-top: 16px;
   font-size: 12px;
-  color: var(--night-mute);
+  color: var(--muted);
 }
 
-/* Your quote and your reply: light-side inputs, reversed. */
+/* Your price and your reply */
 
 .result-block > legend {
   float: left;
@@ -1470,47 +1610,22 @@ legend {
   margin-bottom: 16px;
 }
 
-.result-block .field > label {
-  color: var(--night-mute);
-}
-
 .result-block .unit-input {
-  display: flex;
-  align-items: baseline;
   max-width: 220px;
-  margin-top: 8px;
-  border-bottom: 2px solid var(--night-text);
-  font-size: 22px;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  cursor: text;
-}
-
-.result-block .unit-input input {
-  width: 100%;
-  min-width: 0;
-  padding: 2px 0 4px;
-  border: 0;
-  background: transparent;
-  color: var(--night-text);
 }
 
 .result-block .unit-input input::placeholder {
-  color: var(--night-mute);
+  color: var(--muted);
   opacity: 1;
 }
 
-.result-block .hint {
-  color: var(--night-mute);
-}
-
+/* Lime text isn't allowed on white, so the link is ink, underlined. */
 .link-button {
   min-height: 44px;
   margin-top: 4px;
   padding: 0;
   border: 0;
   background: none;
-  color: var(--lime);
   font-size: 14px;
   font-weight: 600;
   text-decoration: underline;
@@ -1518,16 +1633,14 @@ legend {
 }
 
 #quote-result,
-.notice p,
-.receipt-note,
-.empty-state {
+.notice p {
   max-width: var(--measure);
 }
 
 #quote-result {
   margin-top: 16px;
   font-size: 14px;
-  color: var(--night-2);
+  color: var(--ink-2);
 }
 
 textarea {
@@ -1535,11 +1648,10 @@ textarea {
   width: 100%;
   max-width: var(--measure);
   margin-top: 8px;
-  padding: 16px 16px;
-  border: 1px solid var(--night-tick);
-  border-radius: 12px;
-  background: transparent;
-  color: var(--night-text);
+  padding: 16px;
+  border: 1px solid var(--control);
+  border-radius: 4px;
+  background: var(--paper);
   font-size: 16px;
   line-height: 1.5;
   resize: vertical;
@@ -1560,43 +1672,35 @@ textarea {
   align-items: center;
   gap: 12px 16px;
   font-size: 14px;
-  color: var(--night-2);
+  color: var(--ink-2);
 }
 
-#copy-reply,
-#update-draft {
-  min-height: 48px;
-  padding: 0 24px;
-  border-radius: 999px;
-  font-size: 15px;
-  font-weight: 600;
-}
-
+/* "Copy reply": the same family as "Check the offer", with a small lime square. */
 #copy-reply {
-  border: 0;
-  background: var(--lime);
-  color: var(--night);
+  min-height: 48px;
+  padding: 0 20px;
 }
 
-#update-draft {
-  border: 1.5px solid var(--night-text);
-  background: transparent;
-  color: var(--night-text);
+.lime-square {
+  width: 10px;
+  height: 10px;
+  background: var(--lime);
 }
 
 #copy-status {
   font-size: 13px;
-  color: var(--night-2);
+  color: var(--ink-2);
 }
 
 /* Hover: subtle fills, 120ms. Only on controls, never on rows or text. */
 
 .stepper button::before,
-.radio-choice label,
-.pill-button,
-#copy-reply,
-#update-draft {
-  transition: background-color 120ms ease-out;
+.bar-stepper button::before,
+.switch label,
+.action-button,
+.check-main,
+.tab-choice label {
+  transition: background-color 120ms ease-out, color 120ms ease-out;
 }
 
 .link-button {
@@ -1604,34 +1708,23 @@ textarea {
 }
 
 @media (hover: hover) {
-  .stepper button:hover::before,
-  .radio-choice input:not(:checked) + label:hover,
-  .pill-button.outline:hover {
+  .stepper button:not([data-step="1"]):hover::before,
+  .bar-stepper button:not([data-step="1"]):hover::before,
+  .switch input:not(:checked) + label:hover,
+  .action-button.outline:hover {
     background: var(--hover-paper);
   }
 
   .stepper button[data-step="1"]:hover::before,
-  .radio-choice input:checked + label:hover,
-  .pill-button:not(.outline):hover {
+  .bar-stepper button[data-step="1"]:hover::before,
+  .switch input:checked + label:hover,
+  .action-button:not(.outline):hover,
+  .check-button:hover .check-main {
     background: var(--hover-ink);
   }
 
-  #copy-reply:hover {
-    background: var(--hover-lime);
-  }
-
-  #update-draft:hover,
-  .check-button:hover .check-main {
-    background: var(--hover-night);
-  }
-
-  .bar-stepper button:not([data-step="1"]):hover::before {
-    background: var(--hover-night);
-  }
-
-  .bar-stepper button[data-step="1"]:hover::before {
-    background: var(--night-2);
-    border-color: var(--night-2);
+  .tab-choice input:not(:checked) + label:hover {
+    color: var(--ink);
   }
 
   .link-button:hover {
@@ -1643,132 +1736,72 @@ textarea {
 
 @media (min-width: 960px) {
   .topbar,
-  .control-bar {
+  .screen-inputs,
+  .site-footer,
+  .control-bar-inner,
+  .band-inner,
+  .results-body {
     padding-left: 64px;
     padding-right: 64px;
   }
 
-  .screen-inputs,
-  .site-footer {
-    padding-left: 64px;
-    padding-right: 64px;
+  .topbar-inner {
+    max-width: 1312px;
   }
 
   .inputs-columns {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .results-body {
-    padding-left: 64px;
-    padding-right: 64px;
-  }
-
-  /* The bar's background runs edge to edge; its content lines up with the
-     centered 1312px column below it. */
-  .control-bar {
-    padding-left: max(64px, calc((100% - 1312px) / 2));
-    padding-right: max(64px, calc((100% - 1312px) / 2));
-  }
-
-  /* The label sits on its own row, so the metrics column starts exactly where
-     the hero number starts. */
-  .hero-row {
-    grid-template-columns: minmax(0, 1fr) 300px;
-    row-gap: 0;
-  }
-
-  .hero-row > .hero-label {
-    grid-column: 1;
-    grid-row: 1;
-  }
-
-  .hero-row > .hero-main {
-    grid-column: 1;
-    grid-row: 2;
-  }
-
-  .hero-row > .metrics {
-    grid-column: 2;
-    grid-row: 2;
-    align-self: start;
-  }
-
-  .results-pair {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  /* Screen 1: the top row uses the same two columns as the form below it,
-     so the intro starts exactly at the right column's left edge. */
-  .inputs-top {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0 64px;
-    align-items: end;
-  }
-
-  .inputs-top > .intro {
-    grid-column: 2;
-  }
-
-  /* The right column (3, 4, and the button) stays in view below the header
-     while the left column scrolls. */
+  /* The right column (tally, 3, 4, and the button) stays in view below the
+     header while you edit hours on the left. */
   .inputs-columns > .inputs-column:last-child {
     position: sticky;
     top: calc(56px + 28px);
     align-self: start;
   }
 
-  .metrics {
-    padding-left: 32px;
-    border-left: 1px solid var(--night-line);
-  }
-
-  .charts-row {
-    grid-template-columns: minmax(0, 1fr) 440px;
-  }
-
-  .charts-row > #offer-chart {
-    padding-left: 40px;
-    border-left: 1px solid var(--night-line);
-  }
-
-  /* No offer: the hours chart takes the full row. */
-  .charts-row:has(> #offer-chart[hidden]) {
-    grid-template-columns: minmax(0, 1fr);
+  .results-pair {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
-/* Reveal: plays once when "Check the offer" is pressed (app.js adds and removes
-   these classes). About 1 second in all. Never under reduced motion. */
+/* The reveal: plays once when "Check the offer" is pressed (app.js adds and
+   removes these classes). About 1 second in all. Never under reduced motion. */
 
-/* 1. Screen 1 fades out while the page turns black, then screen 2 fades in. */
-body.reveal-out {
-  background: var(--night);
-  transition: background-color 200ms ease-out;
-}
-
+/* 1. Screen 1 fades out (150ms). */
 body.reveal-out .screen-inputs,
-body.reveal-out .site-footer,
-body.reveal-out .topbar-inner {
+body.reveal-out .site-footer {
   opacity: 0;
-  transition: opacity 100ms ease-out;
+  transition: opacity 150ms ease-out;
 }
 
-body.reveal-out .topbar {
-  background: var(--night);
-  border-bottom-color: var(--night-line);
-  transition: background-color 200ms ease-out, border-color 200ms ease-out;
+/* 2. The lime band grows down from the top (250ms), and its content and
+   everything below it fade in. */
+@keyframes band-grow {
+  from { clip-path: inset(0 0 100% 0); }
+  to { clip-path: inset(0 0 0 0); }
 }
 
-.screen-results.reveal-hidden {
-  opacity: 0;
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
-body.revealing .screen-results {
-  transition: opacity 100ms ease-out;
+body.revealing .band {
+  animation: band-grow 250ms ease-out both;
 }
 
-/* 2. The hour blocks fill in left to right, each growing up from its base. */
+body.revealing .band-inner {
+  animation: fade-in 150ms ease-out 100ms both;
+}
+
+body.revealing .results-body,
+body.revealing.on-results .site-footer {
+  animation: fade-in 200ms ease-out 200ms both;
+}
+
+/* 3. The hour blocks fill in left to right, each growing up from its base. */
 @keyframes block-fill {
   from { transform: scaleY(0); }
   to { transform: scaleY(1); }
@@ -1777,10 +1810,10 @@ body.revealing .screen-results {
 body.revealing .block {
   transform-origin: bottom;
   animation: block-fill 220ms ease-out both;
-  animation-delay: calc(var(--reveal-start, 150ms) + var(--i, 0) * var(--stagger, 18ms));
+  animation-delay: calc(var(--reveal-start, 300ms) + var(--i, 0) * var(--stagger, 18ms));
 }
 
-/* 3. The lime line and its label drop in last. */
+/* 4. The runs-out line and its label drop in last. */
 @keyframes line-drop {
   from { opacity: 0; transform: translateY(-12px); }
   to { opacity: 1; transform: none; }
@@ -1788,7 +1821,7 @@ body.revealing .block {
 
 body.revealing .runs-out {
   animation: line-drop 200ms ease-out both;
-  animation-delay: var(--line-delay, 700ms);
+  animation-delay: var(--line-delay, 900ms);
 }
 
 @media (prefers-reduced-motion: reduce) {

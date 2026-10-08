@@ -1,255 +1,181 @@
-# Counter design system (v3.2, "Two screens", with job options)
+# Counter design system (v4, "Lime reveal")
 
-## What this file replaces
+This file is the source of truth for how Counter looks. It replaces all earlier versions. CLAUDE.md still owns the flow, math, copy, validation, accessibility, and tests.
 
-This is the source of truth for how Counter looks. It replaces:
-- All of section 6 of CLAUDE.md (Design system).
-- In section 7: the hero number style, and the form, colors, and styling of both charts. The two charts are redesigned below.
+Reference images: `docs/design-v4-screen1.png` and `docs/design-v4-screen2.png`. Match their proportions and hierarchy. If an image and this file differ, this file wins. If something isn't covered, ask. Ignore all older reference images.
 
-Everything else in CLAUDE.md still applies: the flow, the math, the copy rules, validation, accessibility, and tests. The receipt, quote, and reply keep their content from CLAUDE.md and take their styling from here.
+Every rule below has a reason. Keep the reasons when you change anything.
 
-Reference renders: `docs/design-screen1-inputs.png` and `docs/design-screen2-results.png`. Match their proportions, weights, and spacing. Where an image and this file differ, this file wins. If something isn't covered, ask before deciding. (`design-reference-split.png` and `design-reference-desktop.png` are older directions. Ignore them.)
+## The idea
 
-## Direction
+**Counter counts the hours you don't see.**
 
-**Count the work, then see the truth.**
+The time block (1 block = 30 minutes) is the visual language of the whole product. It appears on screen 1 while you type, and again on screen 2 in the result.
+Reason: the blocks are Counter's signature. Using them on both screens connects the two screens and makes the main insight (forgotten work) visible from the start.
 
-Two screens. Screen 1 is a white page where you enter the job. One button turns the page black and reveals the result full width. A slim control bar keeps the key numbers live on the results screen. No cards, no rounded panels. Structure comes from big bold type, thin lines, and alignment.
-
-Four rules carry the look:
-1. **Bold, tight type.** One family, heavy weights, negative tracking on anything large.
-2. **One number dominates.** The hero number is huge. Everything else is clearly smaller.
-3. **One signal color, lime, only on black.** It marks your target and where the money runs out. On screen 1 it appears only inside the black "Check the offer" button, as a preview of the results.
-4. **Charts you can count.** Hours are drawn as blocks of time. Pay is drawn as points on one ruler.
+**The reveal: the lime square on the button opens into a lime result band.**
+Reason: both screens stay light, so the change isn't a harsh flip from white to black. The button's lime square previews the answer, then becomes it.
 
 ## Tokens
 
 ```css
 :root {
-  /* Light side (inputs) */
   --paper:   #FFFFFF;
-  --ink:     #0E0F12;  /* 19:1 */
-  --muted:   #5F646D;  /* labels, hints. 6:1 */
-  --line:    #E3E5E8;  /* hairlines, decorative */
-  --control: #8A9099;  /* 3.2:1, only for outlines that must be visible */
-
-  /* Dark side (results) */
-  --night:      #0C0D0F;
-  --night-text: #F4F4F2;  /* 17.6:1 */
-  --night-2:    #B9BCC2;  /* secondary text. 10:1 */
-  --night-mute: #8B9098;  /* captions, axis labels. 6:1 */
-  --night-dim:  #5E626A;  /* ONLY the dimmed cents of the hero number (large text). 3.2:1 */
-  --night-tick: #6E737B;  /* axis ticks. 4:1 */
-  --night-line: #26282D;  /* hairlines, decorative */
-  --lime:       #D4FF3F;  /* the signal. 16.8:1 on night */
-
-  /* States */
-  --error: #B42318;  /* errors, light side only, always with an icon. 6.5:1 */
+  --bar:     #F3F4F5;  /* screen 2 control bar */
+  --ink:     #0E0F12;  /* 19:1 on white, 16.6:1 on lime */
+  --ink-2:   #4A4F57;  /* secondary text. 8.2:1 white, 7.1:1 lime */
+  --muted:   #5F646D;  /* labels, hints. 6:1 white, 5.2:1 lime */
+  --line:    #E3E5E8;  /* hairlines on white, decorative */
+  --control: #8A9099;  /* outlines that must be seen on white. 3.2:1 */
+  --tag:     #C9CDD3;  /* tag border, decorative */
+  --lime:    #D4FF3F;  /* the brand color */
+  --error:   #B42318;  /* 6.5:1 on white, always with an icon */
 }
 ```
 
-Color rules:
-- Lime appears only on black, and only for: your target rate, the "money runs out" marker, the gap, emphasized words about the gap, "Copy reply", and the arrow square of the screen 1 button. Never directly on white (it's invisible there).
-- No other colors anywhere. No green or red arrows.
-- Text never lighter than `--muted` on white or `--night-mute` on black. The one exception is the hero's dimmed cents.
+- Lime is used as a **background** only: the result band and the arrow square on the button. Never lime text or lime lines on white.
+  Reason: lime on white is about 1:1 contrast, so it can't carry meaning there. As a background under ink text it's 16.6:1.
+- Everything on the lime band is ink, ink-2, or muted. Axis ticks on lime use `--ink-2`.
+  Reason: `--control` gray falls below 3:1 on lime.
+- No other colors.
+  Reason: with one brand color, lime always means "the answer."
 
 ## Type
-
-One family: **Geist**, from Google Fonts.
 
 ```html
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,700..900&family=Geist:wght@400;500;600;700;800&display=swap">
 ```
 
-Fallback `system-ui, sans-serif`. `font-variant-numeric: tabular-nums` on the whole page. `-webkit-font-smoothing: antialiased`.
+- **Archivo** (wide, heavy) is only for big numbers: the tally total, the hero number, and the metric values. Settings: `font-stretch: 118%`, weight 800, letter-spacing -0.02em (hero -0.035em).
+  Reason: the numbers are the product, so they get their own voice. It also keeps the page from looking like every other Geist site.
+- **Geist** is for everything else. Tabular numbers on the whole page.
+  Reason: clean and readable for forms and labels.
 
-| Role | Size | Weight | Tracking | Notes |
-|---|---|---|---|---|
-| Hero number | clamp(96px, 9.5vw, 136px) | 700 | -0.065em | line-height 0.8. Cents in `--night-dim` |
-| Hero unit "/hr" | 28px | 600 | -0.01em | `--night-2`, sits on the baseline, 12px left |
-| Page headline (screen 1) | 56px | 700 | -0.05em | line-height 0.95, breaks after "job" |
-| Section title (1 The job) | 17px | 600 | | step number in `--muted` |
-| Chart title | 20px | 600 | -0.02em | `--night-text` |
-| Metric value | 30px | 600 | -0.02em | |
-| Button label (screen 1) | 19px | 700 | -0.02em | |
-| Big input value (rate, expenses, offer) | 22px | 700 | -0.02em | |
-| Stepper number | 24px | 700 | | |
-| Wordmark "counter" | 18px | 800 | -0.04em | lowercase |
-| Body and row labels | 15px | 400 | | |
-| Group label (Production) | 12px | 700 | | |
-| Small label, caption, axis | 12 to 13px | 500 | | muted color |
-| Job pills | 14px | 600 | | same as the offer pills |
-| "Replace your numbers…" question | 14px | 600 | | |
-| Hours input value | 17px | 600 | | right-aligned |
-| Total row | 15px label, 22px value | 700 | -0.02em on the value | |
-| Offer pills | 14px | 600 | | |
-| Replace / Keep my numbers | 14px | 600 | | pill buttons, 44px tall |
-| Error message | 13px | 600 | | `--error` on white; 12px 500 `--night-text` under control bar fields |
-| Empty and error states (screen 2) | 16px | 400 | | `--night-2`, same as the hero sentence |
-| Below-expenses warning | 16px | 400 | | `--night-text` |
-| Text link ("Use my estimate") | 14px | 600 | | lime, underlined |
-| Quote line, reply notice | 14px | 400 | | `--night-2`, same as chart summaries |
-| Pill buttons ("Copy reply", "Update draft") | 15px | 600 | | |
-| Copy status ("Copied to clipboard.") | 13px | 400 | | `--night-2` |
-| Skip link | 15px | 600 | | |
-| Stepper icons (−, +) | 18px on screen 1, 15px in the control bar | 600 | | icons, not text |
+| Role | Font | Size | Weight |
+|---|---|---|---|
+| Headline | Geist | 60px, -0.05em, line-height 0.95 | 700 |
+| Intro | Geist | 18px, line-height 1.45, max 36em | 400 |
+| Section title ("1 The job") | Geist | 18px | 700, number 500 `--muted` |
+| Tally total | Archivo | 56px | 800 |
+| Hero number | Archivo | 140px, line-height 0.8 | 800 |
+| Hero cents | Archivo | 45% of hero, raised to the top | 800 |
+| Hero "/hr" | Geist | 26px, `--ink-2` | 600 |
+| Metric values | Archivo | 30px | 800 |
+| Chart title | Geist | 20px, -0.02em | 600 |
+| Body, row labels | Geist | 15px | 400 |
+| Group label | Geist | 12px | 700 |
+| Small labels, hints, axis | Geist | 12 to 13px, `--muted` | 500 |
+| Tag ("Usually forgotten") | Geist | 11px, `--muted`, 1px `--tag` border, 4px radius | 600 |
 
-Line length: body text, hints, summaries, and notes stay under about 75 characters (`max-width: 36em`). Paragraphs use `text-wrap: pretty` so no word is left alone on a line; headings use `text-wrap: balance`.
+Cents are **smaller and raised**, not grayed.
+Reason: gray cents at full size pulled attention to the least important digits.
 
-Sentence case. No all caps. No small labels stacked above headings.
+Spacing scale: 4, 8, 12, 16, 24, 28, 32, 40, 56, 64.
 
-## Spacing scale
+## Screen 1: inputs (white)
 
-All margins, padding, and gaps use this scale: **4, 8, 12, 16, 24, 28, 32, 40, 56, 64**.
+Content max width 1312px, 64px side padding. Header 56px, white, hairline below, wordmark "counter" (Geist 800, 18px, -0.04em).
 
-Exceptions, because they're geometry rather than spacing:
-- Borders, focus offsets, and optical nudges of 1 to 3px.
-- Chart internals that the drawing code also uses: the 4px and 14px block gaps, the 34px room above the blocks for the "runs out" line, the 44px room below them for group labels, the 80px row gap if blocks wrap, and the dot and ruler positions.
-- Hit-area tricks, such as the control bar steppers' -4px margins around 44px touch targets.
-- Scroll padding under the sticky header and bar (56px and 120px).
+**Top:** headline, then the intro right under it, then "Example numbers. Change them to match your project." in 14px `--muted`. Then a hairline.
+Reason: people read the question, then right away what to do.
 
-## Layout (desktop, 960px and up)
+**Two columns, 72px gap.** Left: 1 The job, 2 The work. Right (sticky below the header): the tally box, 3 Your numbers, 4 Their offer, the button.
+Reason: reading order stays 1, 2, 3, 4 and ends on the button. The sticky right column keeps the total and the button in view while you edit hours.
 
-Both screens live in the same page (one `index.html`). Only one shows at a time. No page reload.
+**1 The job**
+- Job tabs in one row: Restaurant menu, Logo, Social posts, Poster or flyer, Custom. Text tabs, 15px. Selected: 600 `--ink` with a 2.5px ink underline. Others: 500 `--muted`. A hairline under the row. Built as real radio inputs.
+  Reason: tabs say "pick one," never wrap, and look different from on/off switches and action buttons.
+- The "Replace your numbers?" question uses **rectangular buttons** (Replace: solid ink. Keep my numbers: 1.5px ink outline), 4px radius.
+  Reason: actions must not look like choices.
+- Steppers: 40px circles. Minus outlined, plus solid ink.
 
-### Header (both screens)
-- 56px tall, `position: sticky; top: 0; z-index: 10`, 64px side padding, wordmark "counter" left.
-- Screen 1: `--paper` background, `--line` bottom hairline, `--ink` wordmark.
-- Screen 2: `--night` background, `--night-line` bottom hairline, `--night-text` wordmark. Right side: the job name ("Restaurant menu", "Logo", "Custom project") in 13px `--night-2`.
+**2 The work**
+- Hint: "Example hours. Change any to match how you work. 1 block = 30 min."
+- Group label rows show a 10px swatch in the group's texture, then the name, total on the right.
+- Each work row: label, then **a live row of mini blocks** (7px x 16px, 2px gap, group texture, 1px ink outline), then the hours input (84px, 2px ink underline).
+  Reason: you see your hours stack up while you type.
+- Communication, Revisions, and Delivery rows get a **"Usually forgotten" tag** after the label.
+  Reason: this is Counter's thesis, shown where people make the mistake.
+- Textures (on white): Production solid ink. Communication 135° lines. Revisions 45° lines. Delivery dots. Same on both screens.
 
-### Screen 1: inputs (white)
-- Content max width 1312px, centered, 64px side padding, 40px below the header.
-- **Top row:** the same two columns as the form below. Headline in the left column ("What does this job / really pay?"). In the right column, starting exactly at its left edge, max 380px, bottom-aligned with the headline: the intro line (16px `--ink`) and "Example numbers. Change them to match your project." (14px `--muted`). 40px below, a `--line` hairline.
-- **Two columns**, equal width, 64px gap, 28px below the hairline:
-  - **Left column:** 1 The job, then 2 The work.
-  - **Right column:** 3 Your numbers, then 4 Their offer, then the button. It's sticky (`top: 84px`, the 56px header plus 28px), so it stays in view while the left column scrolls.
-  - Sections inside a column are separated by a `--line` hairline with 28px above and below.
-  - This keeps the reading order 1, 2, 3, 4 (down the left, then down the right) and ends on the button.
-- **1 The job** starts with five pills, real radio inputs styled exactly like the offer pills (44px tall, 1.5px `--ink` outline, solid `--ink` when chosen, 8px gaps, wrapping): Restaurant menu, Logo, Social media posts, Poster or flyer, Custom. Then the item stepper (labeled with the job's item: Pages, Concepts, Posts, Sizes, Pieces) and Rounds of changes. The hint under them names the item too ("Concepts and rounds are the work you promise.").
-- **Switching jobs** loads that job's example numbers. If the work numbers (count, rounds, or any hours) differ from the loaded example, it asks first, right under the pills: "Replace your numbers with the Logo example?" (14px 600 `--ink`, `role="status"`) with two pill buttons, "Replace" (solid `--ink`) and "Keep my numbers" (`--ink` outline). The labels switch to the new job right away either way; "Keep my numbers" only keeps the numbers. Focus stays on the pills, so arrow keys still move between jobs; answering returns focus to the chosen pill. Rate, expenses, and the offer never change with the job.
-- **2 The work:** the Production rows follow the job: a setup row (Concepts and sketches, Research and sketches, Template and style, Concept and layout, or Setup) and "Design, per [item]". The "Fewer pages may not save time…" hint shows only for the menu.
-- **2 The work** starts with the hint "Example hours. Change any to match how you work." and ends with a total row: 2px `--ink` line above, "Total hours" 15px 700 left, "11.5 hrs" 22px 700 right (live).
-- **Footer:** below both columns, a `--line` hairline, then the disclaimer in 12px `--muted`.
+**Tally box ("Your work so far")**, top of the right column.
+- 1.5px ink border, 22px x 24px padding, no radius. The only box on the page.
+  Reason: it's the only thing that sums everything up, so it's the only thing framed.
+- Top row: "Your work so far" (13px 600 `--muted`) left, "**5 hrs** usually forgotten" right.
+- Total in Archivo 56px, "hrs" in Geist 20px `--muted`.
+- A strip of all blocks (12px x 30px, 3px gaps, 8px between groups).
+- All live.
 
-### The button (end of screen 1)
-- Full width of the right column, 40px below the offer, 76px tall, **square corners**. Built as a real `<button>`.
-- Two parts side by side:
-  - Main area: `--night` background, 24px left padding. Line 1: "Check the offer" (19px 700, `--night-text`). Line 2: a live preview, "11.5 hrs of work for $200" (12px `--night-mute`).
-  - Right end: a 76px square in `--lime` with a black arrow icon (26px, 2.5px stroke, square ends).
-- With "No offer yet": "Get my estimate" and "11.5 hrs of work at $25/hr".
-- While there are errors, the button stays enabled. Pressing it moves focus to the first field with an error and shows its message.
-- Hover: main area `#1A1C20`. Focus: 2px `--ink` outline, 3px offset.
-- Pressing it shows screen 2, scrolls to the top, and moves keyboard focus to the "This offer pays" label (so screen readers announce the result).
+**3 Your numbers:** target hourly rate and project expenses, two equal columns, 24px values with a 2px ink underline, hints under each.
 
-### Screen 2: results (black)
-- Whole page `--night` background. Content capped at 1440px wide and centered, with 64px side padding, so it lines up with the header and screen 1. The control bar's background runs edge to edge, with its content in the same centered column.
-- The browser's Back button returns to screen 1 with every value kept.
-- The footer disclaimer shows at the bottom of screen 2 too, 12px `--night-mute`, above a `--night-line` hairline.
-- **Control bar** directly under the header: 64px tall, `#15171A` background, `--night-line` bottom hairline, 64px side padding, items in one row with 28px gaps:
-  1. "Edit all details" with a left chevron, 13px 600 `--night-2`. Returns to screen 1 with all values kept, focus on the headline.
-  2. 1px `--night-line` divider.
-  3. Item stepper (labeled with the job's item, like "Concepts") and Rounds stepper, compact: label 12px `--night-mute`, 30px circles (minus: 1.5px `--night-2` outline, plus: solid `--night-text` with a `--night` icon), number 18px 700.
-  4. Divider.
-  5. Offer and Target as inline editable fields: label 12px `--night-mute`, value 18px 700 with a 2px `--night-text` bottom border. Hide Offer when "No offer yet". An error shows right under its field: a small alert icon plus the message, 12px `--night-text`.
-  6. Right end: "Change these to update the result" in 12px `--night-mute`.
-  - These controls are the same values as screen 1. Changing them updates everything on both screens.
-  - The bar is sticky under the header (`top: 56px`).
-- **Row 1 (hero):** two columns, `1fr` and 300px, 64px gap, 40px top padding, 28px bottom padding, `--night-line` hairline below.
-  - Left: label, hero number, sentence.
-  - Right: 1px `--night-line` left border, 32px left padding, the three metrics **stacked** vertically, each separated by a hairline.
-  - The label sits on its own row above both columns, so the top of the metrics column lines up exactly with the top of the hero number.
-- **Row 2 (charts):** two columns, `minmax(0, 1fr)` and 440px, 56px gap, 32px top padding. Left: the hours chart. Right: 1px `--night-line` left border, 40px left padding, the pay per hour chart.
-- **Row 3, below the fold:** the full content width. "Show the math" spans it. Below that, "Your price" (left) and "Your reply" (right) sit side by side in two equal columns with a 64px gap. Each row has a `--night-line` hairline above with 32px spacing.
-- Phone layout: not now. Skip until Kayla says to start it.
+**4 Their offer:** "Did they offer an amount?" with a **pill switch** (Yes / Not yet), next to "Amount they offered." The amount hides on "Not yet."
+Reason: a yes/no question looks like a switch.
 
-### Inputs (both screens)
-- **Steppers (screen 1):** 40px circles. Minus: 1.5px `--ink` outline. Plus: solid `--ink` with a white icon. Number between, 24px 700. Label above in 13px 500 `--muted`.
-- **Work rows:** group label (Production, 12px 700) with its total on the right in `--muted`. Each row: label left 15px, input right. Hairline `--line` under every row.
-- **Hours inputs:** no box. 88px wide, 2px `--ink` bottom border only, value 17px 600 right-aligned, "hrs" 12px `--muted` after it.
-- **Target hourly rate and project expenses:** two equal columns. 12px 500 `--muted` label, value 22px 700 with a 2px `--ink` bottom border.
-- **Offer choice:** two pills. Selected: solid `--ink`, white text. Unselected: 1.5px `--ink` outline. Real radio inputs. The offer field (half the column width) hides with "No offer yet".
-- **Focus on white:** 2px `--ink` outline, 3px offset. Inputs thicken their bottom border to 3px on focus.
-- **Errors:** 16px alert icon plus message in `--error`, 13px, under the row. Bottom border turns `--error`.
+**The button:** full width of the right column, 76px tall, square corners. Ink main area: "Check the offer" (19px 700 white) and the live line "11.5 hrs of work for $200" (12px `#8B9098`). Right end: a 76px lime square with an ink arrow. With no offer: "Get my estimate" and "11.5 hrs of work at $25/hr".
 
-## Dark side (results)
+## Screen 2: result (light, with the lime band)
 
-### Hero
-- "This offer pays" (or "Your estimate"), 14px `--night-2`, 24px space below.
-- The hero number. With an offer: `$17` in `--night-text`, `.39` in `--night-dim`, then "/hr". With no offer: `$310`, no unit, no dimmed part.
-- One sentence, 16px `--night-2`, max 34em, key numbers in 600 `--night-text`, the gap amount in 600 lime: "for **11.5 hours** of real work. That's **$7.61 an hour** under your $25 target." If the offer meets or beats the target: "for **11.5 hours** of real work. That meets your $25 target." (no lime).
-- **Metrics** (right column of the hero row, stacked): three items split by `--night-line` hairlines, 16px padding each. Label 12px `--night-mute`, value 30px 600.
-  - With an offer: "After expenses" $15.65/hr, "Your estimate" $310, "Over their offer" +$110 (or "Under their offer" -$20, or "Same as their offer" $0).
-  - No offer: "Total hours" 11.5 hrs, "Your time at $25/hr" $287.50, "Expenses" $20.00.
-- **Offer below expenses:** replace the sentence with a warning line: alert icon plus "This offer is $5.00 less than your expenses alone." in `--night-text`, with a 2px lime left border, 12px left padding.
-- Screen readers get the full hero value in one label ("$17.39 per hour"). Hide the split spans.
+Content max width 1440px, 64px side padding.
 
-### Chart 1: Your 11.5 hours, and where the money runs out
-Question it answers: Where does the time go, and which part does the offer actually pay for?
+**Header:** white, wordmark left, job name right (13px `--ink-2`).
 
-- Title left: "Your 11.5 hours, and where the money runs out" (the number is live). Right: "1 block = 30 min" in 12px `--night-mute`.
-- **Blocks:** each block is one unit of time, 56px tall, 4px gaps inside a group, 14px gaps between groups. Groups in order: Production, Communication, Revisions, Delivery.
-- On screen 2 the blocks are 64px tall.
-- Block fills, all with a 1.5px `--night-text` inside outline:
-  - Production: solid `--night-text`
-  - Communication: diagonal lines at 135°, `--night-text` on transparent, 1.5px lines every 5px
-  - Revisions: diagonal lines at 45°
-  - Delivery: dots, 1.1px, every 5px
-- **Unit size:** 30 min while total hours are 24 or fewer, 1 hr up to 48, 2 hrs beyond. Update the "1 block =" note to match. Block width fills the full width of the chart's column: (width minus gaps) divided by block count, min 8px, no maximum.
-- **Partial blocks:** a group whose hours aren't a whole number of units ends with a narrower block sized to the remainder.
-- **Where the money runs out** (only when there's an offer and it covers expenses): a 2px lime vertical line at the "hours the offer covers" position (7.2 hrs), from 34px above the blocks to their bottom. Label at the top, right of the line: "$200 runs out at 7.2 hrs", 13px 600 lime. Every block (or part of a block) after the line drops to 28% opacity. If the offer covers all the hours, no line, no dimming, and the label reads "$200 covers all 11.5 hrs" next to the title.
-- If the offer is below expenses, no line; every block is dimmed, and the label reads "$15 doesn't cover your expenses".
-- **Labels under each group:** the hours on one line ("6 hrs", 14px 600 `--night-text`) and the name below ("Production", 12px `--night-2`), left-aligned to the group. A label never reaches into the next group's space: if a name is wider than its blocks, the gap after that group widens just enough (at least 12px before the next group), and block widths are worked out after that.
-- **Summary sentence**, 14px `--night-2`, numbers in 600 `--night-text`: "**4.3 hours** go unpaid, and **5.5 hours** are work outside production." With no outside work: "All 11.5 hours are production." Drop the first clause when nothing is unpaid.
-- The blocks and the line are `aria-hidden`. A visually hidden list gives each group's hours, plus the summary sentence.
+**Control bar:** `--bar` background, 60px tall, hairline below, sticky under the header. Edit all details, item stepper, rounds stepper, offer, target. No helper sentence.
+Reason: live updates explain themselves.
 
-### Chart 2: Pay per hour
-Question it answers: How far is this offer from my target?
+**The lime band** (full bleed, `--lime`, 30px top, 26px bottom padding) holds the whole answer:
+1. **Hero row:** "This offer pays" (14px `--ink-2`). The hero number with small raised cents, and "/hr" next to it. To the right, aligned to the bottom of the number: the sentence (18px `--ink-2`, key numbers 600 ink): "for **11.5 hours** of real work. That's **$7.61 an hour** under your $25 target."
+   Reason: the number and its meaning read together, with no dead space.
+2. **The pay ruler, full width, right under the hero.** Ink axis line, `--ink-2` ticks every $5, labels 12px `--muted`, last label "$30/hr".
+   - This offer: 18px solid ink dot, label below "this offer $17.39" (13px 600, lime background behind the text so the axis line doesn't cross it).
+   - After expenses: 18px hollow dot (2px ink ring, lime fill), label above, left.
+   - Target: 4px x 32px ink bar, label above, right: "your target $25" (13px 700).
+   - The gap: 12px tall dashed ink band between the offer and the target, label above it: "$7.61/hr short" (14px 700).
+   - Labels never overlap. Keep the existing collision rules.
+   Reason: "$17.39" means nothing until you see "$25" next to it.
+3. **Metrics row:** "Your estimate" $310, "More than they offered" $110, "Hours the offer pays for" 7.2 of 11.5. Labels 12px `--muted`, values Archivo 30px. 1px `--ink-2` dividers at 30% opacity between items.
+   Reason: no repeated numbers, no confusing plus sign, and the third metric leads into the chart below.
 
-- Title: "Pay per hour".
-- **One horizontal ruler** in dollars per hour, from $0 to a rounded max a little above the largest value (steps: $5 up to $20, then $10, $25, $50; at most 6 ticks). 1px `--night-line` line, 6px `--night-tick` ticks, tick labels 12px `--night-mute` under the ticks, well below everything else. The last tick carries the unit ("$30/hr").
-- Points on the ruler:
-  - **Offer:** 15px solid `--night-text` dot. Label above the ruler, left of the dot: "offer $17.39/hr", 12px 600 `--night-text`.
-  - **After expenses:** 15px hollow dot, 2px `--night-text` ring, `--night` fill. Label below the ruler, centered under the dot: "after expenses $15.65/hr", 12px `--night-2`.
-  - **Target:** 4px by 25px lime bar. Label above the ruler, centered on the bar: "target $25/hr", 12px 600 lime.
-- **The gap:** between the offer dot and the target, a 9px tall dashed lime band (4px dashes, 3px gaps). Below the ruler, under its center: "-$7.61/hr", 13px 600 lime. Hide this label if the band is under 64px wide.
-- If the offer meets or beats the target: no gap band. Optional small label "+$X/hr" in `--night-2` below the ruler, between the target and the offer.
-- If the after-expenses value is below $0: put the hollow dot at $0 with the label "after expenses -$0.43/hr".
-- **Labels never overlap, for any values.** Above the ruler: offer and target. If they would come closer than 8px, they slide apart just enough, staying inside the ruler. Below the ruler: the gap amount and "+$X/hr" share a row the same way ("+$X/hr" hides first if the row can't fit). "after expenses" stays centered under its dot; if that would put it closer than 8px to another label below the ruler, it moves to a second row of its own, and the tick labels move down to stay below it.
-- `aria-hidden` on the ruler. Keep the summary sentence from CLAUDE.md under it in 14px `--night-2`.
+**Below the band, on white:**
+- **"Your 11.5 hours, and where the money runs out"**, full width.
+  - Blocks fill the full content width, 72px tall, 5px gaps, 26px between groups. Same textures as screen 1, 1.5px ink outline.
+  - "Runs out" marker: 2px ink line with the label "$200 runs out at 7.2 hrs" (13px 700). Blocks after it at 28% opacity.
+  - Labels under each group: hours (15px 600), name (12px `--ink-2`), and for the three forgotten groups a "Usually forgotten" tag. Labels never wrap into the next group.
+  - Keep the summary sentence and all edge cases from before.
+- Then Show the math (collapsed), then Your price and Your reply side by side, then the footer.
+- "Copy reply": rectangular, 4px radius, solid ink, white text, with a small lime square icon on the left.
+  Reason: lime text isn't allowed on white, and this keeps the button family consistent with "Check the offer."
 
-### How we calculated this (collapsed by default)
-- The right side should feel visual, not like a spreadsheet. So the receipt is hidden until asked for.
-- Use a real `<details>` element. The summary row reads "Show the math" with a small chevron, 15px 600 `--night-text`, and the estimate on the right in 15px 600 ("$310"). Open, it reads "Hide the math".
-- Inside: the same table as before. 14px, item `--night-2`, math `--night-mute`, amount `--night-text` right-aligned. Rows 8px padding, `--night-line` hairlines. Sum rows: 1px `--night-2` line above. Math cells carry units and the job's item ("2 hrs + 2 pages x 2 hrs", "2 hrs + 3 concepts x 1.5 hrs", "11.5 hrs x $25/hr"). "Rounded up to the nearest $5". Final row "Your estimate $310" 22px 700.
-- Under it, 12px `--night-mute`: "Taxes are not included. None of these numbers are take-home pay."
-- No lists or tables anywhere else on the black side. The two charts replace the old hours and per-hour lists completely.
+## The reveal (about 1 second, once)
 
-### Your price and your reply
-- Same input style as the light side, reversed: 2px `--night-text` bottom border, `--night-text` value, labels in `--night-mute`.
-- Section "6 Your price", field "Price to send".
-- "Use my estimate": text button, lime, underlined. It clears the price field, so the price follows the estimate again.
-- Reply textarea: transparent fill, 1px `--night-tick` border, 12px radius, 16px `--night-text`.
-- "Copy reply": pill, solid lime fill, `--night` text, 48px tall, 600. The only lime-filled control on the page.
-- "Update draft": pill, 1.5px `--night-text` outline, `--night-text` text.
-- **Focus on the dark side:** 2px lime outline, 3px offset.
+When "Check the offer" is pressed: screen 1 fades out (150ms), the lime band grows down from the top (250ms), the hero counts up (500ms), the blocks fill in left to right, and the runs-out line drops in last. Under `prefers-reduced-motion`, show the final state right away. Later changes use 180ms transitions only.
+Reason: one choreographed moment is memorable. Repeating it would be annoying.
 
-## Motion
-- Block opacity and positions, the "runs out" line, the dots, and the gap band move with 180ms ease-out when values change. Nothing animates on load. All of it off under `prefers-reduced-motion`.
+## Details decided while building v4
 
-### The reveal (pressing "Check the offer")
-Plays once per press of the button, about 1 second in all. Not on load, not on the browser's Back or Forward, and never replayed when values change on screen 2 (those use the normal 180ms transitions).
-1. **Fade (200ms):** screen 1 fades out as the page and header turn black (100ms), then screen 2 fades in (100ms).
-2. **Hero count-up (500ms, ease-out cubic):** the hero number counts from $0 to its value. Screen readers get the final value right away from the hidden label; only the visible digits move. If a value changes during the count, the real value takes over.
-3. **Blocks fill in:** left to right, each growing up from its base (220ms), starting 150ms after screen 2 appears, staggered 18ms apart (less for big jobs, so the fill takes at most 400ms).
-4. **The lime line drops in last:** the "runs out" line and its label fade in while dropping 12px (200ms), right after the last block.
-- Under `prefers-reduced-motion`, none of this plays: the final state shows immediately.
+- **Ticks every $5** while that's 10 steps or fewer; above that, the ruler keeps its own steps ($10, $25, $50).
+  Reason: a $200/hr offer would otherwise get 40 tick labels.
+- **"this offer" beats tick labels.** A tick label closer than 8px to "this offer $17.39" is hidden.
+  Reason: both sit under the line, and the offer matters more than the scale.
+- **"after expenses" moves up to a second row** when it would come closer than 8px to another label above the line.
+  Reason: the existing collision rule, moved to the new label positions.
+- **Above the target:** no gap band; "$9.78/hr over" sits between the target and the offer, and is dropped first if the row is full.
+- **Metric variants:** "Less than they offered" or "Same as their offer" when the estimate isn't higher. "Hours the offer pays for" shows "0 of 11.5" below expenses and never more than the total. With no offer: Total hours, Your time at $25/hr, Expenses (no ruler).
+  Reason: no plus or minus signs; the label says which way it goes.
+- **Empty and error states** sit inside the band, in place of the hero.
+  Reason: the band always holds the answer, or what's missing for it.
+- **The pay ruler's summary sentence is screen-reader only.** The hero sentence right above it says the same thing visibly.
+  Reason: no repeated sentences on screen.
+- **No total row in 2 The work.** The tally box shows the total.
+  Reason: no repeated numbers; the tally is in view while you edit.
+- **Mini blocks** use the same block size as the chart (30 min, or 1 or 2 hrs for big jobs, and the hint says which). A row shows at most 60 and wraps within 180px.
+  Reason: very large numbers can't push the input out of its row.
 
 ## Don'ts
-- No cards, tiles, rounded panels, or shadows. The only rounded things are pills, circles, and the reply box.
-- No gradients except the chart textures.
-- No lime directly on white.
-- No rounded pill for the screen 1 button. It's a square-cornered black block with the lime arrow square.
-- No pies, donuts, sparklines, or decorative charts.
-- No light font weights for numbers. Large numbers are 600 or 700.
+
+- No black page backgrounds. No lime text or lines on white.
+- No boxes except the tally box. No shadows. No gradients except the textures.
+- Pills only for on/off switches. Tabs for picking a job. Rectangles for actions.
+- No gray, full-size cents.
+- Phone layout: not now. Skip until Kayla says to start it.
