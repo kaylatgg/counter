@@ -303,3 +303,24 @@ Counts (pages, rounds) and everything else carry their units.
 3. Units: add "/hr" to the pay chart labels and "hrs" to the receipt math?
 4. Spacing scale (2.2) and a max width for screen 2 on wide screens (2.3)?
 5. Type table additions (2.1)?
+
+---
+
+## Decisions applied (October 8, 2026)
+
+- **Terms:**
+  - "Your estimate" for the calculated price.
+  - "Your price" for the price the student sends (section "6 Your price", field "Price to send").
+  - "Target hourly rate" as a field label and "target" in sentences. The bar's "Rate" is now "Target".
+  - "Production" stays, and the chart summary says "outside production".
+  - "hours" in sentences, "hrs" next to numbers. Chart labels say "6 hrs".
+  - "Scope" is removed from the interface.
+- **Rewrites:** every other suggestion in 3.1 was applied as written. The new error messages for fields that aren't hours ("Enter pages. Use 0 if there are none.") follow the same pattern as the approved hours message.
+- **Units:** the ruler labels and the last tick now show "/hr". The receipt math shows "hrs" and "/hr".
+- **Type table:** the sizes in 2.1 were added to `DESIGN.md`. The interface didn't change.
+- **Spacing:**
+  - The scale 4, 8, 12, 16, 24, 28, 32, 40, 56, 64 is now in `DESIGN.md`, and the layout spacing snaps to it. The column gap went from 96 to 64. The hero row's top went from 36 to 40, the charts row's from 30 to 32, and the lower rows' from 34 to 32.
+  - Chart geometry and 1 to 3px borders are listed as exceptions.
+- **Wide screens:** screen 2 is capped at 1440px and centered.
+- **Line length:** the cap is now 36em. The longest line on either screen is 72 characters, at 1280 and 1920.
+- **Pay ruler:** "after expenses" moves to a second row when it would come closer than 8px to another label below the ruler. This is tested in `calc.test.js`.

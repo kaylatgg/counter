@@ -179,11 +179,11 @@ function renderHero(r) {
 
     let comparison;
     if (r.offer.gap > 0) {
-      comparison = ["Above the offer", "+" + calc.formatPrice(r.offer.gap)];
+      comparison = ["Over their offer", "+" + calc.formatPrice(r.offer.gap)];
     } else if (r.offer.gap < 0) {
-      comparison = ["Below the offer", "-" + calc.formatPrice(-r.offer.gap)];
+      comparison = ["Under their offer", "-" + calc.formatPrice(-r.offer.gap)];
     } else {
-      comparison = ["Matches the offer", "$0"];
+      comparison = ["Same as their offer", "$0"];
     }
     renderMetrics([
       ["After expenses", calc.formatMoney(r.offer.hourlyAfter) + "/hr"],
@@ -192,13 +192,13 @@ function renderHero(r) {
     ]);
   } else {
     const estimate = calc.formatWholeMoney(r.estimate);
-    byId("hero-label").textContent = "Estimated project price";
+    byId("hero-label").textContent = "Your estimate";
     byId("hero-whole").textContent = estimate;
     byId("hero-cents").textContent = "";
     byId("hero-unit").textContent = "";
     byId("hero-spoken").textContent = estimate;
 
-    const parts = [[calc.formatHours(r.hours.total)], " at your ",
+    const parts = [[hoursInWords(r.hours.total)], " at your ",
       [calc.formatMoney(r.rate) + "/hr"], " target, plus ",
       [calc.formatMoney(r.expenses)], " in expenses."];
     if (r.rounding > 0) {
@@ -209,8 +209,8 @@ function renderHero(r) {
     show(warning, false);
 
     renderMetrics([
-      ["Total hours", calc.formatNumber(r.hours.total)],
-      ["Your time", calc.formatMoney(r.timeCost)],
+      ["Total hours", calc.formatHours(r.hours.total)],
+      ["Your time at " + calc.formatPrice(r.rate) + "/hr", calc.formatMoney(r.timeCost)],
       ["Expenses", calc.formatMoney(r.expenses)],
     ]);
   }
@@ -282,7 +282,7 @@ function renderHoursChart(r) {
   }
   if (r.outsideProduction > 0) {
     parts.push([hoursInWords(r.outsideProduction)],
-      isOne(r.outsideProduction) ? " is work outside the design itself." : " are work outside the design itself.");
+      isOne(r.outsideProduction) ? " is work outside production." : " are work outside production.");
   } else {
     parts.push(parts.length ? "all " : "All ", [hoursInWords(total)], " are production.");
   }
@@ -317,7 +317,7 @@ function layoutBlocks(r) {
       element.innerHTML = '<div class="block-row"></div><p class="group-label"><b></b> <span></span></p>';
     }
     container.appendChild(element);
-    element.querySelector(".group-label b").textContent = calc.formatNumber(r.hours[group]) + "h";
+    element.querySelector(".group-label b").textContent = calc.formatHours(r.hours[group]);
     element.querySelector(".group-label span").textContent = GROUP_NAMES[group];
     return element;
   });
@@ -429,11 +429,11 @@ function renderOfferChart(r) {
   items[2].textContent = "Your target rate: " + calc.formatMoney(r.rate) + "/hr";
 
   let summary = offer.meetsTarget
-    ? "Before expenses, the offer meets your target rate."
+    ? "Before expenses, the offer meets your target."
     : "Before expenses, the offer pays " + calc.formatMoney(offer.shortPerHour) +
       " an hour less than your target.";
   if (offer.hourlyAfter < 0) {
-    summary += " After expenses, it pays less than $0 an hour, so you would lose money on this job.";
+    summary += " After expenses, you would lose money on this job.";
   }
   byId("offer-summary").textContent = summary;
 
@@ -486,7 +486,9 @@ function layoutRuler(r) {
   ticks.forEach(function (tick, i) {
     tick.style.left = x(scale.ticks[i]) + "px";
     tick.className = "tick" + (i === 0 ? " first" : "") + (i === ticks.length - 1 ? " last" : "");
-    tick.querySelector("span").textContent = calc.formatWholeMoney(scale.ticks[i]);
+    // The last tick carries the unit for the whole ruler.
+    tick.querySelector("span").textContent = calc.formatWholeMoney(scale.ticks[i]) +
+      (i === ticks.length - 1 ? "/hr" : "");
   });
 
   const offerX = x(offer.hourlyBefore);
@@ -517,9 +519,9 @@ function layoutRuler(r) {
   const targetLabel = byId("target-label");
   const offerLabel = byId("offer-label");
   const afterLabel = byId("after-label");
-  targetLabel.textContent = "target " + calc.formatPrice(r.rate);
-  offerLabel.textContent = "offer " + calc.formatMoney(offer.hourlyBefore);
-  afterLabel.textContent = "after expenses " + calc.formatMoney(offer.hourlyAfter);
+  targetLabel.textContent = "target " + calc.formatPrice(r.rate) + "/hr";
+  offerLabel.textContent = "offer " + calc.formatMoney(offer.hourlyBefore) + "/hr";
+  afterLabel.textContent = "after expenses " + calc.formatMoney(offer.hourlyAfter) + "/hr";
 
   // Above the ruler: the offer label left of its dot, the target label centered on its mark.
   placeRow([
@@ -527,13 +529,26 @@ function layoutRuler(r) {
     { label: targetLabel, left: function (w) { return targetX - w / 2; } },
   ], width);
 
-  // Below the ruler: "after expenses" under its dot, the gap amount under the band's
-  // center, and the optional "+$X/hr" between the target and the offer.
+  // Below the ruler: the gap amount under the band's center, and the optional
+  // "+$X/hr" between the target and the offer.
   placeRow([
-    { label: afterLabel, left: function (w) { return afterX - w / 2; } },
-    { label: gapLabel, optional: true, left: function (w) { return offerX + bandWidth / 2 - w / 2; } },
+    { label: gapLabel, left: function (w) { return offerX + bandWidth / 2 - w / 2; } },
     { label: overLabel, optional: true, left: function (w) { return (targetX + offerX) / 2 - w / 2; } },
   ], width);
+
+  // "after expenses" sits under its dot. If that's closer than 8px to another label
+  // below the ruler, it moves to a second row, and the tick labels move down with it.
+  const afterWidth = afterLabel.offsetWidth;
+  const afterLeft = Math.max(0, Math.min(width - afterWidth, afterX - afterWidth / 2));
+  const others = [gapLabel, overLabel].filter(function (label) { return !label.hidden; })
+    .map(function (label) {
+      const left = parseFloat(label.style.left) || 0;
+      return { left: left, right: left + label.offsetWidth };
+    });
+  const secondRow = calc.isCrowded({ left: afterLeft, right: afterLeft + afterWidth }, others, LABEL_GAP);
+  afterLabel.style.left = afterLeft + "px";
+  afterLabel.classList.toggle("second-row", secondRow);
+  ruler.classList.toggle("has-second-row", secondRow);
 }
 
 // "1 page", "2 pages"
@@ -544,22 +559,22 @@ function countOf(amount, singular, plural) {
 function renderReceipt(r, values) {
   const rows = [
     ["Production",
-      calc.formatNumber(values.conceptHours) + " + " + countOf(values.pages, "page", "pages") +
-        " x " + calc.formatNumber(values.pageHours),
+      calc.formatHours(values.conceptHours) + " + " + countOf(values.pages, "page", "pages") +
+        " x " + calc.formatHours(values.pageHours),
       calc.formatHours(r.hours.production)],
     ["Communication", "", calc.formatHours(r.hours.communication)],
     ["Revisions",
-      countOf(values.rounds, "round", "rounds") + " x " + calc.formatNumber(values.roundHours),
+      countOf(values.rounds, "round", "rounds") + " x " + calc.formatHours(values.roundHours),
       calc.formatHours(r.hours.revisions)],
     ["Delivery", "", calc.formatHours(r.hours.delivery)],
     ["Total hours", "", calc.formatHours(r.hours.total), "sum"],
     ["Your time",
-      calc.formatNumber(r.hours.total) + " x " + calc.formatMoney(r.rate),
+      calc.formatHours(r.hours.total) + " x " + calc.formatPrice(r.rate) + "/hr",
       calc.formatMoney(r.timeCost)],
     ["Expenses", "", calc.formatMoney(r.expenses)],
     ["Subtotal", "", calc.formatMoney(r.subtotal), "sum"],
-    ["Rounded up to nearest $5", "", "+" + calc.formatMoney(r.rounding)],
-    ["Estimated project price", "", calc.formatWholeMoney(r.estimate), "total"],
+    ["Rounded up to the nearest $5", "", "+" + calc.formatMoney(r.rounding)],
+    ["Your estimate", "", calc.formatWholeMoney(r.estimate), "total"],
   ];
 
   byId("math-estimate").textContent = calc.formatWholeMoney(r.estimate);
@@ -654,7 +669,7 @@ function renderTotals(hours) {
   byId("total-hours").textContent = hours ? calc.formatHours(hours.total) : "";
 }
 
-// "11.5 hrs of work against $200", or "11.5 hrs of work at $25/hr" with no offer.
+// "11.5 hrs of work for $200", or "11.5 hrs of work at $25/hr" with no offer.
 function renderCheckButton(values, hours) {
   const preview = byId("check-preview");
   const hasOffer = values.hasOffer;
@@ -664,7 +679,7 @@ function renderCheckButton(values, hours) {
     return;
   }
   preview.textContent = calc.formatHours(hours.total) + " of work " + (hasOffer
-    ? "against " + calc.formatPrice(values.offer)
+    ? "for " + calc.formatPrice(values.offer)
     : "at " + calc.formatPrice(values.rate) + "/hr");
   show(preview, true);
 }

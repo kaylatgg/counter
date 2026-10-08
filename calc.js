@@ -1,19 +1,20 @@
 // Counter math. Pure functions only: no page code here.
 // Works in the browser (as globals) and in Node (through module.exports).
 
-// Each number field: the name used in messages, and whether it must be a whole number.
+// Each number field: how messages name it, whether it holds hours, and
+// whether it must be a whole number.
 const FIELDS = {
-  pages: { label: "Pages", whole: true },
-  rounds: { label: "Rounds of changes", whole: true },
-  conceptHours: { label: "Concepts and sketches" },
-  pageHours: { label: "Layout per page" },
-  communicationHours: { label: "Emails, calls, and meetings" },
-  roundHours: { label: "Hours per round of changes" },
-  deliveryHours: { label: "File prep and export" },
-  rate: { label: "Target hourly rate" },
-  expenses: { label: "Project expenses" },
-  offer: { label: "Amount they offered" },
-  quote: { label: "Price you'll send" },
+  pages: { name: "pages", whole: true },
+  rounds: { name: "rounds of changes", whole: true },
+  conceptHours: { name: "concepts and sketches", hours: true },
+  pageHours: { name: "layout per page", hours: true },
+  communicationHours: { name: "emails, calls, and meetings", hours: true },
+  roundHours: { name: "each round of changes", hours: true },
+  deliveryHours: { name: "file prep and export", hours: true },
+  rate: { name: "your target hourly rate" },
+  expenses: { name: "project expenses" },
+  offer: { name: "the amount they offered" },
+  quote: { name: "your price" },
 };
 
 // The fields the hours depend on. The page can show group totals
@@ -27,8 +28,8 @@ const HOURS_FIELDS = [
 // thousands separators ("1,000" or "12,500.50"), so "1,5" isn't misread as 15.
 const NUMBER_PATTERN = /^((\d{1,3}(,\d{3})+|\d+)(\.\d*)?|\.\d+)$/;
 
-function lowerFirst(text) {
-  return text.charAt(0).toLowerCase() + text.slice(1);
+function upperFirst(text) {
+  return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
 function isBlank(raw) {
@@ -60,14 +61,14 @@ function parseNumber(raw, field) {
   if (isBlank(raw)) return { value: null };
   const cleaned = cleanNumberText(raw);
   if (!NUMBER_PATTERN.test(cleaned.text)) {
-    return { error: field.label + " needs to be a number.", kind: "notNumber" };
+    return { error: "Use a number for " + field.name + ".", kind: "notNumber" };
   }
   const size = Number(cleaned.text.replace(/,/g, ""));
   if (cleaned.negative && size > 0) {
-    return { error: field.label + " can't be negative.", kind: "negative" };
+    return { error: upperFirst(field.name) + " can't be less than 0.", kind: "negative" };
   }
   if (field.whole && !Number.isInteger(size)) {
-    return { error: field.label + " needs to be a whole number.", kind: "notWhole" };
+    return { error: "Use a whole number for " + field.name + ".", kind: "notWhole" };
   }
   return { value: size };
 }
@@ -84,7 +85,9 @@ function validateInputs(raw) {
     if (result.error) {
       errors[name] = result.error;
     } else if (result.value === null) {
-      errors[name] = "Enter " + lowerFirst(FIELDS[name].label) + ". Use 0 if there is none.";
+      const field = FIELDS[name];
+      errors[name] = (field.hours ? "Enter the hours for " : "Enter ") + field.name +
+        ". Use 0 if there are none.";
     } else {
       values[name] = result.value;
     }
@@ -308,6 +311,14 @@ function spreadLabels(items, width, gap) {
   return { lefts: lefts, fits: needed <= width };
 }
 
+// True when a label box comes closer than `gap` px to any of the other boxes.
+// Boxes are { left, right }.
+function isCrowded(box, others, gap) {
+  return others.some(function (other) {
+    return box.left < other.right + gap && other.left < box.right + gap;
+  });
+}
+
 // Display helpers. These are the only places numbers get rounded.
 
 const centsFormat = new Intl.NumberFormat("en-US", {
@@ -363,6 +374,7 @@ const calc = {
   splitIntoBlocks,
   rulerScale,
   spreadLabels,
+  isCrowded,
   formatMoney,
   formatWholeMoney,
   formatNumber,

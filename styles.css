@@ -30,7 +30,7 @@
 
   --font: "Geist", system-ui, sans-serif;
   /* Longest comfortable line: about 75 characters. */
-  --measure: 62ch;
+  --measure: 36em;
 }
 
 /* Base */
@@ -131,7 +131,7 @@ h3 {
   top: 12px;
   left: 12px;
   z-index: 20;
-  padding: 10px 16px;
+  padding: 12px 16px;
   background: var(--ink);
   color: var(--paper);
   font-weight: 600;
@@ -152,13 +152,13 @@ h3 {
   display: flex;
   align-items: center;
   height: 56px;
-  padding: 0 20px;
+  padding: 0 24px;
   background: var(--paper);
   border-bottom: 1px solid var(--line);
 }
 
-/* Screen 1: the same 1312px content width as the page, so the wordmark lines up
-   with the headline. Screen 2: full width, like the results. */
+/* The same 1312px content width as both screens, so the wordmark lines up
+   with the headline on screen 1 and the hero on screen 2. */
 .topbar-inner {
   display: flex;
   align-items: baseline;
@@ -166,10 +166,6 @@ h3 {
   width: 100%;
   max-width: 1312px;
   margin: 0 auto;
-}
-
-.on-results .topbar-inner {
-  max-width: none;
 }
 
 .wordmark {
@@ -205,8 +201,8 @@ h3 {
 .site-footer {
   max-width: 1440px;
   margin: 0 auto;
-  padding-left: 20px;
-  padding-right: 20px;
+  padding-left: 24px;
+  padding-right: 24px;
 }
 
 .screen-inputs {
@@ -220,7 +216,7 @@ h3 {
   flex-wrap: wrap;
   align-items: flex-end;
   justify-content: space-between;
-  gap: 24px 48px;
+  gap: 24px 56px;
   padding-bottom: 40px;
   border-bottom: 1px solid var(--line);
 }
@@ -250,7 +246,7 @@ h1:focus {
 }
 
 .example-note {
-  margin-top: 6px;
+  margin-top: 8px;
   font-size: 14px;
   color: var(--muted);
 }
@@ -259,7 +255,7 @@ h1:focus {
 .inputs-columns {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: 0 96px;
+  gap: 0 64px;
   padding-top: 28px;
 }
 
@@ -287,7 +283,7 @@ legend {
 .section > legend {
   float: left;
   width: 100%;
-  margin-bottom: 18px;
+  margin-bottom: 16px;
   font-size: 17px;
   font-weight: 600;
   letter-spacing: -0.01em;
@@ -298,7 +294,7 @@ legend {
 }
 
 .step {
-  margin-right: 6px;
+  margin-right: 8px;
   color: var(--muted);
   font-weight: 500;
 }
@@ -313,7 +309,7 @@ legend {
 
 /* "Example hours…" under 2 The work. */
 .section-hint {
-  margin: 0 0 22px;
+  margin: 0 0 24px;
 }
 
 /* 1 The job */
@@ -321,13 +317,13 @@ legend {
 .job-name {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   font-size: 15px;
   font-weight: 600;
 }
 
 .tag {
-  padding: 2px 9px;
+  padding: 2px 8px;
   border: 1px solid var(--line);
   border-radius: 999px;
   font-size: 12px;
@@ -338,13 +334,13 @@ legend {
 .steppers {
   display: flex;
   flex-wrap: wrap;
-  gap: 16px 36px;
-  margin-top: 22px;
+  gap: 16px 40px;
+  margin-top: 24px;
 }
 
 .stepper-field > label {
   display: block;
-  margin-bottom: 6px;
+  margin-bottom: 8px;
   font-size: 13px;
   font-weight: 500;
   color: var(--muted);
@@ -415,14 +411,14 @@ legend {
   border-bottom-color: var(--error);
 }
 
-#scope-hint {
+#steppers-hint {
   margin-top: 12px;
 }
 
 /* 2 The work */
 
 .work-group {
-  margin-top: 22px;
+  margin-top: 24px;
 }
 
 .work-group:first-of-type {
@@ -451,7 +447,7 @@ legend {
   grid-template-columns: 1fr 88px;
   column-gap: 16px;
   align-items: baseline;
-  padding: 10px 0 9px;
+  padding: 12px 0 8px;
   border-bottom: 1px solid var(--line);
 }
 
@@ -469,7 +465,7 @@ legend {
   display: flex;
   align-items: baseline;
   justify-content: flex-end;
-  gap: 6px;
+  gap: 8px;
   border-bottom: 2px solid var(--ink);
 }
 
@@ -524,7 +520,7 @@ legend {
 .field-row .unit-input {
   display: flex;
   align-items: baseline;
-  margin-top: 6px;
+  margin-top: 8px;
   border-bottom: 2px solid var(--ink);
   font-size: 22px;
   font-weight: 700;
@@ -555,7 +551,7 @@ legend {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  margin-bottom: 22px;
+  margin-bottom: 24px;
 }
 
 .radio-choice input {
@@ -570,7 +566,7 @@ legend {
   display: inline-flex;
   align-items: center;
   min-height: 44px;
-  padding: 0 18px;
+  padding: 0 16px;
   border: 1.5px solid var(--ink);
   border-radius: 999px;
   font-size: 14px;
@@ -593,7 +589,7 @@ legend {
 .error {
   display: flex;
   align-items: flex-start;
-  gap: 6px;
+  gap: 8px;
   margin-top: 8px;
   font-size: 13px;
   font-weight: 600;
@@ -611,7 +607,7 @@ legend {
   align-items: baseline;
   justify-content: space-between;
   margin-top: 16px;
-  padding-top: 14px;
+  padding-top: 16px;
   border-top: 2px solid var(--ink);
   font-size: 15px;
   font-weight: 700;
@@ -685,13 +681,9 @@ legend {
 
 .site-footer p {
   max-width: var(--measure);
-  padding-top: 20px;
+  padding-top: 24px;
   font-size: 12px;
   color: var(--muted);
-}
-
-.on-results .site-footer {
-  max-width: none;
 }
 
 .on-results .site-footer::before {
@@ -719,8 +711,11 @@ legend {
   outline-color: var(--lime);
 }
 
+/* Screen 2 content is capped at 1440px wide and centered, like screen 1. */
 .results-body {
-  padding: 0 20px 64px;
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 0 24px 64px;
 }
 
 .screen-results h3,
@@ -736,7 +731,7 @@ legend {
 }
 
 .empty-state {
-  padding-top: 36px;
+  padding-top: 40px;
   font-size: 16px;
   color: var(--night-2);
 }
@@ -755,7 +750,7 @@ legend {
   align-items: center;
   gap: 8px 28px;
   min-height: 64px;
-  padding: 8px 20px;
+  padding: 8px 24px;
   background: var(--night-bar);
   border-bottom: 1px solid var(--night-line);
 }
@@ -763,7 +758,7 @@ legend {
 .back-button {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   min-height: 44px;
   padding: 0;
   border: 0;
@@ -776,7 +771,7 @@ legend {
 .bar-divider {
   align-self: stretch;
   width: 1px;
-  margin: 6px 0;
+  margin: 8px 0;
   background: var(--night-line);
 }
 
@@ -793,7 +788,7 @@ legend {
   flex-basis: 100%;
   display: flex;
   align-items: flex-start;
-  gap: 6px;
+  gap: 8px;
   margin-top: 4px;
   font-size: 12px;
   font-weight: 500;
@@ -855,7 +850,7 @@ legend {
 
 .bar-stepper input {
   width: 2.2ch;
-  padding: 0 6px;
+  padding: 0 8px;
   border: 0;
   background: transparent;
   color: var(--night-text);
@@ -918,7 +913,7 @@ legend {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   gap: 32px 64px;
-  padding: 36px 0 28px;
+  padding: 40px 0 28px;
   border-bottom: 1px solid var(--night-line);
 }
 
@@ -931,7 +926,7 @@ legend {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   gap: 40px 56px;
-  padding-top: 30px;
+  padding-top: 32px;
 }
 
 /* Row 3: Show the math, quote, and reply, 760px wide, left-aligned. */
@@ -941,8 +936,8 @@ legend {
 
 .results-more > .receipt,
 .results-more > .result-block {
-  margin-top: 34px;
-  padding-top: 34px;
+  margin-top: 32px;
+  padding-top: 32px;
   border-top: 1px solid var(--night-line);
 }
 
@@ -951,7 +946,7 @@ legend {
 .hero-label {
   font-size: 14px;
   color: var(--night-2);
-  margin-bottom: 22px;
+  margin-bottom: 24px;
 }
 
 .hero-number {
@@ -966,7 +961,7 @@ legend {
 }
 
 .hero-unit {
-  margin-left: 10px;
+  margin-left: 12px;
   font-size: 28px;
   font-weight: 600;
   letter-spacing: -0.01em;
@@ -1011,7 +1006,7 @@ legend {
 }
 
 .metrics > div {
-  padding: 18px 0;
+  padding: 16px 0;
   border-top: 1px solid var(--night-line);
 }
 
@@ -1031,7 +1026,7 @@ legend {
 }
 
 .metrics dd {
-  margin: 6px 0 0;
+  margin: 8px 0 0;
   font-size: 30px;
   font-weight: 600;
   letter-spacing: -0.02em;
@@ -1046,7 +1041,7 @@ legend {
 }
 
 .chart-summary {
-  margin-top: 22px;
+  margin-top: 24px;
   max-width: var(--measure);
   font-size: 14px;
   color: var(--night-2);
@@ -1081,7 +1076,7 @@ legend {
   align-items: flex-start;
   column-gap: 14px;
   row-gap: 80px;
-  margin-top: 14px;
+  margin-top: 16px;
   padding-top: 34px;
   /* Room for the two-line group labels. */
   padding-bottom: 44px;
@@ -1185,7 +1180,7 @@ legend {
 .ruler {
   position: relative;
   height: 96px;
-  margin-top: 30px;
+  margin-top: 32px;
 }
 
 .ruler-line {
@@ -1289,6 +1284,20 @@ legend {
   top: 52px;
 }
 
+/* "after expenses" on its own second row when it would crowd another label.
+   The ruler grows and the tick labels move below it. */
+.after-label.second-row {
+  top: 72px;
+}
+
+.ruler.has-second-row {
+  height: 116px;
+}
+
+.ruler.has-second-row .tick span {
+  top: 56px;
+}
+
 .gap-label {
   font-size: 13px;
   font-weight: 600;
@@ -1364,7 +1373,7 @@ legend {
 }
 
 .math table {
-  margin-top: 10px;
+  margin-top: 12px;
 }
 
 .receipt table {
@@ -1413,7 +1422,7 @@ legend {
 
 .receipt tr.total > * {
   white-space: nowrap;
-  padding-top: 14px;
+  padding-top: 16px;
   border-bottom: 0;
   font-size: 22px;
   font-weight: 700;
@@ -1422,7 +1431,7 @@ legend {
 }
 
 .receipt-note {
-  margin-top: 14px;
+  margin-top: 16px;
   font-size: 12px;
   color: var(--night-mute);
 }
@@ -1432,7 +1441,7 @@ legend {
 .result-block > legend {
   float: left;
   width: 100%;
-  margin-bottom: 18px;
+  margin-bottom: 16px;
 }
 
 .result-block .field > label {
@@ -1443,7 +1452,7 @@ legend {
   display: flex;
   align-items: baseline;
   max-width: 220px;
-  margin-top: 6px;
+  margin-top: 8px;
   border-bottom: 2px solid var(--night-text);
   font-size: 22px;
   font-weight: 700;
@@ -1490,7 +1499,7 @@ legend {
 }
 
 #quote-result {
-  margin-top: 14px;
+  margin-top: 16px;
   font-size: 14px;
   color: var(--night-2);
 }
@@ -1500,7 +1509,7 @@ textarea {
   width: 100%;
   max-width: var(--measure);
   margin-top: 8px;
-  padding: 14px 16px;
+  padding: 16px 16px;
   border: 1px solid var(--night-tick);
   border-radius: 12px;
   background: transparent;
@@ -1623,6 +1632,13 @@ textarea {
   .results-body {
     padding-left: 64px;
     padding-right: 64px;
+  }
+
+  /* The bar's background runs edge to edge; its content lines up with the
+     centered 1312px column below it. */
+  .control-bar {
+    padding-left: max(64px, calc((100% - 1312px) / 2));
+    padding-right: max(64px, calc((100% - 1312px) / 2));
   }
 
   .hero-row {

@@ -263,31 +263,42 @@ test("negative rate", function () {
 
 test("rate that isn't a number keeps the number message", function () {
   assert.deepStrictEqual(errorsFor({ rate: "abc" }), {
-    rate: "Target hourly rate needs to be a number.",
+    rate: "Use a number for your target hourly rate.",
   });
 });
 
 test("negative hours", function () {
   assert.deepStrictEqual(errorsFor({ deliveryHours: "-1" }), {
-    deliveryHours: "File prep and export can't be negative.",
+    deliveryHours: "File prep and export can't be less than 0.",
   });
 });
 
 test("text in a number field", function () {
   assert.deepStrictEqual(errorsFor({ expenses: "twenty" }), {
-    expenses: "Project expenses needs to be a number.",
+    expenses: "Use a number for project expenses.",
   });
 });
 
 test("1.5 pages", function () {
   assert.deepStrictEqual(errorsFor({ pages: "1.5" }), {
-    pages: "Pages needs to be a whole number.",
+    pages: "Use a whole number for pages.",
   });
 });
 
 test("blank required field", function () {
   assert.deepStrictEqual(errorsFor({ communicationHours: "" }), {
-    communicationHours: "Enter emails, calls, and meetings. Use 0 if there is none.",
+    communicationHours: "Enter the hours for emails, calls, and meetings. Use 0 if there are none.",
+  });
+});
+
+test("messages name each field in plain words", function () {
+  assert.deepStrictEqual(errorsFor({ pages: "", roundHours: "", quote: "-5" }), {
+    pages: "Enter pages. Use 0 if there are none.",
+    roundHours: "Enter the hours for each round of changes. Use 0 if there are none.",
+    quote: "Your price can't be less than 0.",
+  });
+  assert.deepStrictEqual(errorsFor({ rounds: "2.5" }), {
+    rounds: "Use a whole number for rounds of changes.",
   });
 });
 
@@ -317,7 +328,7 @@ test("commas in the wrong place are not a number", function () {
   ["1,5", "1,00", "10,00,000", ",100", "1,000,"].forEach(function (text) {
     assert.strictEqual(
       calc.parseNumber(text, calc.FIELDS.offer).error,
-      "Amount they offered needs to be a number.",
+      "Use a number for the amount they offered.",
       text + " should not be accepted"
     );
   });
@@ -327,15 +338,15 @@ test("other text is still not a number", function () {
   ["$", "-", "200 dollars", "USD 200", "$$200", "2 00", "1e3", "0x10"].forEach(function (text) {
     assert.strictEqual(
       calc.parseNumber(text, calc.FIELDS.offer).error,
-      "Amount they offered needs to be a number.",
+      "Use a number for the amount they offered.",
       text + " should not be accepted"
     );
   });
 });
 
 test("\"-$5\" and \"$-5\" are both negative", function () {
-  assert.strictEqual(calc.parseNumber("-$5", calc.FIELDS.expenses).error, "Project expenses can't be negative.");
-  assert.strictEqual(calc.parseNumber("$-5", calc.FIELDS.expenses).error, "Project expenses can't be negative.");
+  assert.strictEqual(calc.parseNumber("-$5", calc.FIELDS.expenses).error, "Project expenses can't be less than 0.");
+  assert.strictEqual(calc.parseNumber("$-5", calc.FIELDS.expenses).error, "Project expenses can't be less than 0.");
 });
 
 test("\"1,000\" pages is still a whole number", function () {
@@ -363,7 +374,7 @@ test("a blank quote uses the estimate: $26.96/hr before, $25.22/hr after", funct
 
 test("a quote that isn't a number is an error", function () {
   assert.deepStrictEqual(errorsFor({ quote: "lots" }), {
-    quote: "Price you'll send needs to be a number.",
+    quote: "Use a number for your price.",
   });
 });
 
@@ -512,6 +523,20 @@ test("2,000 random rows of labels never overlap", function () {
     }
     checkSpread(items, width, 8);
   }
+});
+
+test("\"after expenses\" too close to the gap label needs its own row", function () {
+  // The example on a 400px ruler: "after expenses $15.65/hr" centered under
+  // $15.65 runs into "-$7.61/hr" centered under the gap band.
+  const after = { left: 148, right: 278 };
+  const gapLabel = { left: 262, right: 330 };
+  assert.strictEqual(calc.isCrowded(after, [gapLabel], 8), true);
+});
+
+test("labels exactly 8px apart are fine, 7px apart are crowded", function () {
+  assert.strictEqual(calc.isCrowded({ left: 0, right: 100 }, [{ left: 108, right: 150 }], 8), false);
+  assert.strictEqual(calc.isCrowded({ left: 0, right: 100 }, [{ left: 107, right: 150 }], 8), true);
+  assert.strictEqual(calc.isCrowded({ left: 0, right: 100 }, [], 8), false);
 });
 
 test("says when labels can't all fit", function () {
