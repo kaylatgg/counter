@@ -312,23 +312,45 @@ legend {
   margin: 0 0 24px;
 }
 
-/* 1 The job */
+/* 1 The job: five job pills, then the steppers. */
 
-.job-name {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  font-size: 15px;
+.pill-choice.job-choice {
+  margin-bottom: 0;
+}
+
+/* "Replace your numbers with the Logo example?" under the pills. */
+.job-replace {
+  margin-top: 16px;
+  font-size: 14px;
   font-weight: 600;
 }
 
-.tag {
-  padding: 2px 8px;
-  border: 1px solid var(--line);
+.job-replace-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.pill-button {
+  min-height: 44px;
+  padding: 0 16px;
+  border: 1.5px solid var(--ink);
   border-radius: 999px;
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--muted);
+  background: var(--ink);
+  color: var(--paper);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.pill-button.outline {
+  background: var(--paper);
+  color: var(--ink);
+}
+
+.pill-button:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 3px;
 }
 
 .steppers {
@@ -545,9 +567,9 @@ legend {
   }
 }
 
-/* Offer choice: real radios, drawn as two pills. */
+/* Job and offer choices: real radios, drawn as pills. */
 
-.offer-choice {
+.pill-choice {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
@@ -1571,6 +1593,7 @@ textarea {
 
 .stepper button::before,
 .radio-choice label,
+.pill-button,
 #copy-reply,
 #update-draft {
   transition: background-color 120ms ease-out;
@@ -1582,12 +1605,14 @@ textarea {
 
 @media (hover: hover) {
   .stepper button:hover::before,
-  .radio-choice input:not(:checked) + label:hover {
+  .radio-choice input:not(:checked) + label:hover,
+  .pill-button.outline:hover {
     background: var(--hover-paper);
   }
 
   .stepper button[data-step="1"]:hover::before,
-  .radio-choice input:checked + label:hover {
+  .radio-choice input:checked + label:hover,
+  .pill-button:not(.outline):hover {
     background: var(--hover-ink);
   }
 

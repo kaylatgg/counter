@@ -9,7 +9,7 @@ Everything below is **provisional example data**. None of it is validated.
 
 | Item | Example value | Status |
 |---|---|---|
-| Job | Restaurant menu, 2 pages | Provisional. Check it's familiar to students |
+| Job | Restaurant menu, 2 pages (default) | Provisional. Check it's familiar to students |
 | Concepts and sketches | 2 hrs | Example, not a benchmark |
 | Layout per page | 2 hrs | Example, not a benchmark |
 | Emails, calls, meetings | 1.5 hrs | Example, not a benchmark |
@@ -18,6 +18,20 @@ Everything below is **provisional example data**. None of it is validated.
 | Target rate | $25/hr | Example rate, labeled "adjust for your project" |
 | Expenses | $20 | Example |
 | Offer | $200 | Example |
+
+### Job options (added October 8, 2026)
+
+Four more graphic design jobs, all **provisional example numbers**, none validated:
+
+| Job | Item | Count | Setup | Per item | Emails/calls | Rounds x hrs | File prep | Total |
+|---|---|---|---|---|---|---|---|---|
+| Restaurant menu | pages | 2 | 2 | 2 | 1.5 | 2 x 1.5 | 1 | 11.5 hrs, $310 |
+| Logo | concepts | 3 | 2 | 1.5 | 1.5 | 2 x 1 | 1.5 | 11.5 hrs, $310 |
+| Social media posts | posts | 6 | 2 | 0.5 | 1 | 2 x 1 | 0.5 | 8.5 hrs, $235 |
+| Poster or flyer | sizes | 2 | 3 | 0.75 | 1 | 2 x 1 | 1 | 8.5 hrs, $235 |
+| Custom | pieces | 1 | 0 | 0 | 0 | 0 x 0 | 0 | 0 hrs |
+
+Note: the logo lands on the same 11.5 hrs and $310 as the menu, and the poster on the same 8.5 hrs and $235 as the social posts. Fine for examples, but worth knowing when comparing jobs in testing.
 
 **Findings collected so far:** none yet. Add findings in a separate section only after real sessions.
 
@@ -38,10 +52,11 @@ Everything below is **provisional example data**. None of it is validated.
 13. **Accessibility:** real labels, visible focus, errors tied to fields, color is never the only cue (patterns plus labels), screen reader summary announced after a pause or a committed change, reduced motion respected, skip link to the result.
 14. **Layout:** desktop puts inputs beside the result, with the main result kept in view while scrolling. Phone is one sequence with the result after the inputs.
 15. **Visual direction:** white canvas, dark ink type, thin dividers, one blue accent that always means "your target." Brand and logo are not decided.
+16. **Job options, graphic design only.** Five pills: Restaurant menu, Logo, Social media posts, Poster or flyer, Custom. One formula for all of them: production = setup + count x hours per item, so the menu still gives 11.5 hrs and $310. Labels follow the job (item name, setup row, "Design, per [item]"); the "fewer pages" hint is menu only. Switching loads the job's example numbers, and asks first ("Replace your numbers with the [job] example?" / Keep my numbers) if the person changed any. "Keep my numbers" still switches the labels. Rate, expenses, and offer don't belong to a job, so they never change. The "Example job" tag was removed: the pills replace it, and the example lines at the top and in 2 The work still mark the numbers as examples.
 
 ## Known limits of version 1
 
-- Only one job type.
+- Graphic design jobs only, with guessed example hours.
 - Default hours are guesses until checked with students.
 - The phone layout puts the result below the inputs. Watch whether people find it.
 - No saving, accounts, or market rate data, on purpose.

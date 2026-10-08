@@ -3,10 +3,10 @@
 
 // Which field on the page holds each value calc.js needs.
 const FIELD_IDS = {
-  pages: "pages",
+  count: "count",
   rounds: "rounds",
-  conceptHours: "concept-hours",
-  pageHours: "page-hours",
+  setupHours: "setup-hours",
+  itemHours: "item-hours",
   communicationHours: "communication-hours",
   roundHours: "round-hours",
   deliveryHours: "delivery-hours",
@@ -567,7 +567,7 @@ function layoutRuler(r) {
   ruler.classList.toggle("has-second-row", secondRow);
 }
 
-// "1 page", "2 pages"
+// "1 page", "2 concepts"
 function countOf(amount, singular, plural) {
   return calc.formatNumber(amount) + " " + (amount === 1 ? singular : plural);
 }
@@ -575,8 +575,8 @@ function countOf(amount, singular, plural) {
 function renderReceipt(r, values) {
   const rows = [
     ["Production",
-      calc.formatHours(values.conceptHours) + " + " + countOf(values.pages, "page", "pages") +
-        " x " + calc.formatHours(values.pageHours),
+      calc.formatHours(values.setupHours) + " + " + countOf(values.count, job().item, job().items) +
+        " x " + calc.formatHours(values.itemHours),
       calc.formatHours(r.hours.production)],
     ["Communication", "", calc.formatHours(r.hours.communication)],
     ["Revisions",
@@ -638,12 +638,13 @@ function renderQuote(r, quoteError) {
 // Reply
 
 // The draft from CLAUDE.md, using the quote if there is one, or the estimate.
+// "For a logo with 3 concepts and 2 rounds of changes, my price is $310."
 function buildReply(r, values) {
   const price = calc.formatPrice(r.quote.amount);
-  const pages = calc.formatNumber(values.pages) + "-page menu";
+  const items = countOf(values.count, job().item, job().items);
   const rounds = countOf(values.rounds, "round", "rounds") + " of changes";
-  let text = "Hi! Thanks for reaching out about the menu. For a " + pages + " with " + rounds +
-    " and print-ready files, my price is " + price + ".";
+  let text = "Hi! Thanks for reaching out about the " + job().about + ". For " + job().phrase +
+    " with " + items + " and " + rounds + ", my price is " + price + ".";
   if (r.offer && r.quote.amount > r.offer.amount) {
     text += " I know that's more than the " + calc.formatPrice(r.offer.amount) +
       " you mentioned, so I'm happy to talk about what would fit your budget.";
@@ -700,7 +701,7 @@ function renderCheckButton(values, hours) {
   show(preview, true);
 }
 
-// Control bar: pages, rounds, offer, and rate on screen 2 are the same values
+// Control bar: the item count, rounds, offer, and rate on screen 2 are the same values
 // as on screen 1. Typing in either place updates the other.
 
 const mirrors = Array.prototype.slice.call(document.querySelectorAll("[data-mirror]"));
@@ -798,11 +799,94 @@ function renderErrorState(errors) {
     (messages.length ? " " + messages.join(" ") : "");
 }
 
+// The job: five pill choices. Each names its item ("concepts") and setup row,
+// and brings example numbers. The math is the same for all of them.
+
+function currentJob() {
+  return document.querySelector('input[name="job"]:checked').value;
+}
+
+function job() {
+  return calc.JOBS[currentJob()];
+}
+
+function upperFirst(text) {
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
+// Puts the job's names on every label, button, and header that mentions it.
+function renderJob() {
+  const j = job();
+  const items = upperFirst(j.items);
+  byId("topbar-job").textContent = j.name;
+  byId("count-label").textContent = items;
+  byId("bar-count-label").textContent = items;
+  byId("steppers-items").textContent = items;
+  byId("setup-label").textContent = j.setup;
+  byId("item-label").textContent = "Design, per " + j.item;
+  document.querySelectorAll('button[data-target="count"]').forEach(function (button) {
+    button.setAttribute("aria-label",
+      (button.dataset.step === "1" ? "One more " : "One less ") + j.item);
+  });
+
+  // "Fewer pages may not save time…" only makes sense for the menu.
+  const isMenu = currentJob() === "menu";
+  show(byId("page-hours-hint"), isMenu);
+  byId("item-hours").setAttribute("aria-describedby",
+    "unit-item-hours" + (isMenu ? " page-hours-hint" : ""));
+}
+
+// The job whose example numbers are in the fields. Changing any of them
+// (count, rounds, or hours) counts as editing. Rate, expenses, and the offer
+// never change with the job.
+let loadedJob = "menu";
+
+function numbersEdited() {
+  const example = calc.JOBS[loadedJob].example;
+  return calc.HOURS_FIELDS.some(function (name) {
+    const parsed = calc.parseNumber(byId(FIELD_IDS[name]).value, calc.FIELDS[name]);
+    return parsed.value !== example[name];
+  });
+}
+
+function loadExample(key) {
+  const example = calc.JOBS[key].example;
+  calc.HOURS_FIELDS.forEach(function (name) {
+    byId(FIELD_IDS[name]).value = String(example[name]);
+  });
+  loadedJob = key;
+}
+
+// Switching jobs loads its numbers. If the person changed any, ask first.
+// Focus stays on the pills, so arrow keys can still move between jobs.
+function switchJob() {
+  clearTimeout(commitTimer);
+  renderJob();
+  if (numbersEdited()) {
+    byId("job-replace-question").textContent =
+      "Replace your numbers with the " + job().name + " example?";
+    show(byId("job-replace"), true);
+  } else {
+    show(byId("job-replace"), false);
+    loadExample(currentJob());
+  }
+  update(true);
+}
+
+function answerReplace(replace) {
+  if (replace) loadExample(currentJob());
+  show(byId("job-replace"), false);
+  byId("job-replace-question").textContent = "";
+  document.querySelector('input[name="job"]:checked').focus();
+  clearTimeout(commitTimer);
+  update(true);
+}
+
 // Runs on every change: check the fields, do the math, update the page.
 // commit is true when the person has left a field, paused typing, or clicked a control.
 // Until then, a new error leaves the page as it was, so nothing flashes mid-typing.
 function update(commit) {
-  const checked = calc.validateInputs(readForm());
+  const checked = calc.validateInputs(readForm(), currentJob());
   const errors = checked.errors;
   showErrors(errors, commit);
   syncMirrors(errors);
@@ -1047,6 +1131,12 @@ document.querySelectorAll('input[name="offerStatus"]').forEach(function (radio) 
   });
 });
 
+document.querySelectorAll('input[name="job"]').forEach(function (radio) {
+  radio.addEventListener("change", switchJob);
+});
+byId("job-replace-yes").addEventListener("click", function () { answerReplace(true); });
+byId("job-replace-no").addEventListener("click", function () { answerReplace(false); });
+
 byId("check-offer").addEventListener("click", checkOffer);
 byId("edit-details").addEventListener("click", editDetails);
 byId("skip-link").addEventListener("click", function (event) {
@@ -1072,6 +1162,10 @@ if (document.fonts && document.fonts.ready) {
 // Always start on screen 1. A leftover #results in the address goes away.
 if (location.hash === "#results") history.replaceState(null, "", location.pathname);
 
+// The browser may keep a different job checked after a reload. Its example
+// numbers load with it, so the labels and the numbers always match.
+if (currentJob() !== "menu") loadExample(currentJob());
+renderJob();
 showOfferField();
 update(true);
 

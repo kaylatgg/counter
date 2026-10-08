@@ -4,10 +4,10 @@
 // Each number field: how messages name it, whether it holds hours, and
 // whether it must be a whole number.
 const FIELDS = {
-  pages: { name: "pages", whole: true },
+  count: { name: "pages", whole: true },
   rounds: { name: "rounds of changes", whole: true },
-  conceptHours: { name: "concepts and sketches", hours: true },
-  pageHours: { name: "layout per page", hours: true },
+  setupHours: { name: "concepts and sketches", hours: true },
+  itemHours: { name: "design, per page", hours: true },
   communicationHours: { name: "emails, calls, and meetings", hours: true },
   roundHours: { name: "each round of changes", hours: true },
   deliveryHours: { name: "file prep and export", hours: true },
@@ -17,10 +17,56 @@ const FIELDS = {
   quote: { name: "your price" },
 };
 
+// Graphic design jobs. Each one names its item ("pages", "concepts") and its
+// setup row, and brings provisional example numbers. Production is always
+// setup + count x hours per item, so the math is the same for every job.
+const JOBS = {
+  menu: {
+    name: "Restaurant menu", phrase: "a restaurant menu", about: "menu",
+    item: "page", items: "pages", setup: "Concepts and sketches",
+    example: { count: 2, rounds: 2, setupHours: 2, itemHours: 2,
+      communicationHours: 1.5, roundHours: 1.5, deliveryHours: 1 },
+  },
+  logo: {
+    name: "Logo", phrase: "a logo", about: "logo",
+    item: "concept", items: "concepts", setup: "Research and sketches",
+    example: { count: 3, rounds: 2, setupHours: 2, itemHours: 1.5,
+      communicationHours: 1.5, roundHours: 1, deliveryHours: 1.5 },
+  },
+  social: {
+    name: "Social media posts", phrase: "a set of social media posts", about: "posts",
+    item: "post", items: "posts", setup: "Template and style",
+    example: { count: 6, rounds: 2, setupHours: 2, itemHours: 0.5,
+      communicationHours: 1, roundHours: 1, deliveryHours: 0.5 },
+  },
+  poster: {
+    name: "Poster or flyer", phrase: "a poster or flyer", about: "poster",
+    item: "size", items: "sizes", setup: "Concept and layout",
+    example: { count: 2, rounds: 2, setupHours: 3, itemHours: 0.75,
+      communicationHours: 1, roundHours: 1, deliveryHours: 1 },
+  },
+  custom: {
+    name: "Custom project", phrase: "a custom project", about: "project",
+    item: "piece", items: "pieces", setup: "Setup",
+    example: { count: 1, rounds: 0, setupHours: 0, itemHours: 0,
+      communicationHours: 0, roundHours: 0, deliveryHours: 0 },
+  },
+};
+
+// The fields, named for one job, so messages say "concepts" for a logo.
+function fieldsFor(jobKey) {
+  const job = JOBS[jobKey] || JOBS.menu;
+  return Object.assign({}, FIELDS, {
+    count: { name: job.items, whole: true },
+    setupHours: { name: job.setup.toLowerCase(), hours: true },
+    itemHours: { name: "design, per " + job.item, hours: true },
+  });
+}
+
 // The fields the hours depend on. The page can show group totals
 // whenever these are fine, even if another field has an error.
 const HOURS_FIELDS = [
-  "pages", "rounds", "conceptHours", "pageHours",
+  "count", "rounds", "setupHours", "itemHours",
   "communicationHours", "roundHours", "deliveryHours",
 ];
 
@@ -73,9 +119,11 @@ function parseNumber(raw, field) {
   return { value: size };
 }
 
-// Checks every field. Takes the raw text from the form, returns
+// Checks every field. Takes the raw text from the form (and the job, which
+// names the fields in messages; the menu if left out), returns
 // { values, errors } where errors maps a field name to its message.
-function validateInputs(raw) {
+function validateInputs(raw, jobKey) {
+  const FIELDS = fieldsFor(jobKey);
   const values = {};
   const errors = {};
 
@@ -143,7 +191,7 @@ function hourlyFor(price, expenses, totalHours) {
 
 // Hours for each type of work, and the total.
 function workHours(values) {
-  const production = values.conceptHours + values.pages * values.pageHours;
+  const production = values.setupHours + values.count * values.itemHours;
   const communication = values.communicationHours;
   const revisions = values.rounds * values.roundHours;
   const delivery = values.deliveryHours;
@@ -364,7 +412,9 @@ function formatPrice(amount) {
 // One object holding everything, so the page can call calc.calculate(...) and so on.
 const calc = {
   FIELDS,
+  JOBS,
   HOURS_FIELDS,
+  fieldsFor,
   parseNumber,
   validateInputs,
   roundUpToFive,

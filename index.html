@@ -39,15 +39,45 @@
           <fieldset class="section">
             <legend><span class="step">1</span> The job</legend>
 
-            <p class="job-name">Restaurant menu <span class="tag">Example job</span></p>
+            <div class="pill-choice job-choice" role="radiogroup" aria-label="Type of job">
+              <div class="radio-choice">
+                <input id="job-menu" name="job" type="radio" value="menu" checked>
+                <label for="job-menu">Restaurant menu</label>
+              </div>
+              <div class="radio-choice">
+                <input id="job-logo" name="job" type="radio" value="logo">
+                <label for="job-logo">Logo</label>
+              </div>
+              <div class="radio-choice">
+                <input id="job-social" name="job" type="radio" value="social">
+                <label for="job-social">Social media posts</label>
+              </div>
+              <div class="radio-choice">
+                <input id="job-poster" name="job" type="radio" value="poster">
+                <label for="job-poster">Poster or flyer</label>
+              </div>
+              <div class="radio-choice">
+                <input id="job-custom" name="job" type="radio" value="custom">
+                <label for="job-custom">Custom</label>
+              </div>
+            </div>
+
+            <!-- Shown when switching jobs after changing the work numbers. -->
+            <div class="job-replace" id="job-replace" hidden>
+              <p id="job-replace-question" role="status">Replace your numbers with the Logo example?</p>
+              <div class="job-replace-actions">
+                <button type="button" class="pill-button" id="job-replace-yes">Replace</button>
+                <button type="button" class="pill-button outline" id="job-replace-no">Keep my numbers</button>
+              </div>
+            </div>
 
             <div class="steppers">
               <div class="stepper-field">
-                <label for="pages">Pages</label>
+                <label for="count" id="count-label">Pages</label>
                 <div class="stepper">
-                  <button type="button" data-step="-1" data-target="pages" aria-label="One less page">−</button>
-                  <input id="pages" name="pages" type="text" inputmode="numeric" value="2">
-                  <button type="button" data-step="1" data-target="pages" aria-label="One more page">+</button>
+                  <button type="button" data-step="-1" data-target="count" aria-label="One less page">−</button>
+                  <input id="count" name="count" type="text" inputmode="numeric" value="2">
+                  <button type="button" data-step="1" data-target="count" aria-label="One more page">+</button>
                 </div>
               </div>
 
@@ -61,7 +91,7 @@
               </div>
             </div>
 
-            <p class="hint" id="steppers-hint">Pages and rounds are the work you promise. Change them and the hours below change too.</p>
+            <p class="hint" id="steppers-hint"><span id="steppers-items">Pages</span> and rounds are the work you promise. Change them and the hours below change too.</p>
           </fieldset>
 
           <!-- 2 The work -->
@@ -74,18 +104,18 @@
               <legend>Production <output id="total-production">6 hrs</output></legend>
 
               <div class="work-row">
-                <label for="concept-hours">Concepts and sketches</label>
+                <label for="setup-hours" id="setup-label">Concepts and sketches</label>
                 <div class="unit-input">
-                  <input id="concept-hours" name="conceptHours" type="text" inputmode="decimal" value="2" aria-describedby="unit-concept-hours">
-                  <span class="unit" id="unit-concept-hours">hrs</span>
+                  <input id="setup-hours" name="setupHours" type="text" inputmode="decimal" value="2" aria-describedby="unit-setup-hours">
+                  <span class="unit" id="unit-setup-hours">hrs</span>
                 </div>
               </div>
 
               <div class="work-row">
-                <label for="page-hours">Layout per page</label>
+                <label for="item-hours" id="item-label">Design, per page</label>
                 <div class="unit-input">
-                  <input id="page-hours" name="pageHours" type="text" inputmode="decimal" value="2" aria-describedby="unit-page-hours page-hours-hint">
-                  <span class="unit" id="unit-page-hours">hrs</span>
+                  <input id="item-hours" name="itemHours" type="text" inputmode="decimal" value="2" aria-describedby="unit-item-hours page-hours-hint">
+                  <span class="unit" id="unit-item-hours">hrs</span>
                 </div>
                 <p class="hint" id="page-hours-hint">Fewer pages may not save time if the same content still has to fit. If so, raise this number.</p>
               </div>
@@ -163,7 +193,7 @@
           <fieldset class="section">
             <legend><span class="step">4</span> Their offer</legend>
 
-            <div class="offer-choice">
+            <div class="pill-choice offer-choice">
               <div class="radio-choice">
                 <input id="offer-yes" name="offerStatus" type="radio" value="amount" checked>
                 <label for="offer-yes">They offered an amount</label>
@@ -211,10 +241,10 @@
         <span class="bar-divider" aria-hidden="true"></span>
 
         <div class="bar-stepper">
-          <label for="bar-pages">Pages</label>
-          <button type="button" data-step="-1" data-target="pages" aria-label="One less page">−</button>
-          <input id="bar-pages" data-mirror="pages" type="text" inputmode="numeric" value="2">
-          <button type="button" data-step="1" data-target="pages" aria-label="One more page">+</button>
+          <label for="bar-count" id="bar-count-label">Pages</label>
+          <button type="button" data-step="-1" data-target="count" aria-label="One less page">−</button>
+          <input id="bar-count" data-mirror="count" type="text" inputmode="numeric" value="2">
+          <button type="button" data-step="1" data-target="count" aria-label="One more page">+</button>
         </div>
 
         <div class="bar-stepper">
@@ -382,7 +412,7 @@
 
               <div class="field">
                 <label for="reply">Your reply to the client</label>
-                <textarea id="reply" name="reply" rows="6" autocomplete="off">Hi! Thanks for reaching out about the menu. For a 2-page menu with 2 rounds of changes and print-ready files, my price is $310. I know that's more than the $200 you mentioned, so I'm happy to talk about what would fit your budget. Let me know if you have any questions!</textarea>
+                <textarea id="reply" name="reply" rows="6" autocomplete="off">Hi! Thanks for reaching out about the menu. For a restaurant menu with 2 pages and 2 rounds of changes, my price is $310. I know that's more than the $200 you mentioned, so I'm happy to talk about what would fit your budget. Let me know if you have any questions!</textarea>
               </div>
 
               <div class="reply-actions">

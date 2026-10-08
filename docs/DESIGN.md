@@ -1,4 +1,4 @@
-# Counter design system (v3.1, "Two screens")
+# Counter design system (v3.2, "Two screens", with job options)
 
 ## What this file replaces
 
@@ -80,10 +80,12 @@ Fallback `system-ui, sans-serif`. `font-variant-numeric: tabular-nums` on the wh
 | Body and row labels | 15px | 400 | | |
 | Group label (Production) | 12px | 700 | | |
 | Small label, caption, axis | 12 to 13px | 500 | | muted color |
-| Job line ("Restaurant menu", screen 1) | 15px | 600 | | |
+| Job pills | 14px | 600 | | same as the offer pills |
+| "Replace your numbers…" question | 14px | 600 | | |
 | Hours input value | 17px | 600 | | right-aligned |
 | Total row | 15px label, 22px value | 700 | -0.02em on the value | |
 | Offer pills | 14px | 600 | | |
+| Replace / Keep my numbers | 14px | 600 | | pill buttons, 44px tall |
 | Error message | 13px | 600 | | `--error` on white; 12px 500 `--night-text` under control bar fields |
 | Empty and error states (screen 2) | 16px | 400 | | `--night-2`, same as the hero sentence |
 | Below-expenses warning | 16px | 400 | | `--night-text` |
@@ -115,7 +117,7 @@ Both screens live in the same page (one `index.html`). Only one shows at a time.
 ### Header (both screens)
 - 56px tall, `position: sticky; top: 0; z-index: 10`, 64px side padding, wordmark "counter" left.
 - Screen 1: `--paper` background, `--line` bottom hairline, `--ink` wordmark.
-- Screen 2: `--night` background, `--night-line` bottom hairline, `--night-text` wordmark. Right side: the job name ("Restaurant menu") in 13px `--night-2`.
+- Screen 2: `--night` background, `--night-line` bottom hairline, `--night-text` wordmark. Right side: the job name ("Restaurant menu", "Logo", "Custom project") in 13px `--night-2`.
 
 ### Screen 1: inputs (white)
 - Content max width 1312px, centered, 64px side padding, 40px below the header.
@@ -125,6 +127,9 @@ Both screens live in the same page (one `index.html`). Only one shows at a time.
   - **Right column:** 3 Your numbers, then 4 Their offer, then the button. It's sticky (`top: 84px`, the 56px header plus 28px), so it stays in view while the left column scrolls.
   - Sections inside a column are separated by a `--line` hairline with 28px above and below.
   - This keeps the reading order 1, 2, 3, 4 (down the left, then down the right) and ends on the button.
+- **1 The job** starts with five pills, real radio inputs styled exactly like the offer pills (44px tall, 1.5px `--ink` outline, solid `--ink` when chosen, 8px gaps, wrapping): Restaurant menu, Logo, Social media posts, Poster or flyer, Custom. Then the item stepper (labeled with the job's item: Pages, Concepts, Posts, Sizes, Pieces) and Rounds of changes. The hint under them names the item too ("Concepts and rounds are the work you promise.").
+- **Switching jobs** loads that job's example numbers. If the work numbers (count, rounds, or any hours) differ from the loaded example, it asks first, right under the pills: "Replace your numbers with the Logo example?" (14px 600 `--ink`, `role="status"`) with two pill buttons, "Replace" (solid `--ink`) and "Keep my numbers" (`--ink` outline). The labels switch to the new job right away either way; "Keep my numbers" only keeps the numbers. Focus stays on the pills, so arrow keys still move between jobs; answering returns focus to the chosen pill. Rate, expenses, and the offer never change with the job.
+- **2 The work:** the Production rows follow the job: a setup row (Concepts and sketches, Research and sketches, Template and style, Concept and layout, or Setup) and "Design, per [item]". The "Fewer pages may not save time…" hint shows only for the menu.
 - **2 The work** starts with the hint "Example hours. Change any to match how you work." and ends with a total row: 2px `--ink` line above, "Total hours" 15px 700 left, "11.5 hrs" 22px 700 right (live).
 - **Footer:** below both columns, a `--line` hairline, then the disclaimer in 12px `--muted`.
 
@@ -145,7 +150,7 @@ Both screens live in the same page (one `index.html`). Only one shows at a time.
 - **Control bar** directly under the header: 64px tall, `#15171A` background, `--night-line` bottom hairline, 64px side padding, items in one row with 28px gaps:
   1. "Edit all details" with a left chevron, 13px 600 `--night-2`. Returns to screen 1 with all values kept, focus on the headline.
   2. 1px `--night-line` divider.
-  3. Pages stepper and Rounds stepper, compact: label 12px `--night-mute`, 30px circles (minus: 1.5px `--night-2` outline, plus: solid `--night-text` with a `--night` icon), number 18px 700.
+  3. Item stepper (labeled with the job's item, like "Concepts") and Rounds stepper, compact: label 12px `--night-mute`, 30px circles (minus: 1.5px `--night-2` outline, plus: solid `--night-text` with a `--night` icon), number 18px 700.
   4. Divider.
   5. Offer and Target as inline editable fields: label 12px `--night-mute`, value 18px 700 with a 2px `--night-text` bottom border. Hide Offer when "No offer yet". An error shows right under its field: a small alert icon plus the message, 12px `--night-text`.
   6. Right end: "Change these to update the result" in 12px `--night-mute`.
@@ -217,7 +222,7 @@ Question it answers: How far is this offer from my target?
 ### How we calculated this (collapsed by default)
 - The right side should feel visual, not like a spreadsheet. So the receipt is hidden until asked for.
 - Use a real `<details>` element. The summary row reads "Show the math" with a small chevron, 15px 600 `--night-text`, and the estimate on the right in 15px 600 ("$310"). Open, it reads "Hide the math".
-- Inside: the same table as before. 14px, item `--night-2`, math `--night-mute`, amount `--night-text` right-aligned. Rows 8px padding, `--night-line` hairlines. Sum rows: 1px `--night-2` line above. Math cells carry units ("2 hrs + 2 pages x 2 hrs", "11.5 hrs x $25/hr"). "Rounded up to the nearest $5". Final row "Your estimate $310" 22px 700.
+- Inside: the same table as before. 14px, item `--night-2`, math `--night-mute`, amount `--night-text` right-aligned. Rows 8px padding, `--night-line` hairlines. Sum rows: 1px `--night-2` line above. Math cells carry units and the job's item ("2 hrs + 2 pages x 2 hrs", "2 hrs + 3 concepts x 1.5 hrs", "11.5 hrs x $25/hr"). "Rounded up to the nearest $5". Final row "Your estimate $310" 22px 700.
 - Under it, 12px `--night-mute`: "Taxes are not included. None of these numbers are take-home pay."
 - No lists or tables anywhere else on the black side. The two charts replace the old hours and per-hour lists completely.
 

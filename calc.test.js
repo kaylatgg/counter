@@ -34,10 +34,10 @@ function closeTo(actual, expected) {
 // The example data from CLAUDE.md, as the form would send it (all text).
 function example(changes) {
   return Object.assign({
-    pages: "2",
+    count: "2",
     rounds: "2",
-    conceptHours: "2",
-    pageHours: "2",
+    setupHours: "2",
+    itemHours: "2",
     communicationHours: "1.5",
     roundHours: "1.5",
     deliveryHours: "1",
@@ -111,7 +111,7 @@ test("is $7.61 an hour under the $25 target", function () {
 
 test("an hourly within half a cent of the target meets it", function () {
   // 1 page, 1 round: $200 / 8 hrs = exactly $25.00/hr.
-  const exact = run({ pages: "1", rounds: "1" });
+  const exact = run({ count: "1", rounds: "1" });
   assert.strictEqual(exact.offer.meetsTarget, true);
   // $287.49 / 11.5 hrs = $24.9991/hr, which displays as $25.00.
   assert.strictEqual(run({ offer: "287.49" }).offer.meetsTarget, true);
@@ -147,7 +147,7 @@ test("estimate is $110 above the offer", function () {
 group("Smaller scope: 1 page and 1 round");
 
 test("8 hrs, $220 estimate, still $20 above the offer", function () {
-  const r = run({ pages: "1", rounds: "1" });
+  const r = run({ count: "1", rounds: "1" });
   closeTo(r.hours.total, 8);
   assert.strictEqual(r.estimate, 220);
   closeTo(r.offer.gap, 20);
@@ -225,8 +225,8 @@ group("Zero hours");
 
 test("all hours at 0 gives the \"add some hours\" state", function () {
   const r = run({
-    conceptHours: "0",
-    pageHours: "0",
+    setupHours: "0",
+    itemHours: "0",
     communicationHours: "0",
     roundHours: "0",
     deliveryHours: "0",
@@ -236,7 +236,7 @@ test("all hours at 0 gives the \"add some hours\" state", function () {
 });
 
 test("0 pages and 0 rounds can still have hours", function () {
-  const r = run({ pages: "0", rounds: "0" });
+  const r = run({ count: "0", rounds: "0" });
   closeTo(r.hours.total, 4.5);
   assert.strictEqual(r.hasHours, true);
 });
@@ -280,8 +280,8 @@ test("text in a number field", function () {
 });
 
 test("1.5 pages", function () {
-  assert.deepStrictEqual(errorsFor({ pages: "1.5" }), {
-    pages: "Use a whole number for pages.",
+  assert.deepStrictEqual(errorsFor({ count: "1.5" }), {
+    count: "Use a whole number for pages.",
   });
 });
 
@@ -292,8 +292,8 @@ test("blank required field", function () {
 });
 
 test("messages name each field in plain words", function () {
-  assert.deepStrictEqual(errorsFor({ pages: "", roundHours: "", quote: "-5" }), {
-    pages: "Enter pages. Use 0 if there are none.",
+  assert.deepStrictEqual(errorsFor({ count: "", roundHours: "", quote: "-5" }), {
+    count: "Enter pages. Use 0 if there are none.",
     roundHours: "Enter the hours for each round of changes. Use 0 if there are none.",
     quote: "Your price can't be less than 0.",
   });
@@ -303,8 +303,8 @@ test("messages name each field in plain words", function () {
 });
 
 test("several errors at once are all reported", function () {
-  const errors = errorsFor({ pages: "1.5", rounds: "-2", rate: "0" });
-  assert.deepStrictEqual(Object.keys(errors).sort(), ["pages", "rate", "rounds"]);
+  const errors = errorsFor({ count: "1.5", rounds: "-2", rate: "0" });
+  assert.deepStrictEqual(Object.keys(errors).sort(), ["count", "rate", "rounds"]);
 });
 
 group("Typing style: commas, \"$\", and spaces");
@@ -350,7 +350,7 @@ test("\"-$5\" and \"$-5\" are both negative", function () {
 });
 
 test("\"1,000\" pages is still a whole number", function () {
-  assert.deepStrictEqual(calc.parseNumber("1,000", calc.FIELDS.pages), { value: 1000 });
+  assert.deepStrictEqual(calc.parseNumber("1,000", calc.FIELDS.count), { value: 1000 });
 });
 
 group("Your quote");
@@ -541,6 +541,86 @@ test("labels exactly 8px apart are fine, 7px apart are crowded", function () {
 
 test("says when labels can't all fit", function () {
   assert.strictEqual(calc.spreadLabels([{ left: 0, width: 150 }, { left: 0, width: 150 }], 200, 8).fits, false);
+});
+
+group("Job options");
+
+// One job's example numbers, as the form would send them, with the menu's
+// rate, expenses, and offer (those don't change with the job).
+function jobExample(key) {
+  const raw = example();
+  const numbers = calc.JOBS[key].example;
+  Object.keys(numbers).forEach(function (name) { raw[name] = String(numbers[name]); });
+  return raw;
+}
+
+function runJob(key) {
+  const checked = calc.validateInputs(jobExample(key), key);
+  assert.deepStrictEqual(checked.errors, {}, "expected no errors");
+  return calc.calculate(checked.values);
+}
+
+test("there are five jobs, each with every work number", function () {
+  assert.deepStrictEqual(Object.keys(calc.JOBS), ["menu", "logo", "social", "poster", "custom"]);
+  Object.keys(calc.JOBS).forEach(function (key) {
+    assert.deepStrictEqual(Object.keys(calc.JOBS[key].example).sort(), calc.HOURS_FIELDS.slice().sort());
+  });
+});
+
+test("restaurant menu: 6 + 1.5 + 3 + 1 = 11.5 hrs, $310", function () {
+  const r = runJob("menu");
+  closeTo(r.hours.production, 6);
+  closeTo(r.hours.total, 11.5);
+  assert.strictEqual(r.estimate, 310);
+});
+
+test("logo: 2 + 3 x 1.5 = 6.5 production, 11.5 hrs, $310", function () {
+  const r = runJob("logo");
+  closeTo(r.hours.production, 6.5);
+  closeTo(r.hours.communication, 1.5);
+  closeTo(r.hours.revisions, 2);
+  closeTo(r.hours.delivery, 1.5);
+  closeTo(r.hours.total, 11.5);
+  assert.strictEqual(r.estimate, 310);
+});
+
+test("social media posts: 2 + 6 x 0.5 = 5 production, 8.5 hrs, $235", function () {
+  const r = runJob("social");
+  closeTo(r.hours.production, 5);
+  closeTo(r.hours.revisions, 2);
+  closeTo(r.hours.total, 8.5);
+  closeTo(r.subtotal, 232.5);
+  assert.strictEqual(r.estimate, 235);
+});
+
+test("poster or flyer: 3 + 2 x 0.75 = 4.5 production, 8.5 hrs, $235", function () {
+  const r = runJob("poster");
+  closeTo(r.hours.production, 4.5);
+  closeTo(r.hours.total, 8.5);
+  assert.strictEqual(r.estimate, 235);
+});
+
+test("custom: starts at 0 hours, so it shows the \"add hours\" state", function () {
+  const r = runJob("custom");
+  closeTo(r.hours.total, 0);
+  assert.strictEqual(r.hasHours, false);
+});
+
+test("messages name the job's item and setup row", function () {
+  const raw = jobExample("logo");
+  raw.count = "1.5";
+  raw.itemHours = "";
+  raw.setupHours = "-1";
+  assert.deepStrictEqual(calc.validateInputs(raw, "logo").errors, {
+    count: "Use a whole number for concepts.",
+    itemHours: "Enter the hours for design, per concept. Use 0 if there are none.",
+    setupHours: "Research and sketches can't be less than 0.",
+  });
+});
+
+test("with no job given, messages use the menu's names", function () {
+  assert.strictEqual(errorsFor({ itemHours: "x" }).itemHours, "Use a number for design, per page.");
+  assert.strictEqual(errorsFor({ setupHours: "x" }).setupHours, "Use a number for concepts and sketches.");
 });
 
 console.log("\n" + passed + " passed, " + failed + " failed");
