@@ -40,6 +40,8 @@
 
 html {
   -webkit-text-size-adjust: 100%;
+  /* Keeps focused fields clear of the sticky header. */
+  scroll-padding-top: 56px;
 }
 
 body {
@@ -105,7 +107,7 @@ button {
   position: absolute;
   top: 12px;
   left: 12px;
-  z-index: 10;
+  z-index: 20;
   padding: 10px 16px;
   background: var(--ink);
   color: var(--paper);
@@ -118,17 +120,35 @@ button {
   transform: none;
 }
 
-/* Header */
+/* Sticky header: 56px, split white and black to match the columns. */
 
-header,
-form,
-footer {
-  padding-left: 20px;
-  padding-right: 20px;
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  height: 56px;
 }
 
-header {
-  padding-top: 30px;
+.topbar-left,
+.topbar-right {
+  display: flex;
+  align-items: center;
+}
+
+.topbar-left {
+  flex: 1;
+  padding: 0 20px;
+  background: var(--paper);
+  border-bottom: 1px solid var(--line);
+}
+
+.topbar-right {
+  display: none;
+  justify-content: flex-end;
+  padding: 0 20px;
+  background: var(--night);
+  border-bottom: 1px solid var(--night-line);
 }
 
 .wordmark {
@@ -136,6 +156,53 @@ header {
   font-weight: 800;
   letter-spacing: -0.04em;
   text-transform: lowercase;
+  color: var(--ink);
+}
+
+/* Compact live summary: fades in once the hero number scrolls out of view. */
+.mini-summary {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 120ms ease-out, visibility 0s linear 120ms;
+}
+
+.mini-summary.is-visible {
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 120ms ease-out, visibility 0s;
+}
+
+.mini-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--night-mute);
+}
+
+.mini-value {
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--night-text);
+}
+
+.mini-estimate {
+  margin-left: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--night-2);
+}
+
+/* Intro: the light side starts 44px below the header. */
+
+.intro,
+form,
+footer {
+  padding-left: 20px;
+  padding-right: 20px;
 }
 
 h1 {
@@ -1191,39 +1258,56 @@ textarea {
 /* Desktop: white 500px input side, black result side filling the rest. */
 
 @media (min-width: 960px) {
+  /* Rows: header, intro, form, footer. The result column spans all but the header. */
   body {
     display: grid;
     grid-template-columns: 500px minmax(0, 1fr);
-    grid-template-rows: auto 1fr auto;
+    grid-template-rows: 56px auto 1fr auto;
     min-height: 100vh;
   }
 
-  header,
+  .topbar {
+    grid-column: 1 / -1;
+    grid-row: 1;
+  }
+
+  .topbar-left {
+    flex: 0 0 500px;
+    padding: 0 48px;
+  }
+
+  .topbar-right {
+    display: flex;
+    flex: 1;
+    padding: 0 64px;
+  }
+
+  .intro,
   form,
   footer {
     padding-left: 48px;
     padding-right: 48px;
   }
 
-  header {
+  .intro {
     grid-column: 1;
-    grid-row: 1;
+    grid-row: 2;
     position: relative;
     z-index: 1;
   }
 
   footer {
     grid-column: 1;
-    grid-row: 3;
+    grid-row: 4;
     position: relative;
     z-index: 1;
   }
 
-  /* main spans the whole page and shares the body's columns and rows,
-     so the form sits under the header and the result fills the right side. */
+  /* main shares the body's columns and its last three rows, so the form sits
+     under the intro and the result fills the right side below the header. */
   main {
     grid-column: 1 / -1;
-    grid-row: 1 / -1;
+    grid-row: 2 / -1;
     display: grid;
     grid-template-columns: subgrid;
     grid-template-rows: subgrid;
@@ -1239,8 +1323,8 @@ textarea {
     grid-row: 1 / -1;
     align-self: start;
     position: sticky;
-    top: 0;
-    height: 100vh;
+    top: 56px;
+    height: calc(100vh - 56px);
     overflow-y: auto;
     padding: 30px 64px 64px;
   }

@@ -14,12 +14,24 @@
 <body>
   <a href="#result" class="skip-link">Skip to your result</a>
 
-  <header>
-    <p class="wordmark">Counter</p>
+  <header class="topbar">
+    <div class="topbar-left">
+      <p class="wordmark">Counter</p>
+    </div>
+    <div class="topbar-right">
+      <p class="mini-summary" id="mini-summary" aria-hidden="true">
+        <span class="mini-label" id="mini-label">This offer pays</span>
+        <span class="mini-value" id="mini-value">$17.39/hr</span>
+        <span class="mini-estimate" id="mini-estimate">Estimate $310</span>
+      </p>
+    </div>
+  </header>
+
+  <div class="intro">
     <h1>What does this <span class="headline-break">job really pay?</span></h1>
     <p class="lede">Count all the work, see what an offer pays per hour, then choose your price or scope.</p>
     <p class="example-note">Example numbers. Change them to match your project.</p>
-  </header>
+  </div>
 
   <main>
     <form id="counter-form" novalidate>

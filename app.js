@@ -678,8 +678,28 @@ function updateDraft() {
   byId("reply").focus();
 }
 
+// Sticky header summary
+
+// Fills the compact summary. It only shows once the hero scrolls out of view.
+function renderMiniSummary(r) {
+  const estimate = "Estimate " + calc.formatWholeMoney(r.estimate);
+  show(byId("mini-label"), Boolean(r.offer));
+  show(byId("mini-value"), Boolean(r.offer));
+  if (r.offer) byId("mini-value").textContent = calc.formatMoney(r.offer.hourlyBefore) + "/hr";
+  byId("mini-estimate").textContent = estimate;
+}
+
+let heroInView = true;
+let hasResult = false;
+
+function updateMiniSummary() {
+  byId("mini-summary").classList.toggle("is-visible", hasResult && !heroInView);
+}
+
 // Which parts of the result are visible: the full result, "add hours," or "fix errors."
 function showResultState(state) {
+  hasResult = state === "result";
+  updateMiniSummary();
   show(byId("result-summary"), state === "result");
   show(byId("hours-chart"), state === "result");
   show(byId("receipt-section"), state === "result");
@@ -724,6 +744,7 @@ function update(commit) {
   showResultState("result");
   lastResult = r;
   renderHero(r);
+  renderMiniSummary(r);
   renderHoursChart(r);
   renderOfferChart(r);
   renderReceipt(r, checked.values);
@@ -797,6 +818,15 @@ document.querySelectorAll('input[name="offerStatus"]').forEach(function (radio) 
 
 byId("reply").addEventListener("input", onReplyEdit);
 byId("update-draft").addEventListener("click", updateDraft);
+
+// The hero counts as out of view once it's behind the 56px header or scrolled away.
+if ("IntersectionObserver" in window) {
+  const heroWatcher = new IntersectionObserver(function (entries) {
+    heroInView = entries[entries.length - 1].isIntersecting;
+    updateMiniSummary();
+  }, { rootMargin: "-56px 0px 0px 0px" });
+  heroWatcher.observe(document.querySelector(".hero-number"));
+}
 
 let resizeFrame = null;
 window.addEventListener("resize", function () {
