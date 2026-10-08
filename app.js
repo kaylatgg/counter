@@ -228,7 +228,7 @@ const BLOCK_GAP = 4;
 const GROUP_GAP = 14;
 const BLOCK_MIN = 8;
 const BLOCK_MAX = 22;
-const BLOCK_HEIGHT = 56;
+const BLOCK_HEIGHT = 64;
 const LINE_ABOVE = 34;
 const LABEL_SPACE = 12;
 const BAND_LABEL_MIN = 64;
@@ -440,24 +440,28 @@ function renderOfferChart(r) {
   layoutRuler(r);
 }
 
-// Puts a label left or right of x. Returns its left and right edges.
-function placeSide(label, x, side, width) {
-  const w = label.offsetWidth;
-  let left = side === "right" ? x + LABEL_SPACE - 2 : x - LABEL_SPACE + 2 - w;
-  left = Math.max(0, Math.min(width - w, left));
-  label.style.left = left + "px";
-  return { left: left, right: left + w };
-}
+// Minimum space between two labels in the same row, in px.
+const LABEL_GAP = 8;
 
-function placeCentered(label, x, width) {
-  const w = label.offsetWidth;
-  const left = Math.max(0, Math.min(width - w, x - w / 2));
-  label.style.left = left + "px";
-  return { left: left, right: left + w };
-}
-
-function overlaps(a, b) {
-  return a.left < b.right + 6 && b.left < a.right + 6;
+// Places each row of labels with calc.spreadLabels, so none overlap and all stay
+// inside the ruler. Each entry is { label, left } where left is the wanted left edge.
+// Optional labels are dropped, last first, if a row can't fit everything.
+function placeRow(entries, width) {
+  let visible = entries.filter(function (entry) { return !entry.label.hidden; });
+  for (;;) {
+    const items = visible.map(function (entry) {
+      return { left: entry.left(entry.label.offsetWidth), width: entry.label.offsetWidth };
+    });
+    const result = calc.spreadLabels(items, width, LABEL_GAP);
+    const optional = visible.filter(function (entry) { return entry.optional; });
+    if (result.fits || !optional.length) {
+      visible.forEach(function (entry, i) { entry.label.style.left = result.lefts[i] + "px"; });
+      return;
+    }
+    const drop = optional[optional.length - 1];
+    show(drop.label, false);
+    visible = visible.filter(function (entry) { return entry !== drop; });
+  }
 }
 
 function layoutRuler(r) {
@@ -503,19 +507,13 @@ function layoutRuler(r) {
     gapLabel.textContent = "-" + calc.formatMoney(offer.shortPerHour) + "/hr";
   }
   show(gapLabel, !offer.meetsTarget && bandWidth >= BAND_LABEL_MIN);
-  if (!offer.meetsTarget) placeCentered(gapLabel, offerX + bandWidth / 2, width);
 
   // Above the target: a small "+$X/hr" between the target and the offer.
   const overLabel = byId("over-label");
   const overCents = Math.round((offer.hourlyBefore - r.rate) * 100);
-  const showOver = overCents > 0 && offerX - targetX >= BAND_LABEL_MIN;
-  show(overLabel, showOver);
-  if (showOver) {
-    overLabel.textContent = "+" + calc.formatMoney(overCents / 100) + "/hr";
-    placeCentered(overLabel, (targetX + offerX) / 2, width);
-  }
+  show(overLabel, overCents > 0 && offerX - targetX >= BAND_LABEL_MIN);
+  if (overCents > 0) overLabel.textContent = "+" + calc.formatMoney(overCents / 100) + "/hr";
 
-  // Labels above the ruler: target centered, offer to the right, after expenses to the left.
   const targetLabel = byId("target-label");
   const offerLabel = byId("offer-label");
   const afterLabel = byId("after-label");
@@ -523,47 +521,19 @@ function layoutRuler(r) {
   offerLabel.textContent = "offer " + calc.formatMoney(offer.hourlyBefore);
   afterLabel.textContent = "after expenses " + calc.formatMoney(offer.hourlyAfter);
 
-  const targetBox = placeCentered(targetLabel, targetX, width);
+  // Above the ruler: the offer label left of its dot, the target label centered on its mark.
+  placeRow([
+    { label: offerLabel, left: function (w) { return offerX - LABEL_SPACE - w; } },
+    { label: targetLabel, left: function (w) { return targetX - w / 2; } },
+  ], width);
 
-  // The offer label goes right of its dot, or left if that collides with the target.
-  // If the offer sits right on the target, it drops below the ruler.
-  offerLabel.classList.remove("below");
-  let offerBox = placeSide(offerLabel, offerX, "right", width);
-  if (overlaps(offerBox, targetBox)) offerBox = placeSide(offerLabel, offerX, "left", width);
-  if (overlaps(offerBox, targetBox)) {
-    offerLabel.classList.add("below");
-    offerBox = placeSide(offerLabel, offerX, "right", width);
-  }
-  const aboveBoxes = [targetBox];
-  const belowBoxes = [];
-  if (offerLabel.classList.contains("below")) belowBoxes.push(offerBox);
-  else aboveBoxes.push(offerBox);
-  if (!gapLabel.hidden) belowBoxes.push(boxOf(gapLabel));
-
-  // If labels would overlap, the after-expenses label moves below the ruler.
-  afterLabel.classList.remove("below");
-  let afterBox = placeBeside(afterLabel, afterX, width);
-  if (aboveBoxes.some(function (box) { return overlaps(afterBox, box); })) {
-    afterLabel.classList.add("below");
-    afterBox = placeBeside(afterLabel, afterX, width);
-  }
-  if (afterLabel.classList.contains("below")) belowBoxes.push(afterBox);
-
-  // "+$X/hr" is optional, so it gives way to any label it would touch.
-  if (!overLabel.hidden && belowBoxes.some(function (box) { return overlaps(boxOf(overLabel), box); })) {
-    show(overLabel, false);
-  }
-}
-
-// Left of the dot, or right of it when there's no room on the left.
-function placeBeside(label, x, width) {
-  if (x - LABEL_SPACE - label.offsetWidth < 0) return placeSide(label, x, "right", width);
-  return placeSide(label, x, "left", width);
-}
-
-function boxOf(label) {
-  const left = parseFloat(label.style.left) || 0;
-  return { left: left, right: left + label.offsetWidth };
+  // Below the ruler: "after expenses" under its dot, the gap amount under the band's
+  // center, and the optional "+$X/hr" between the target and the offer.
+  placeRow([
+    { label: afterLabel, left: function (w) { return afterX - w / 2; } },
+    { label: gapLabel, optional: true, left: function (w) { return offerX + bandWidth / 2 - w / 2; } },
+    { label: overLabel, optional: true, left: function (w) { return (targetX + offerX) / 2 - w / 2; } },
+  ], width);
 }
 
 // "1 page", "2 pages"
@@ -678,28 +648,64 @@ function updateDraft() {
   byId("reply").focus();
 }
 
-// Sticky header summary
+// Screen 1 extras: the work total and the button's live preview
 
-// Fills the compact summary. It only shows once the hero scrolls out of view.
-function renderMiniSummary(r) {
-  const estimate = "Estimate " + calc.formatWholeMoney(r.estimate);
-  show(byId("mini-label"), Boolean(r.offer));
-  show(byId("mini-value"), Boolean(r.offer));
-  if (r.offer) byId("mini-value").textContent = calc.formatMoney(r.offer.hourlyBefore) + "/hr";
-  byId("mini-estimate").textContent = estimate;
+function renderTotals(hours) {
+  byId("total-hours").textContent = hours ? calc.formatHours(hours.total) : "";
 }
 
-let heroInView = true;
-let hasResult = false;
+// "11.5 hrs of work against $200", or "11.5 hrs of work at $25/hr" with no offer.
+function renderCheckButton(values, hours) {
+  const preview = byId("check-preview");
+  const hasOffer = values.hasOffer;
+  byId("check-title").textContent = hasOffer ? "Check the offer" : "Get my estimate";
+  if (!hours) {
+    show(preview, false);
+    return;
+  }
+  preview.textContent = calc.formatHours(hours.total) + " of work " + (hasOffer
+    ? "against " + calc.formatPrice(values.offer)
+    : "at " + calc.formatPrice(values.rate) + "/hr");
+  show(preview, true);
+}
 
-function updateMiniSummary() {
-  byId("mini-summary").classList.toggle("is-visible", hasResult && !heroInView);
+// Control bar: pages, rounds, offer, and rate on screen 2 are the same values
+// as on screen 1. Typing in either place updates the other.
+
+const mirrors = Array.prototype.slice.call(document.querySelectorAll("[data-mirror]"));
+
+// Copies screen 1's values into the bar, and shows any error right under
+// the bar field (icon plus message), linked with aria-describedby.
+function syncMirrors(errors) {
+  mirrors.forEach(function (mirror) {
+    const name = mirror.dataset.mirror;
+    const source = byId(name);
+    if (document.activeElement !== mirror) mirror.value = source.value;
+
+    const errorId = mirror.id + "-error";
+    let error = byId(errorId);
+    const message = shownErrors[name] ? errors[name] : "";
+    if (message) {
+      if (!error) {
+        error = document.createElement("p");
+        error.className = "bar-error";
+        error.id = errorId;
+        error.innerHTML = ALERT_ICON + '<span class="error-text"></span>';
+        mirror.closest(".bar-field, .bar-stepper").appendChild(error);
+      }
+      error.querySelector(".error-text").textContent = message;
+      mirror.setAttribute("aria-invalid", "true");
+      mirror.setAttribute("aria-describedby", errorId);
+    } else {
+      if (error) error.remove();
+      mirror.removeAttribute("aria-invalid");
+      mirror.removeAttribute("aria-describedby");
+    }
+  });
 }
 
 // Which parts of the result are visible: the full result, "add hours," or "fix errors."
 function showResultState(state) {
-  hasResult = state === "result";
-  updateMiniSummary();
   show(byId("result-summary"), state === "result");
   show(byId("hours-chart"), state === "result");
   show(byId("receipt-section"), state === "result");
@@ -711,6 +717,16 @@ function showResultState(state) {
   }
 }
 
+// On screen 2 the fields themselves are out of sight, so the "fix errors" line
+// also says what's wrong.
+function renderErrorState(errors) {
+  const messages = Object.keys(shownErrors)
+    .filter(function (name) { return name !== "quote"; })
+    .map(function (name) { return errors[name]; });
+  byId("error-state").textContent = "Fix the fields with errors to see your result." +
+    (messages.length ? " " + messages.join(" ") : "");
+}
+
 // Runs on every change: check the fields, do the math, update the page.
 // commit is true when the person has left a field, paused typing, or clicked a control.
 // Until then, a new error leaves the page as it was, so nothing flashes mid-typing.
@@ -718,6 +734,7 @@ function update(commit) {
   const checked = calc.validateInputs(readForm());
   const errors = checked.errors;
   showErrors(errors, commit);
+  syncMirrors(errors);
 
   // Any error outside the quote stops the math. A quote error only hides the quote line.
   const blocking = Object.keys(errors).filter(function (name) { return name !== "quote"; });
@@ -726,16 +743,23 @@ function update(commit) {
     if (!anyShown) return;
     const hoursAreFine = calc.HOURS_FIELDS.every(function (name) { return !errors[name]; });
     if (hoursAreFine) {
-      renderGroupTotals(calc.workHours(checked.values));
+      const hours = calc.workHours(checked.values);
+      renderGroupTotals(hours);
+      renderTotals(hours);
     } else {
       clearGroupTotals();
+      renderTotals(null);
     }
+    renderCheckButton(checked.values, null);
+    renderErrorState(errors);
     showResultState("errors");
     return;
   }
 
   const r = calc.calculate(checked.values);
   renderGroupTotals(r.hours);
+  renderTotals(r.hours);
+  renderCheckButton(checked.values, r.hours);
   if (!r.hasHours) {
     showResultState("no-hours");
     return;
@@ -744,7 +768,6 @@ function update(commit) {
   showResultState("result");
   lastResult = r;
   renderHero(r);
-  renderMiniSummary(r);
   renderHoursChart(r);
   renderOfferChart(r);
   renderReceipt(r, checked.values);
@@ -756,7 +779,7 @@ function update(commit) {
 let lastResult = null;
 
 function relayoutCharts() {
-  if (!lastResult) return;
+  if (!lastResult || byId("result").hidden) return;
   layoutBlocks(lastResult);
   if (lastResult.offer) layoutRuler(lastResult);
 }
@@ -789,6 +812,64 @@ function stepField(button) {
 function showOfferField() {
   const hasOffer = byId("offer-yes").checked;
   show(byId("offer-field"), hasOffer);
+  show(byId("bar-offer-field"), hasOffer);
+}
+
+// Screens: inputs (white) and results (black), one at a time, no reload.
+
+function showScreen(name) {
+  const results = name === "results";
+  byId("screen-inputs").hidden = results;
+  byId("result").hidden = !results;
+  document.body.classList.toggle("on-inputs", !results);
+  document.body.classList.toggle("on-results", results);
+  window.scrollTo(0, 0);
+}
+
+// The browser's Back button goes from results to inputs, with every value kept.
+// Showing the results adds a history step; Back (or "Edit all details") removes it.
+function openResults() {
+  showScreen("results");
+  relayoutCharts();
+  const target = !byId("result-summary").hidden ? byId("hero-label") : byId("empty-state");
+  target.focus();
+}
+
+function openInputs() {
+  showScreen("inputs");
+  byId("page-title").focus();
+}
+
+window.addEventListener("popstate", function (event) {
+  if (event.state && event.state.screen === "results") {
+    openResults();
+  } else {
+    openInputs();
+  }
+});
+
+// "Check the offer": with errors, go to the first one. Otherwise show the result
+// and move focus to its first line, so screen readers announce it.
+function checkOffer() {
+  clearTimeout(commitTimer);
+  update(true);
+  const firstError = Object.keys(FIELD_IDS).filter(function (name) {
+    return name !== "quote" && shownErrors[name];
+  })[0];
+  if (firstError) {
+    byId(FIELD_IDS[firstError]).focus();
+    return;
+  }
+  history.pushState({ screen: "results" }, "", "#results");
+  openResults();
+}
+
+function editDetails() {
+  if (history.state && history.state.screen === "results") {
+    history.back();
+  } else {
+    openInputs();
+  }
 }
 
 // Wiring
@@ -798,7 +879,7 @@ byId("counter-form").addEventListener("submit", function (event) {
   event.preventDefault();
 });
 
-document.querySelectorAll(".stepper button").forEach(function (button) {
+document.querySelectorAll("button[data-step]").forEach(function (button) {
   button.addEventListener("click", function () { stepField(button); });
 });
 
@@ -806,6 +887,14 @@ Object.keys(FIELD_IDS).forEach(function (name) {
   const input = byId(FIELD_IDS[name]);
   input.addEventListener("input", onType);
   input.addEventListener("blur", onLeaveField);
+});
+
+mirrors.forEach(function (mirror) {
+  mirror.addEventListener("input", function () {
+    byId(mirror.dataset.mirror).value = mirror.value;
+    onType();
+  });
+  mirror.addEventListener("blur", onLeaveField);
 });
 
 document.querySelectorAll('input[name="offerStatus"]').forEach(function (radio) {
@@ -816,17 +905,15 @@ document.querySelectorAll('input[name="offerStatus"]').forEach(function (radio) 
   });
 });
 
+byId("check-offer").addEventListener("click", checkOffer);
+byId("edit-details").addEventListener("click", editDetails);
+byId("skip-link").addEventListener("click", function (event) {
+  event.preventDefault();
+  checkOffer();
+});
+
 byId("reply").addEventListener("input", onReplyEdit);
 byId("update-draft").addEventListener("click", updateDraft);
-
-// The hero counts as out of view once it's behind the 56px header or scrolled away.
-if ("IntersectionObserver" in window) {
-  const heroWatcher = new IntersectionObserver(function (entries) {
-    heroInView = entries[entries.length - 1].isIntersecting;
-    updateMiniSummary();
-  }, { rootMargin: "-56px 0px 0px 0px" });
-  heroWatcher.observe(document.querySelector(".hero-number"));
-}
 
 let resizeFrame = null;
 window.addEventListener("resize", function () {
@@ -837,6 +924,9 @@ window.addEventListener("resize", function () {
 if (document.fonts && document.fonts.ready) {
   document.fonts.ready.then(relayoutCharts);
 }
+
+// Always start on screen 1. A leftover #results in the address goes away.
+if (location.hash === "#results") history.replaceState(null, "", location.pathname);
 
 showOfferField();
 update(true);

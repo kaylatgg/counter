@@ -465,5 +465,58 @@ test("never more than 6 ticks", function () {
   });
 });
 
+group("Pay per hour: labels never overlap");
+
+function checkSpread(items, width, gap) {
+  const result = calc.spreadLabels(items, width, gap);
+  if (!result.fits) return result;
+  const placed = items.map(function (item, i) {
+    return { left: result.lefts[i], right: result.lefts[i] + item.width };
+  }).sort(function (a, b) { return a.left - b.left; });
+  placed.forEach(function (box, i) {
+    assert.ok(box.left >= -1e-9, "label starts before the ruler: " + box.left);
+    assert.ok(box.right <= width + 1e-9, "label runs past the ruler: " + box.right);
+    if (i > 0) {
+      assert.ok(box.left - placed[i - 1].right >= gap - 1e-9,
+        "labels too close: " + JSON.stringify(placed));
+    }
+  });
+  return result;
+}
+
+test("labels that already fit don't move", function () {
+  const result = checkSpread([{ left: 10, width: 50 }, { left: 200, width: 60 }], 400, 8);
+  assert.deepStrictEqual(result.lefts, [10, 200]);
+});
+
+test("two labels wanting the same spot are pushed apart", function () {
+  checkSpread([{ left: 100, width: 80 }, { left: 100, width: 60 }], 400, 8);
+});
+
+test("labels near the edges stay inside the ruler", function () {
+  checkSpread([{ left: -40, width: 120 }, { left: 380, width: 70 }], 400, 8);
+});
+
+test("2,000 random rows of labels never overlap", function () {
+  let seed = 7;
+  function random() {
+    seed = (seed * 16807) % 2147483647;
+    return seed / 2147483647;
+  }
+  for (let run = 0; run < 2000; run++) {
+    const width = 200 + random() * 600;
+    const count = 1 + Math.floor(random() * 3);
+    const items = [];
+    for (let i = 0; i < count; i++) {
+      items.push({ left: random() * width - 40, width: 40 + random() * 100 });
+    }
+    checkSpread(items, width, 8);
+  }
+});
+
+test("says when labels can't all fit", function () {
+  assert.strictEqual(calc.spreadLabels([{ left: 0, width: 150 }, { left: 0, width: 150 }], 200, 8).fits, false);
+});
+
 console.log("\n" + passed + " passed, " + failed + " failed");
 if (failed > 0) process.exitCode = 1;

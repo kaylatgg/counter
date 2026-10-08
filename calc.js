@@ -279,6 +279,35 @@ function rulerScale(largest) {
   return { max: max, step: step, ticks: ticks };
 }
 
+// Places one row of chart labels so none overlap. Each item has the left edge it
+// wants and its width. Labels keep at least `gap` px between them and stay inside
+// 0..width, moving as little as needed: a left-to-right pass pushes labels right,
+// then a right-to-left pass pulls them back inside the edge.
+// Returns { lefts, fits }. fits is false when the labels can't all fit at once.
+function spreadLabels(items, width, gap) {
+  const order = items.map(function (item, i) { return i; })
+    .sort(function (a, b) { return items[a].left - items[b].left; });
+  const lefts = items.map(function (item) {
+    return Math.max(0, Math.min(width - item.width, item.left));
+  });
+
+  let edge = -Infinity;
+  order.forEach(function (i) {
+    if (lefts[i] < edge) lefts[i] = edge;
+    edge = lefts[i] + items[i].width + gap;
+  });
+
+  edge = width;
+  order.slice().reverse().forEach(function (i) {
+    if (lefts[i] + items[i].width > edge) lefts[i] = edge - items[i].width;
+    edge = lefts[i] - gap;
+  });
+
+  const needed = items.reduce(function (sum, item) { return sum + item.width; }, 0) +
+    Math.max(0, items.length - 1) * gap;
+  return { lefts: lefts, fits: needed <= width };
+}
+
 // Display helpers. These are the only places numbers get rounded.
 
 const centsFormat = new Intl.NumberFormat("en-US", {
@@ -333,6 +362,7 @@ const calc = {
   blockUnit,
   splitIntoBlocks,
   rulerScale,
+  spreadLabels,
   formatMoney,
   formatWholeMoney,
   formatNumber,

@@ -11,328 +11,396 @@
   <script src="calc.js" defer></script>
   <script src="app.js" defer></script>
 </head>
-<body>
-  <a href="#result" class="skip-link">Skip to your result</a>
+<body class="on-inputs">
+  <a href="#result" class="skip-link" id="skip-link">Skip to your result</a>
 
   <header class="topbar">
-    <div class="topbar-left">
+    <div class="topbar-inner">
       <p class="wordmark">Counter</p>
-    </div>
-    <div class="topbar-right">
-      <p class="mini-summary" id="mini-summary" aria-hidden="true">
-        <span class="mini-label" id="mini-label">This offer pays</span>
-        <span class="mini-value" id="mini-value">$17.39/hr</span>
-        <span class="mini-estimate" id="mini-estimate">Estimate $310</span>
-      </p>
+      <p class="topbar-job" id="topbar-job">Restaurant menu</p>
     </div>
   </header>
 
-  <div class="intro">
-    <h1>What does this <span class="headline-break">job really pay?</span></h1>
-    <p class="lede">Count all the work, see what an offer pays per hour, then choose your price or scope.</p>
-    <p class="example-note">Example numbers. Change them to match your project.</p>
-  </div>
-
   <main>
-    <form id="counter-form" novalidate>
-
-      <!-- 1 The job -->
-      <fieldset class="section">
-        <legend><span class="step">1</span> The job</legend>
-
-        <p class="job-name">Restaurant menu <span class="tag">Example job</span></p>
-
-        <div class="steppers">
-          <div class="stepper-field">
-            <label for="pages">Pages</label>
-            <div class="stepper">
-              <button type="button" data-step="-1" data-target="pages" aria-label="One less page">−</button>
-              <input id="pages" name="pages" type="text" inputmode="numeric" value="2">
-              <button type="button" data-step="1" data-target="pages" aria-label="One more page">+</button>
-            </div>
-          </div>
-
-          <div class="stepper-field">
-            <label for="rounds">Rounds of changes</label>
-            <div class="stepper">
-              <button type="button" data-step="-1" data-target="rounds" aria-label="One less round of changes">−</button>
-              <input id="rounds" name="rounds" type="text" inputmode="numeric" value="2">
-              <button type="button" data-step="1" data-target="rounds" aria-label="One more round of changes">+</button>
-            </div>
-          </div>
+    <!-- Screen 1: inputs -->
+    <section class="screen-inputs" id="screen-inputs" aria-labelledby="page-title">
+      <div class="inputs-top">
+        <h1 id="page-title" tabindex="-1">What does this job <span class="headline-break">really pay?</span></h1>
+        <div class="intro">
+          <p class="lede">Count all the work, see what an offer pays per hour, then choose your price or scope.</p>
+          <p class="example-note">Example numbers. Change them to match your project.</p>
         </div>
-
-        <p class="hint" id="scope-hint">Changing pages or rounds changes the work you promise the client, so it changes the hours below.</p>
-      </fieldset>
-
-      <!-- 2 The work -->
-      <fieldset class="section">
-        <legend><span class="step">2</span> The work</legend>
-
-        <fieldset class="work-group" data-group="production">
-          <legend>Production <output id="total-production">6 hrs</output></legend>
-
-          <div class="work-row">
-            <label for="concept-hours">Concepts and sketches</label>
-            <div class="unit-input">
-              <input id="concept-hours" name="conceptHours" type="text" inputmode="decimal" value="2" aria-describedby="unit-concept-hours">
-              <span class="unit" id="unit-concept-hours">hrs</span>
-            </div>
-          </div>
-
-          <div class="work-row">
-            <label for="page-hours">Layout per page</label>
-            <div class="unit-input">
-              <input id="page-hours" name="pageHours" type="text" inputmode="decimal" value="2" aria-describedby="unit-page-hours page-hours-hint">
-              <span class="unit" id="unit-page-hours">hrs</span>
-            </div>
-            <p class="hint" id="page-hours-hint">If fewer pages means fitting the same content into less space, it may not save much time. Adjust this if so.</p>
-          </div>
-        </fieldset>
-
-        <fieldset class="work-group" data-group="communication">
-          <legend>Communication <output id="total-communication">1.5 hrs</output></legend>
-
-          <div class="work-row">
-            <label for="communication-hours">Emails, calls, and meetings</label>
-            <div class="unit-input">
-              <input id="communication-hours" name="communicationHours" type="text" inputmode="decimal" value="1.5" aria-describedby="unit-communication-hours">
-              <span class="unit" id="unit-communication-hours">hrs</span>
-            </div>
-          </div>
-        </fieldset>
-
-        <fieldset class="work-group" data-group="revisions">
-          <legend>Revisions <output id="total-revisions">3 hrs</output></legend>
-
-          <div class="work-row">
-            <label for="round-hours">Hours per round of changes</label>
-            <div class="unit-input">
-              <input id="round-hours" name="roundHours" type="text" inputmode="decimal" value="1.5" aria-describedby="unit-round-hours">
-              <span class="unit" id="unit-round-hours">hrs</span>
-            </div>
-          </div>
-        </fieldset>
-
-        <fieldset class="work-group" data-group="delivery">
-          <legend>Delivery <output id="total-delivery">1 hr</output></legend>
-
-          <div class="work-row">
-            <label for="delivery-hours">File prep and export</label>
-            <div class="unit-input">
-              <input id="delivery-hours" name="deliveryHours" type="text" inputmode="decimal" value="1" aria-describedby="unit-delivery-hours">
-              <span class="unit" id="unit-delivery-hours">hrs</span>
-            </div>
-          </div>
-        </fieldset>
-      </fieldset>
-
-      <!-- 3 Your numbers -->
-      <fieldset class="section">
-        <legend><span class="step">3</span> Your numbers</legend>
-
-        <div class="field-row">
-          <div class="field">
-            <label for="rate">Target hourly rate</label>
-            <div class="unit-input">
-              <span class="unit">$</span>
-              <input id="rate" name="rate" type="text" inputmode="decimal" value="25" aria-describedby="unit-rate rate-hint">
-              <span class="unit" id="unit-rate">/hr</span>
-            </div>
-            <p class="hint" id="rate-hint">Example rate. Adjust for your project.</p>
-          </div>
-
-          <div class="field">
-            <label for="expenses">Project expenses</label>
-            <div class="unit-input">
-              <span class="unit">$</span>
-              <input id="expenses" name="expenses" type="text" inputmode="decimal" value="20" aria-describedby="expenses-hint">
-            </div>
-            <p class="hint" id="expenses-hint">Direct costs for this job, like fonts, stock images, or printed proofs.</p>
-          </div>
-        </div>
-      </fieldset>
-
-      <!-- 4 Their offer -->
-      <fieldset class="section">
-        <legend><span class="step">4</span> Their offer</legend>
-
-        <div class="offer-choice">
-          <div class="radio-choice">
-            <input id="offer-yes" name="offerStatus" type="radio" value="amount" checked>
-            <label for="offer-yes">They offered an amount</label>
-          </div>
-          <div class="radio-choice">
-            <input id="offer-none" name="offerStatus" type="radio" value="none">
-            <label for="offer-none">No offer yet</label>
-          </div>
-        </div>
-
-        <div class="field-row">
-          <div class="field" id="offer-field">
-            <label for="offer">Amount they offered</label>
-            <div class="unit-input">
-              <span class="unit">$</span>
-              <input id="offer" name="offer" type="text" inputmode="decimal" value="200">
-            </div>
-          </div>
-        </div>
-      </fieldset>
-    </form>
-
-    <!-- 5 The result -->
-    <section id="result" class="result" aria-labelledby="result-title" tabindex="-1">
-      <h2 id="result-title" class="visually-hidden"><span class="step">5</span> The result</h2>
-
-      <div class="result-summary" id="result-summary">
-        <p class="hero-label" id="hero-label">This offer pays</p>
-        <p class="hero-number">
-          <span class="visually-hidden" id="hero-spoken">$17.39 per hour</span>
-          <span aria-hidden="true"><span id="hero-whole">$17</span><span class="hero-cents" id="hero-cents">.39</span><span class="hero-unit" id="hero-unit">/hr</span></span>
-        </p>
-        <p class="hero-sentence" id="hero-sentence">for <strong>11.5 hours</strong> of real work. That's <strong class="signal">$7.61 an hour</strong> under your $25 target.</p>
-        <p class="warning" id="offer-warning" hidden></p>
-
-        <dl class="metrics" id="metrics">
-          <div><dt>After expenses</dt><dd>$15.65/hr</dd></div>
-          <div><dt>Your estimate</dt><dd>$310</dd></div>
-          <div><dt>Above the offer</dt><dd>+$110</dd></div>
-        </dl>
       </div>
 
-      <p class="empty-state" id="empty-state" hidden>Add some hours to see your estimate.</p>
-      <p class="empty-state" id="error-state" hidden>Fix the fields with errors to see your result.</p>
+      <form id="counter-form" class="inputs-columns" novalidate>
+        <div class="inputs-column">
 
-      <!-- B. Your hours, and where the money runs out -->
-      <section class="chart" id="hours-chart" aria-labelledby="hours-title">
-        <div class="chart-head">
-          <h3 id="hours-title">Your 11.5 hours, and where the money runs out</h3>
-          <p class="chart-flag" id="hours-flag" hidden></p>
-          <p class="chart-unit" id="block-unit">1 block = 30 min</p>
+          <!-- 1 The job -->
+          <fieldset class="section">
+            <legend><span class="step">1</span> The job</legend>
+
+            <p class="job-name">Restaurant menu <span class="tag">Example job</span></p>
+
+            <div class="steppers">
+              <div class="stepper-field">
+                <label for="pages">Pages</label>
+                <div class="stepper">
+                  <button type="button" data-step="-1" data-target="pages" aria-label="One less page">−</button>
+                  <input id="pages" name="pages" type="text" inputmode="numeric" value="2">
+                  <button type="button" data-step="1" data-target="pages" aria-label="One more page">+</button>
+                </div>
+              </div>
+
+              <div class="stepper-field">
+                <label for="rounds">Rounds of changes</label>
+                <div class="stepper">
+                  <button type="button" data-step="-1" data-target="rounds" aria-label="One less round of changes">−</button>
+                  <input id="rounds" name="rounds" type="text" inputmode="numeric" value="2">
+                  <button type="button" data-step="1" data-target="rounds" aria-label="One more round of changes">+</button>
+                </div>
+              </div>
+            </div>
+
+            <p class="hint" id="scope-hint">Changing pages or rounds changes the work you promise the client, so it changes the hours below.</p>
+          </fieldset>
+
+          <!-- 2 The work -->
+          <fieldset class="section">
+            <legend><span class="step">2</span> The work</legend>
+
+            <p class="hint section-hint">Example hours. Change any to match how you work.</p>
+
+            <fieldset class="work-group" data-group="production">
+              <legend>Production <output id="total-production">6 hrs</output></legend>
+
+              <div class="work-row">
+                <label for="concept-hours">Concepts and sketches</label>
+                <div class="unit-input">
+                  <input id="concept-hours" name="conceptHours" type="text" inputmode="decimal" value="2" aria-describedby="unit-concept-hours">
+                  <span class="unit" id="unit-concept-hours">hrs</span>
+                </div>
+              </div>
+
+              <div class="work-row">
+                <label for="page-hours">Layout per page</label>
+                <div class="unit-input">
+                  <input id="page-hours" name="pageHours" type="text" inputmode="decimal" value="2" aria-describedby="unit-page-hours page-hours-hint">
+                  <span class="unit" id="unit-page-hours">hrs</span>
+                </div>
+                <p class="hint" id="page-hours-hint">If fewer pages means fitting the same content into less space, it may not save much time. Adjust this if so.</p>
+              </div>
+            </fieldset>
+
+            <fieldset class="work-group" data-group="communication">
+              <legend>Communication <output id="total-communication">1.5 hrs</output></legend>
+
+              <div class="work-row">
+                <label for="communication-hours">Emails, calls, and meetings</label>
+                <div class="unit-input">
+                  <input id="communication-hours" name="communicationHours" type="text" inputmode="decimal" value="1.5" aria-describedby="unit-communication-hours">
+                  <span class="unit" id="unit-communication-hours">hrs</span>
+                </div>
+              </div>
+            </fieldset>
+
+            <fieldset class="work-group" data-group="revisions">
+              <legend>Revisions <output id="total-revisions">3 hrs</output></legend>
+
+              <div class="work-row">
+                <label for="round-hours">Hours per round of changes</label>
+                <div class="unit-input">
+                  <input id="round-hours" name="roundHours" type="text" inputmode="decimal" value="1.5" aria-describedby="unit-round-hours">
+                  <span class="unit" id="unit-round-hours">hrs</span>
+                </div>
+              </div>
+            </fieldset>
+
+            <fieldset class="work-group" data-group="delivery">
+              <legend>Delivery <output id="total-delivery">1 hr</output></legend>
+
+              <div class="work-row">
+                <label for="delivery-hours">File prep and export</label>
+                <div class="unit-input">
+                  <input id="delivery-hours" name="deliveryHours" type="text" inputmode="decimal" value="1" aria-describedby="unit-delivery-hours">
+                  <span class="unit" id="unit-delivery-hours">hrs</span>
+                </div>
+              </div>
+            </fieldset>
+
+            <p class="work-total">Total <output id="total-hours">11.5 hrs</output></p>
+          </fieldset>
         </div>
 
-        <div class="blocks" id="blocks" aria-hidden="true">
-          <div class="runs-out" id="runs-out" hidden><span class="runs-out-label" id="runs-out-label"></span></div>
-        </div>
+        <div class="inputs-column">
 
-        <ul class="visually-hidden" id="hours-list">
-          <li>Production: 6 hrs</li>
-          <li>Communication: 1.5 hrs</li>
-          <li>Revisions: 3 hrs</li>
-          <li>Delivery: 1 hr</li>
-        </ul>
+          <!-- 3 Your numbers -->
+          <fieldset class="section">
+            <legend><span class="step">3</span> Your numbers</legend>
 
-        <p class="chart-summary" id="hours-summary"><strong>4.3 hours</strong> go unpaid, and <strong>5.5 hours</strong> are work outside the design itself.</p>
-      </section>
+            <div class="field-row">
+              <div class="field">
+                <label for="rate">Target hourly rate</label>
+                <div class="unit-input">
+                  <span class="unit">$</span>
+                  <input id="rate" name="rate" type="text" inputmode="decimal" value="25" aria-describedby="unit-rate rate-hint">
+                  <span class="unit" id="unit-rate">/hr</span>
+                </div>
+                <p class="hint" id="rate-hint">Example rate. Adjust for your project.</p>
+              </div>
 
-      <!-- C. Pay per hour -->
-      <section class="chart" id="offer-chart" aria-labelledby="offer-chart-title">
-        <h3 id="offer-chart-title">Pay per hour</h3>
+              <div class="field">
+                <label for="expenses">Project expenses</label>
+                <div class="unit-input">
+                  <span class="unit">$</span>
+                  <input id="expenses" name="expenses" type="text" inputmode="decimal" value="20" aria-describedby="expenses-hint">
+                </div>
+                <p class="hint" id="expenses-hint">Direct costs for this job, like fonts, stock images, or printed proofs.</p>
+              </div>
+            </div>
+          </fieldset>
 
-        <div class="ruler" id="ruler" aria-hidden="true">
-          <div class="ruler-line"></div>
-          <div class="ruler-ticks" id="ruler-ticks"></div>
-          <div class="gap-band" id="gap-band"></div>
-          <span class="ruler-label gap-label" id="gap-label"></span>
-          <span class="ruler-label over-label" id="over-label"></span>
-          <div class="target-mark" id="target-mark"></div>
-          <span class="ruler-label target-label" id="target-label"></span>
-          <div class="dot dot-after" id="dot-after"></div>
-          <span class="ruler-label after-label" id="after-label"></span>
-          <div class="dot dot-offer" id="dot-offer"></div>
-          <span class="ruler-label offer-label" id="offer-label"></span>
-        </div>
+          <!-- 4 Their offer -->
+          <fieldset class="section">
+            <legend><span class="step">4</span> Their offer</legend>
 
-        <ul class="visually-hidden" id="pay-list">
-          <li>Offer, before expenses: $17.39/hr</li>
-          <li>Offer, after $20.00 expenses: $15.65/hr</li>
-          <li>Your target rate: $25.00/hr</li>
-        </ul>
+            <div class="offer-choice">
+              <div class="radio-choice">
+                <input id="offer-yes" name="offerStatus" type="radio" value="amount" checked>
+                <label for="offer-yes">They offered an amount</label>
+              </div>
+              <div class="radio-choice">
+                <input id="offer-none" name="offerStatus" type="radio" value="none">
+                <label for="offer-none">No offer yet</label>
+              </div>
+            </div>
 
-        <p class="chart-summary" id="offer-summary">Before expenses, the offer pays $7.61 an hour less than your target.</p>
-      </section>
+            <div class="field-row">
+              <div class="field" id="offer-field">
+                <label for="offer">Amount they offered</label>
+                <div class="unit-input">
+                  <span class="unit">$</span>
+                  <input id="offer" name="offer" type="text" inputmode="decimal" value="200">
+                </div>
+              </div>
+            </div>
+          </fieldset>
 
-      <!-- D. How we calculated this -->
-      <section class="receipt" id="receipt-section" aria-labelledby="receipt-title">
-        <h3 id="receipt-title" class="visually-hidden">How we calculated this</h3>
-
-        <details class="math">
-          <summary>
-            <span class="math-toggle">
-              <svg class="chevron" width="12" height="12" viewBox="0 0 12 12" aria-hidden="true" focusable="false"><path d="M4 2.5 7.5 6 4 9.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
-              <span class="when-closed">Show the math</span><span class="when-open">Hide the math</span>
+          <button type="button" class="check-button" id="check-offer">
+            <span class="check-main">
+              <span class="check-title" id="check-title">Check the offer</span>
+              <span class="check-preview" id="check-preview">11.5 hrs of work against $200</span>
             </span>
-            <span class="math-estimate" id="math-estimate">$310</span>
-          </summary>
+            <span class="check-arrow" aria-hidden="true">
+              <svg width="26" height="26" viewBox="0 0 26 26" focusable="false"><path d="M4 13h17M14 6l7 7-7 7" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="square" stroke-linejoin="miter"/></svg>
+            </span>
+          </button>
+        </div>
+      </form>
+    </section>
 
-          <table id="receipt">
-            <thead>
-              <tr>
-                <th scope="col"><span class="visually-hidden">Item</span></th>
-                <th scope="col"><span class="visually-hidden">Math</span></th>
-                <th scope="col"><span class="visually-hidden">Amount</span></th>
-              </tr>
-            </thead>
-            <tbody id="receipt-rows">
-              <tr><th scope="row">Production</th><td>2 + 2 pages x 2</td><td>6 hrs</td></tr>
-              <tr><th scope="row">Communication</th><td></td><td>1.5 hrs</td></tr>
-              <tr><th scope="row">Revisions</th><td>2 rounds x 1.5</td><td>3 hrs</td></tr>
-              <tr><th scope="row">Delivery</th><td></td><td>1 hr</td></tr>
-              <tr class="sum"><th scope="row">Total hours</th><td></td><td>11.5 hrs</td></tr>
-              <tr><th scope="row">Your time</th><td>11.5 x $25.00</td><td>$287.50</td></tr>
-              <tr><th scope="row">Expenses</th><td></td><td>$20.00</td></tr>
-              <tr class="sum"><th scope="row">Subtotal</th><td></td><td>$307.50</td></tr>
-              <tr><th scope="row">Rounded up to nearest $5</th><td></td><td>+$2.50</td></tr>
-              <tr class="total"><th scope="row" colspan="2">Estimated project price</th><td>$310</td></tr>
-            </tbody>
-          </table>
+    <!-- Screen 2: results -->
+    <section id="result" class="screen-results" aria-labelledby="result-title" hidden>
 
-          <p class="receipt-note">Taxes are not included. None of these numbers are take-home pay.</p>
-        </details>
-      </section>
+      <!-- Control bar: the same values as screen 1, editable here too -->
+      <div class="control-bar" role="group" aria-label="Quick changes">
+        <button type="button" class="back-button" id="edit-details">
+          <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true" focusable="false"><path d="M8.5 3 4.5 7l4 4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Edit all details
+        </button>
 
-      <!-- 6 Your quote -->
-      <fieldset class="section result-block">
-        <legend><span class="step">6</span> Your quote</legend>
+        <span class="bar-divider" aria-hidden="true"></span>
 
-        <div class="field">
-          <label for="quote">Price you'll send</label>
-          <div class="unit-input">
-            <span class="unit">$</span>
-            <input id="quote" name="quote" type="text" inputmode="decimal" placeholder="310" aria-describedby="quote-hint">
+        <div class="bar-stepper">
+          <label for="bar-pages">Pages</label>
+          <button type="button" data-step="-1" data-target="pages" aria-label="One less page">−</button>
+          <input id="bar-pages" data-mirror="pages" type="text" inputmode="numeric" value="2">
+          <button type="button" data-step="1" data-target="pages" aria-label="One more page">+</button>
+        </div>
+
+        <div class="bar-stepper">
+          <label for="bar-rounds">Rounds</label>
+          <button type="button" data-step="-1" data-target="rounds" aria-label="One less round of changes">−</button>
+          <input id="bar-rounds" data-mirror="rounds" type="text" inputmode="numeric" value="2">
+          <button type="button" data-step="1" data-target="rounds" aria-label="One more round of changes">+</button>
+        </div>
+
+        <span class="bar-divider" aria-hidden="true"></span>
+
+        <div class="bar-field" id="bar-offer-field">
+          <label for="bar-offer">Offer</label>
+          <span class="bar-input"><span class="unit">$</span><input id="bar-offer" data-mirror="offer" type="text" inputmode="decimal" value="200"></span>
+        </div>
+
+        <div class="bar-field">
+          <label for="bar-rate">Rate</label>
+          <span class="bar-input"><span class="unit">$</span><input id="bar-rate" data-mirror="rate" type="text" inputmode="decimal" value="25"><span class="unit">/hr</span></span>
+        </div>
+
+        <p class="bar-note">Change these to see it update</p>
+      </div>
+
+      <div class="results-body">
+        <h2 id="result-title" class="visually-hidden"><span class="step">5</span> The result</h2>
+
+        <!-- Row 1: hero and stacked metrics -->
+        <div class="hero-row" id="result-summary">
+          <div class="hero-main">
+            <p class="hero-label" id="hero-label" tabindex="-1">This offer pays</p>
+            <p class="hero-number">
+              <span class="visually-hidden" id="hero-spoken">$17.39 per hour</span>
+              <span aria-hidden="true"><span id="hero-whole">$17</span><span class="hero-cents" id="hero-cents">.39</span><span class="hero-unit" id="hero-unit">/hr</span></span>
+            </p>
+            <p class="hero-sentence" id="hero-sentence">for <strong>11.5 hours</strong> of real work. That's <strong class="signal">$7.61 an hour</strong> under your $25 target.</p>
+            <p class="warning" id="offer-warning" hidden></p>
           </div>
-          <button type="button" class="link-button" id="use-estimate">Use estimate</button>
-          <p class="hint" id="quote-hint">Leave blank to use your estimate. Changing this doesn't change your estimate or target rate.</p>
+
+          <dl class="metrics" id="metrics">
+            <div><dt>After expenses</dt><dd>$15.65/hr</dd></div>
+            <div><dt>Your estimate</dt><dd>$310</dd></div>
+            <div><dt>Above the offer</dt><dd>+$110</dd></div>
+          </dl>
         </div>
 
-        <p id="quote-result">At $310, you'd earn $26.96/hr before expenses and $25.22/hr after.</p>
-      </fieldset>
+        <p class="empty-state" id="empty-state" tabindex="-1" hidden>Add some hours to see your estimate.</p>
+        <p class="empty-state" id="error-state" tabindex="-1" hidden>Fix the fields with errors to see your result.</p>
 
-      <!-- 7 Your reply -->
-      <fieldset class="section result-block">
-        <legend><span class="step">7</span> Your reply</legend>
+        <!-- Row 2: both charts side by side -->
+        <div class="charts-row">
+          <!-- B. Your hours, and where the money runs out -->
+          <section class="chart" id="hours-chart" aria-labelledby="hours-title">
+            <div class="chart-head">
+              <h3 id="hours-title">Your 11.5 hours, and where the money runs out</h3>
+              <p class="chart-flag" id="hours-flag" hidden></p>
+              <p class="chart-unit" id="block-unit">1 block = 30 min</p>
+            </div>
 
-        <div class="field">
-          <label for="reply">Your reply to the client</label>
-          <textarea id="reply" name="reply" rows="6" autocomplete="off">Hi! Thanks for reaching out about the menu. For a 2-page menu with 2 rounds of changes and print-ready files, my price is $310. I know that's more than the $200 you mentioned, so I'm happy to talk about what would fit your budget. Let me know if you have any questions!</textarea>
+            <div class="blocks" id="blocks" aria-hidden="true">
+              <div class="runs-out" id="runs-out" hidden><span class="runs-out-label" id="runs-out-label"></span></div>
+            </div>
+
+            <ul class="visually-hidden" id="hours-list">
+              <li>Production: 6 hrs</li>
+              <li>Communication: 1.5 hrs</li>
+              <li>Revisions: 3 hrs</li>
+              <li>Delivery: 1 hr</li>
+            </ul>
+
+            <p class="chart-summary" id="hours-summary"><strong>4.3 hours</strong> go unpaid, and <strong>5.5 hours</strong> are work outside the design itself.</p>
+          </section>
+
+          <!-- C. Pay per hour -->
+          <section class="chart" id="offer-chart" aria-labelledby="offer-chart-title">
+            <h3 id="offer-chart-title">Pay per hour</h3>
+
+            <div class="ruler" id="ruler" aria-hidden="true">
+              <div class="ruler-line"></div>
+              <div class="ruler-ticks" id="ruler-ticks"></div>
+              <div class="gap-band" id="gap-band"></div>
+              <span class="ruler-label gap-label" id="gap-label"></span>
+              <span class="ruler-label over-label" id="over-label"></span>
+              <div class="target-mark" id="target-mark"></div>
+              <span class="ruler-label target-label" id="target-label"></span>
+              <div class="dot dot-after" id="dot-after"></div>
+              <span class="ruler-label after-label" id="after-label"></span>
+              <div class="dot dot-offer" id="dot-offer"></div>
+              <span class="ruler-label offer-label" id="offer-label"></span>
+            </div>
+
+            <ul class="visually-hidden" id="pay-list">
+              <li>Offer, before expenses: $17.39/hr</li>
+              <li>Offer, after $20.00 expenses: $15.65/hr</li>
+              <li>Your target rate: $25.00/hr</li>
+            </ul>
+
+            <p class="chart-summary" id="offer-summary">Before expenses, the offer pays $7.61 an hour less than your target.</p>
+          </section>
         </div>
 
-        <div class="reply-actions">
-          <div class="notice" id="reply-notice" hidden>
-            <p>Your numbers or scope changed since you edited this reply.</p>
-            <button type="button" id="update-draft">Update draft</button>
-          </div>
+        <!-- Row 3: Show the math, quote, reply -->
+        <div class="results-more">
+          <!-- D. How we calculated this -->
+          <section class="receipt" id="receipt-section" aria-labelledby="receipt-title">
+            <h3 id="receipt-title" class="visually-hidden">How we calculated this</h3>
 
-          <button type="button" id="copy-reply">Copy reply</button>
-          <span id="copy-status" role="status"></span>
+            <details class="math">
+              <summary>
+                <span class="math-toggle">
+                  <svg class="chevron" width="12" height="12" viewBox="0 0 12 12" aria-hidden="true" focusable="false"><path d="M4 2.5 7.5 6 4 9.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  <span class="when-closed">Show the math</span><span class="when-open">Hide the math</span>
+                </span>
+                <span class="math-estimate" id="math-estimate">$310</span>
+              </summary>
+
+              <table id="receipt">
+                <thead>
+                  <tr>
+                    <th scope="col"><span class="visually-hidden">Item</span></th>
+                    <th scope="col"><span class="visually-hidden">Math</span></th>
+                    <th scope="col"><span class="visually-hidden">Amount</span></th>
+                  </tr>
+                </thead>
+                <tbody id="receipt-rows">
+                  <tr><th scope="row">Production</th><td>2 + 2 pages x 2</td><td>6 hrs</td></tr>
+                  <tr><th scope="row">Communication</th><td></td><td>1.5 hrs</td></tr>
+                  <tr><th scope="row">Revisions</th><td>2 rounds x 1.5</td><td>3 hrs</td></tr>
+                  <tr><th scope="row">Delivery</th><td></td><td>1 hr</td></tr>
+                  <tr class="sum"><th scope="row">Total hours</th><td></td><td>11.5 hrs</td></tr>
+                  <tr><th scope="row">Your time</th><td>11.5 x $25.00</td><td>$287.50</td></tr>
+                  <tr><th scope="row">Expenses</th><td></td><td>$20.00</td></tr>
+                  <tr class="sum"><th scope="row">Subtotal</th><td></td><td>$307.50</td></tr>
+                  <tr><th scope="row">Rounded up to nearest $5</th><td></td><td>+$2.50</td></tr>
+                  <tr class="total"><th scope="row" colspan="2">Estimated project price</th><td>$310</td></tr>
+                </tbody>
+              </table>
+
+              <p class="receipt-note">Taxes are not included. None of these numbers are take-home pay.</p>
+            </details>
+          </section>
+
+          <!-- 6 Your quote -->
+          <fieldset class="section result-block">
+            <legend><span class="step">6</span> Your quote</legend>
+
+            <div class="field">
+              <label for="quote">Price you'll send</label>
+              <div class="unit-input">
+                <span class="unit">$</span>
+                <input id="quote" name="quote" type="text" inputmode="decimal" placeholder="310" aria-describedby="quote-hint">
+              </div>
+              <button type="button" class="link-button" id="use-estimate">Use estimate</button>
+              <p class="hint" id="quote-hint">Leave blank to use your estimate. Changing this doesn't change your estimate or target rate.</p>
+            </div>
+
+            <p id="quote-result">At $310, you'd earn $26.96/hr before expenses and $25.22/hr after.</p>
+          </fieldset>
+
+          <!-- 7 Your reply -->
+          <fieldset class="section result-block">
+            <legend><span class="step">7</span> Your reply</legend>
+
+            <div class="field">
+              <label for="reply">Your reply to the client</label>
+              <textarea id="reply" name="reply" rows="6" autocomplete="off">Hi! Thanks for reaching out about the menu. For a 2-page menu with 2 rounds of changes and print-ready files, my price is $310. I know that's more than the $200 you mentioned, so I'm happy to talk about what would fit your budget. Let me know if you have any questions!</textarea>
+            </div>
+
+            <div class="reply-actions">
+              <div class="notice" id="reply-notice" hidden>
+                <p>Your numbers or scope changed since you edited this reply.</p>
+                <button type="button" id="update-draft">Update draft</button>
+              </div>
+
+              <button type="button" id="copy-reply">Copy reply</button>
+              <span id="copy-status" role="status"></span>
+            </div>
+          </fieldset>
         </div>
-      </fieldset>
+      </div>
     </section>
 
     <div class="visually-hidden" id="announcer" aria-live="polite"></div>
   </main>
 
-  <footer>
+  <footer class="site-footer">
     <p>Counter gives an estimate from your own inputs. It isn't a market rate or financial advice.</p>
   </footer>
 </body>

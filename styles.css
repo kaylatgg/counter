@@ -1,5 +1,5 @@
-/* Counter design system: "Split" (docs/DESIGN.md).
-   White input side on the left, black result side on the right.
+/* Counter design system: "Two screens" (docs/DESIGN.md v3).
+   Screen 1 is white, where you enter the job. Screen 2 is black, with the result.
    Every color is a token, so themes can change in one place. */
 
 :root {
@@ -25,9 +25,12 @@
   --hover-paper: #F1F2F4;  /* outline circles and pills on hover */
   --hover-ink: #2A2C31;    /* solid ink circles and pills on hover */
   --hover-lime: #E2FF6B;   /* "Copy reply" on hover */
-  --hover-night: #1A1C20;  /* outline pills on the dark side on hover */
+  --hover-night: #1A1C20;  /* outline pills and the screen 1 button on hover */
+  --night-bar: #15171A;    /* control bar on screen 2 */
 
   --font: "Geist", system-ui, sans-serif;
+  /* Longest comfortable line: about 75 characters. */
+  --measure: 62ch;
 }
 
 /* Base */
@@ -40,12 +43,17 @@
 
 html {
   -webkit-text-size-adjust: 100%;
-  /* Keeps focused fields clear of the sticky header. */
+  /* Keeps focused fields clear of the sticky header (and the control bar on screen 2). */
   scroll-padding-top: 56px;
+}
+
+html:has(body.on-results) {
+  scroll-padding-top: 120px;
 }
 
 body {
   margin: 0;
+  min-height: 100vh;
   background: var(--paper);
   color: var(--ink);
   font-family: var(--font);
@@ -79,6 +87,21 @@ textarea {
 
 button {
   cursor: pointer;
+}
+
+/* No single words left alone on a line, and balanced headings. */
+p,
+li,
+dd,
+label,
+legend {
+  text-wrap: pretty;
+}
+
+h1,
+h2,
+h3 {
+  text-wrap: balance;
 }
 
 [hidden] {
@@ -120,35 +143,33 @@ button {
   transform: none;
 }
 
-/* Sticky header: 56px, split white and black to match the columns. */
+/* Header: 56px, sticky, on both screens. White on screen 1, black on screen 2. */
 
 .topbar {
   position: sticky;
   top: 0;
   z-index: 10;
   display: flex;
-  height: 56px;
-}
-
-.topbar-left,
-.topbar-right {
-  display: flex;
   align-items: center;
-}
-
-.topbar-left {
-  flex: 1;
+  height: 56px;
   padding: 0 20px;
   background: var(--paper);
   border-bottom: 1px solid var(--line);
 }
 
-.topbar-right {
-  display: none;
-  justify-content: flex-end;
-  padding: 0 20px;
-  background: var(--night);
-  border-bottom: 1px solid var(--night-line);
+/* Screen 1: the same 1312px content width as the page, so the wordmark lines up
+   with the headline. Screen 2: full width, like the results. */
+.topbar-inner {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  width: 100%;
+  max-width: 1312px;
+  margin: 0 auto;
+}
+
+.on-results .topbar-inner {
+  max-width: none;
 }
 
 .wordmark {
@@ -159,73 +180,87 @@ button {
   color: var(--ink);
 }
 
-/* Compact live summary: fades in once the hero number scrolls out of view. */
-.mini-summary {
-  display: flex;
-  align-items: baseline;
-  gap: 10px;
-  white-space: nowrap;
-  opacity: 0;
-  visibility: hidden;
-  transition: opacity 120ms ease-out, visibility 0s linear 120ms;
-}
-
-.mini-summary.is-visible {
-  opacity: 1;
-  visibility: visible;
-  transition: opacity 120ms ease-out, visibility 0s;
-}
-
-.mini-label {
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--night-mute);
-}
-
-.mini-value {
-  font-size: 18px;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  color: var(--night-text);
-}
-
-.mini-estimate {
-  margin-left: 6px;
-  font-size: 14px;
-  font-weight: 600;
+.topbar-job {
+  display: none;
+  font-size: 13px;
   color: var(--night-2);
 }
 
-/* Intro: the light side starts 44px below the header. */
+.on-results .topbar {
+  background: var(--night);
+  border-bottom-color: var(--night-line);
+}
 
-.intro,
-form,
-footer {
+.on-results .wordmark {
+  color: var(--night-text);
+}
+
+.on-results .topbar-job {
+  display: block;
+}
+
+/* Screen 1: inputs */
+
+.screen-inputs,
+.site-footer {
+  max-width: 1440px;
+  margin: 0 auto;
   padding-left: 20px;
   padding-right: 20px;
 }
 
+.screen-inputs {
+  padding-top: 40px;
+}
+
+
+/* Headline left, intro right, a hairline under both. */
+.inputs-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px 48px;
+  padding-bottom: 40px;
+  border-bottom: 1px solid var(--line);
+}
+
 h1 {
-  margin-top: 44px;
-  font-size: 46px;
+  font-size: 56px;
   font-weight: 700;
-  letter-spacing: -0.045em;
-  line-height: 0.98;
+  letter-spacing: -0.05em;
+  line-height: 0.95;
+}
+
+h1:focus {
+  outline: none;
 }
 
 .headline-break {
   display: block;
 }
 
+.intro {
+  max-width: 380px;
+}
+
 .lede {
-  margin-top: 18px;
   font-size: 16px;
-  max-width: 34em;
+  color: var(--ink);
 }
 
 .example-note {
   margin-top: 6px;
+  font-size: 14px;
   color: var(--muted);
+}
+
+/* Two columns: 1 and 2 on the left, 3 and 4 and the button on the right. */
+.inputs-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0 96px;
+  padding-top: 28px;
 }
 
 /* Sections: a hairline above, a 17px title with a muted step number. */
@@ -241,9 +276,10 @@ legend {
   padding: 0;
 }
 
-.section {
-  margin-top: 32px;
-  padding-top: 24px;
+/* Sections inside a column: a hairline with 28px above and below. */
+.inputs-column .section + .section {
+  margin-top: 28px;
+  padding-top: 28px;
   border-top: 1px solid var(--line);
 }
 
@@ -268,10 +304,16 @@ legend {
 }
 
 .hint {
+  max-width: var(--measure);
   margin-top: 8px;
   font-size: 12px;
   font-weight: 500;
   color: var(--muted);
+}
+
+/* "Example hours…" under 2 The work. */
+.section-hint {
+  margin: 0 0 22px;
 }
 
 /* 1 The job */
@@ -408,14 +450,13 @@ legend {
   display: grid;
   grid-template-columns: 1fr 88px;
   column-gap: 16px;
-  align-items: end;
+  align-items: baseline;
   padding: 10px 0 9px;
   border-bottom: 1px solid var(--line);
 }
 
 .work-row > label {
   font-size: 15px;
-  padding-bottom: 4px;
 }
 
 .work-row > .hint,
@@ -564,46 +605,125 @@ legend {
   margin-top: 1px;
 }
 
-/* Footer */
-
-footer {
-  padding-top: 40px;
-  padding-bottom: 30px;
+/* 2 The work: a total row under the groups. */
+.work-total {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 2px solid var(--ink);
+  font-size: 15px;
+  font-weight: 700;
 }
 
-footer p {
+.work-total output {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+/* The button: a square black block with a lime arrow square at the end. */
+.check-button {
+  display: flex;
+  align-items: stretch;
+  width: 100%;
+  height: 76px;
+  margin-top: 40px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: var(--night);
+  color: var(--night-text);
+  text-align: left;
+}
+
+.check-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  padding-left: 24px;
+  transition: background-color 120ms ease-out;
+}
+
+.check-title {
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+.check-preview {
+  font-size: 12px;
+  color: var(--night-mute);
+}
+
+.check-arrow {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 76px;
+  background: var(--lime);
+  color: var(--night);
+}
+
+/* Footer: a hairline, then the disclaimer. On screen 2 it's full width and muted. */
+.site-footer {
+  padding-bottom: 40px;
+}
+
+/* The hairline spans the content width; the text keeps to the measure. */
+.site-footer::before {
+  content: "";
+  display: block;
+  height: 1px;
+  margin-top: 40px;
+  background: var(--line);
+}
+
+.site-footer p {
+  max-width: var(--measure);
+  padding-top: 20px;
   font-size: 12px;
   color: var(--muted);
 }
 
-/* Dark side: results */
-
-.result {
-  background: var(--night);
-  color: var(--night-text);
-  padding: 30px 20px 48px;
+.on-results .site-footer {
+  max-width: none;
 }
 
-.result :focus-visible,
-.result .unit-input:focus-within {
+.on-results .site-footer::before {
+  margin-top: 0;
+  background: var(--night-line);
+}
+
+.on-results .site-footer p {
+  color: var(--night-mute);
+}
+
+/* Screen 2: results (black) */
+
+.on-results {
+  background: var(--night);
+}
+
+.screen-results {
+  color: var(--night-text);
+}
+
+.screen-results :focus-visible,
+.screen-results .unit-input:focus-within,
+.on-results .topbar :focus-visible {
   outline-color: var(--lime);
 }
 
-/* Content stays at most 760px wide, aligned left, so numbers stay near their labels. */
-.result > * {
-  max-width: 760px;
+.results-body {
+  padding: 0 20px 64px;
 }
 
-/* Each block after the hero gets a hairline with 34px above and below. */
-.result > .chart,
-.result > .receipt,
-.result > .result-block {
-  margin-top: 34px;
-  padding-top: 34px;
-  border-top: 1px solid var(--night-line);
-}
-
-.result h3,
+.screen-results h3,
 .result-block > legend {
   font-size: 20px;
   font-weight: 600;
@@ -611,13 +731,219 @@ footer p {
   color: var(--night-text);
 }
 
-.result .step {
+.screen-results .step {
   color: var(--night-mute);
 }
 
 .empty-state {
+  padding-top: 36px;
   font-size: 16px;
   color: var(--night-2);
+}
+
+.empty-state:focus {
+  outline: none;
+}
+
+/* Control bar: the key numbers, live, sticky under the header. */
+.control-bar {
+  position: sticky;
+  top: 56px;
+  z-index: 9;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 28px;
+  min-height: 64px;
+  padding: 8px 20px;
+  background: var(--night-bar);
+  border-bottom: 1px solid var(--night-line);
+}
+
+.back-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--night-2);
+}
+
+.bar-divider {
+  align-self: stretch;
+  width: 1px;
+  margin: 6px 0;
+  background: var(--night-line);
+}
+
+.bar-stepper,
+.bar-field {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 4px;
+}
+
+/* An error under its bar field: icon plus message. */
+.bar-error {
+  flex-basis: 100%;
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin-top: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--night-text);
+}
+
+.bar-error .icon {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  margin-top: 1px;
+}
+
+.bar-stepper label,
+.bar-field label {
+  margin-right: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--night-mute);
+}
+
+/* Each bar stepper button is a 44px touch target holding a 30px circle. */
+.bar-stepper button {
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  margin: 0 -4px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--night-2);
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.bar-stepper button::before {
+  content: "";
+  position: absolute;
+  inset: 7px;
+  z-index: -1;
+  border-radius: 50%;
+  border: 1.5px solid var(--night-2);
+  transition: background-color 120ms ease-out;
+}
+
+.bar-stepper button[data-step="1"] {
+  color: var(--night);
+}
+
+.bar-stepper button[data-step="1"]::before {
+  border-color: var(--night-text);
+  background: var(--night-text);
+}
+
+.bar-stepper input {
+  width: 2.2ch;
+  padding: 0 6px;
+  border: 0;
+  background: transparent;
+  color: var(--night-text);
+  font-size: 18px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.bar-input {
+  display: inline-flex;
+  align-items: baseline;
+  border-bottom: 2px solid var(--night-text);
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--night-text);
+}
+
+.bar-input:focus-within {
+  outline: 2px solid var(--lime);
+  outline-offset: 3px;
+}
+
+.bar-input input {
+  width: 4ch;
+  padding: 2px 0 3px;
+  border: 0;
+  background: transparent;
+  color: var(--night-text);
+}
+
+.bar-input input:focus-visible,
+.bar-stepper input:focus-visible {
+  outline: none;
+}
+
+.bar-stepper input:focus-visible {
+  outline: 2px solid var(--lime);
+  outline-offset: 3px;
+}
+
+@supports (field-sizing: content) {
+  .bar-input input,
+  .bar-stepper input {
+    field-sizing: content;
+    width: auto;
+    min-width: 1ch;
+  }
+}
+
+.bar-note {
+  margin-left: auto;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--night-mute);
+}
+
+/* Row 1: hero left, stacked metrics right, a hairline below. */
+.hero-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 32px 64px;
+  padding: 36px 0 28px;
+  border-bottom: 1px solid var(--night-line);
+}
+
+.hero-label:focus {
+  outline: none;
+}
+
+/* Row 2: the two charts side by side. */
+.charts-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 40px 56px;
+  padding-top: 30px;
+}
+
+/* Row 3: Show the math, quote, and reply, 760px wide, left-aligned. */
+.results-more {
+  max-width: 760px;
+}
+
+.results-more > .receipt,
+.results-more > .result-block {
+  margin-top: 34px;
+  padding-top: 34px;
+  border-top: 1px solid var(--night-line);
 }
 
 /* Hero */
@@ -629,7 +955,7 @@ footer p {
 }
 
 .hero-number {
-  font-size: clamp(88px, 8vw, 128px);
+  font-size: clamp(96px, 9.5vw, 136px);
   font-weight: 700;
   letter-spacing: -0.065em;
   line-height: 0.8;
@@ -654,12 +980,12 @@ footer p {
   color: var(--night-2);
 }
 
-.result strong {
+.screen-results strong {
   font-weight: 600;
   color: var(--night-text);
 }
 
-.result strong.signal {
+.screen-results strong.signal {
   color: var(--lime);
 }
 
@@ -679,21 +1005,23 @@ footer p {
   margin-top: 3px;
 }
 
-/* Metrics row: three items split by thin vertical lines. */
+/* Metrics: stacked, split by hairlines. */
 .metrics {
-  display: flex;
-  flex-wrap: wrap;
-  margin: 34px 0 0;
+  margin: 0;
 }
 
 .metrics > div {
-  padding: 0 32px;
-  border-left: 1px solid var(--night-line);
+  padding: 18px 0;
+  border-top: 1px solid var(--night-line);
 }
 
 .metrics > div:first-child {
-  padding-left: 0;
-  border-left: 0;
+  padding-top: 0;
+  border-top: 0;
+}
+
+.metrics > div:last-child {
+  padding-bottom: 0;
 }
 
 .metrics dt {
@@ -704,7 +1032,7 @@ footer p {
 
 .metrics dd {
   margin: 6px 0 0;
-  font-size: 26px;
+  font-size: 30px;
   font-weight: 600;
   letter-spacing: -0.02em;
   line-height: 1.1;
@@ -719,7 +1047,7 @@ footer p {
 
 .chart-summary {
   margin-top: 22px;
-  max-width: 40em;
+  max-width: var(--measure);
   font-size: 14px;
   color: var(--night-2);
 }
@@ -771,7 +1099,7 @@ footer p {
 
 .block {
   flex: none;
-  height: 56px;
+  height: 64px;
   outline: 1.5px solid var(--night-text);
   outline-offset: -1.5px;
 }
@@ -805,7 +1133,7 @@ footer p {
 
 .group-label {
   position: absolute;
-  top: 64px;
+  top: 72px;
   left: 0;
   white-space: nowrap;
   font-size: 12px;
@@ -954,10 +1282,10 @@ footer p {
   color: var(--lime);
 }
 
+/* Below the ruler: after expenses, the gap amount, and "+$X/hr". */
 .gap-label,
 .over-label,
-.after-label.below,
-.offer-label.below {
+.after-label {
   top: 52px;
 }
 
@@ -1154,6 +1482,13 @@ footer p {
   text-underline-offset: 3px;
 }
 
+#quote-result,
+.notice p,
+.receipt-note,
+.empty-state {
+  max-width: var(--measure);
+}
+
 #quote-result {
   margin-top: 14px;
   font-size: 14px;
@@ -1163,6 +1498,7 @@ footer p {
 textarea {
   display: block;
   width: 100%;
+  max-width: var(--measure);
   margin-top: 8px;
   padding: 14px 16px;
   border: 1px solid var(--night-tick);
@@ -1246,8 +1582,18 @@ textarea {
     background: var(--hover-lime);
   }
 
-  #update-draft:hover {
+  #update-draft:hover,
+  .check-button:hover .check-main {
     background: var(--hover-night);
+  }
+
+  .bar-stepper button:not([data-step="1"]):hover::before {
+    background: var(--hover-night);
+  }
+
+  .bar-stepper button[data-step="1"]:hover::before {
+    background: var(--night-2);
+    border-color: var(--night-2);
   }
 
   .link-button:hover {
@@ -1255,78 +1601,51 @@ textarea {
   }
 }
 
-/* Desktop: white 500px input side, black result side filling the rest. */
+/* Desktop: 960px and up. */
 
 @media (min-width: 960px) {
-  /* Rows: header, intro, form, footer. The result column spans all but the header. */
-  body {
-    display: grid;
-    grid-template-columns: 500px minmax(0, 1fr);
-    grid-template-rows: 56px auto 1fr auto;
-    min-height: 100vh;
+  .topbar,
+  .control-bar {
+    padding-left: 64px;
+    padding-right: 64px;
   }
 
-  .topbar {
-    grid-column: 1 / -1;
-    grid-row: 1;
+  .screen-inputs,
+  .site-footer {
+    padding-left: 64px;
+    padding-right: 64px;
   }
 
-  .topbar-left {
-    flex: 0 0 500px;
-    padding: 0 48px;
+  .inputs-columns {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .topbar-right {
-    display: flex;
-    flex: 1;
-    padding: 0 64px;
+  .results-body {
+    padding-left: 64px;
+    padding-right: 64px;
   }
 
-  .intro,
-  form,
-  footer {
-    padding-left: 48px;
-    padding-right: 48px;
+  .hero-row {
+    grid-template-columns: minmax(0, 1fr) 300px;
   }
 
-  .intro {
-    grid-column: 1;
-    grid-row: 2;
-    position: relative;
-    z-index: 1;
+  .metrics {
+    padding-left: 32px;
+    border-left: 1px solid var(--night-line);
   }
 
-  footer {
-    grid-column: 1;
-    grid-row: 4;
-    position: relative;
-    z-index: 1;
+  .charts-row {
+    grid-template-columns: minmax(0, 1fr) 440px;
   }
 
-  /* main shares the body's columns and its last three rows, so the form sits
-     under the intro and the result fills the right side below the header. */
-  main {
-    grid-column: 1 / -1;
-    grid-row: 2 / -1;
-    display: grid;
-    grid-template-columns: subgrid;
-    grid-template-rows: subgrid;
+  .charts-row > #offer-chart {
+    padding-left: 40px;
+    border-left: 1px solid var(--night-line);
   }
 
-  form {
-    grid-column: 1;
-    grid-row: 2;
-  }
-
-  .result {
-    grid-column: 2;
-    grid-row: 1 / -1;
-    align-self: start;
-    position: sticky;
-    top: 56px;
-    height: calc(100vh - 56px);
-    overflow-y: auto;
-    padding: 30px 64px 64px;
+  /* No offer: the hours chart takes the full row. */
+  .charts-row:has(> #offer-chart[hidden]) {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 

@@ -177,13 +177,13 @@ Question it answers: How far is this offer from my target?
 - Title: "Pay per hour".
 - **One horizontal ruler** in dollars per hour, from $0 to a rounded max a little above the largest value (steps: $5 up to $20, then $10, $25, $50; at most 6 ticks). 1px `--night-line` line, 6px `--night-tick` ticks, tick labels 12px `--night-mute` under the ticks, well below everything else.
 - Points on the ruler:
-  - **Offer:** 15px solid `--night-text` dot. Label above, right of the dot: "offer $17.39", 12px 600 `--night-text`.
-  - **After expenses:** 15px hollow dot, 2px `--night-text` ring, `--night` fill. Label above, left of the dot: "after expenses $15.65", 12px `--night-2`.
-  - **Target:** 4px by 25px lime bar. Label centered above: "target $25", 12px 600 lime.
-- **The gap:** between the offer dot and the target, a 9px tall dashed lime band (4px dashes, 3px gaps). Under its center: "-$7.61/hr", 13px 600 lime. Hide this label if the band is under 64px wide.
-- If the offer meets or beats the target: no gap band. Optional small label "+$X/hr" in `--night-2` between the target and the offer.
+  - **Offer:** 15px solid `--night-text` dot. Label above the ruler, left of the dot: "offer $17.39", 12px 600 `--night-text`.
+  - **After expenses:** 15px hollow dot, 2px `--night-text` ring, `--night` fill. Label below the ruler, centered under the dot: "after expenses $15.65", 12px `--night-2`.
+  - **Target:** 4px by 25px lime bar. Label above the ruler, centered on the bar: "target $25", 12px 600 lime.
+- **The gap:** between the offer dot and the target, a 9px tall dashed lime band (4px dashes, 3px gaps). Below the ruler, under its center: "-$7.61/hr", 13px 600 lime. Hide this label if the band is under 64px wide.
+- If the offer meets or beats the target: no gap band. Optional small label "+$X/hr" in `--night-2` below the ruler, between the target and the offer.
 - If the after-expenses value is below $0: put the hollow dot at $0 with the label "after expenses -$0.43".
-- If labels would overlap (values close together), move the after-expenses label below the ruler.
+- **Labels never overlap, for any values.** Labels sit in two rows: above the ruler (offer, target) and below it (after expenses, the gap amount, "+$X/hr"). In each row, if two labels would touch, they slide apart just enough to keep at least 8px between them, and every label stays inside the ruler. If a row still can't fit, the optional labels hide first ("+$X/hr", then the gap amount). The labels below the ruler sit above the tick labels.
 - `aria-hidden` on the ruler. Keep the summary sentence from CLAUDE.md under it in 14px `--night-2`.
 
 ### How we calculated this (collapsed by default)
