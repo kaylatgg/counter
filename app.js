@@ -719,6 +719,46 @@ function syncMirrors(errors) {
   });
 }
 
+// Your price: "Use my estimate" clears the field, so the price follows the
+// estimate again (and keeps following it when the numbers change).
+function useEstimate() {
+  byId("quote").value = "";
+  clearTimeout(commitTimer);
+  update(true);
+}
+
+// Copy reply: copies the text and says so for a few seconds. If the browser
+// won't allow it, the text is selected so it can be copied by hand.
+const COPIED_MESSAGE_MS = 3000;
+let copiedTimer = null;
+
+function setCopyStatus(text) {
+  const status = byId("copy-status");
+  // Clearing first makes screen readers announce the message again on a repeat copy.
+  status.textContent = "";
+  setTimeout(function () { status.textContent = text; }, 50);
+}
+
+function copyReply() {
+  const reply = byId("reply");
+  clearTimeout(copiedTimer);
+
+  function failed() {
+    reply.focus();
+    reply.select();
+    setCopyStatus("Couldn't copy. Select the text and copy it yourself.");
+  }
+
+  if (!navigator.clipboard || !navigator.clipboard.writeText) {
+    failed();
+    return;
+  }
+  navigator.clipboard.writeText(reply.value).then(function () {
+    setCopyStatus("Copied to clipboard.");
+    copiedTimer = setTimeout(function () { byId("copy-status").textContent = ""; }, COPIED_MESSAGE_MS);
+  }, failed);
+}
+
 // Which parts of the result are visible: the full result, "add hours," or "fix errors."
 function showResultState(state) {
   show(byId("result-summary"), state === "result");
@@ -929,6 +969,8 @@ byId("skip-link").addEventListener("click", function (event) {
 
 byId("reply").addEventListener("input", onReplyEdit);
 byId("update-draft").addEventListener("click", updateDraft);
+byId("use-estimate").addEventListener("click", useEstimate);
+byId("copy-reply").addEventListener("click", copyReply);
 
 let resizeFrame = null;
 window.addEventListener("resize", function () {
