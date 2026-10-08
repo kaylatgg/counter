@@ -929,16 +929,20 @@ legend {
   padding-top: 32px;
 }
 
-/* Row 3: Show the math, quote, and reply, 760px wide, left-aligned. */
-.results-more {
-  max-width: 760px;
-}
-
+/* Row 3: Show the math across the full width, then your price and your reply
+   side by side. Each row has a hairline above with 32px around it. */
 .results-more > .receipt,
-.results-more > .result-block {
+.results-pair {
   margin-top: 32px;
   padding-top: 32px;
   border-top: 1px solid var(--night-line);
+}
+
+.results-pair {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 32px 64px;
+  align-items: start;
 }
 
 /* Hero */
@@ -1641,8 +1645,52 @@ textarea {
     padding-right: max(64px, calc((100% - 1312px) / 2));
   }
 
+  /* The label sits on its own row, so the metrics column starts exactly where
+     the hero number starts. */
   .hero-row {
     grid-template-columns: minmax(0, 1fr) 300px;
+    row-gap: 0;
+  }
+
+  .hero-row > .hero-label {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .hero-row > .hero-main {
+    grid-column: 1;
+    grid-row: 2;
+  }
+
+  .hero-row > .metrics {
+    grid-column: 2;
+    grid-row: 2;
+    align-self: start;
+  }
+
+  .results-pair {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  /* Screen 1: the top row uses the same two columns as the form below it,
+     so the intro starts exactly at the right column's left edge. */
+  .inputs-top {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0 64px;
+    align-items: end;
+  }
+
+  .inputs-top > .intro {
+    grid-column: 2;
+  }
+
+  /* The right column (3, 4, and the button) stays in view below the header
+     while the left column scrolls. */
+  .inputs-columns > .inputs-column:last-child {
+    position: sticky;
+    top: calc(56px + 28px);
+    align-self: start;
   }
 
   .metrics {
@@ -1663,6 +1711,59 @@ textarea {
   .charts-row:has(> #offer-chart[hidden]) {
     grid-template-columns: minmax(0, 1fr);
   }
+}
+
+/* Reveal: plays once when "Check the offer" is pressed (app.js adds and removes
+   these classes). About 1 second in all. Never under reduced motion. */
+
+/* 1. Screen 1 fades out while the page turns black, then screen 2 fades in. */
+body.reveal-out {
+  background: var(--night);
+  transition: background-color 200ms ease-out;
+}
+
+body.reveal-out .screen-inputs,
+body.reveal-out .site-footer,
+body.reveal-out .topbar-inner {
+  opacity: 0;
+  transition: opacity 100ms ease-out;
+}
+
+body.reveal-out .topbar {
+  background: var(--night);
+  border-bottom-color: var(--night-line);
+  transition: background-color 200ms ease-out, border-color 200ms ease-out;
+}
+
+.screen-results.reveal-hidden {
+  opacity: 0;
+}
+
+body.revealing .screen-results {
+  transition: opacity 100ms ease-out;
+}
+
+/* 2. The hour blocks fill in left to right, each growing up from its base. */
+@keyframes block-fill {
+  from { transform: scaleY(0); }
+  to { transform: scaleY(1); }
+}
+
+body.revealing .block {
+  transform-origin: bottom;
+  animation: block-fill 220ms ease-out both;
+  animation-delay: calc(var(--reveal-start, 150ms) + var(--i, 0) * var(--stagger, 18ms));
+}
+
+/* 3. The lime line and its label drop in last. */
+@keyframes line-drop {
+  from { opacity: 0; transform: translateY(-12px); }
+  to { opacity: 1; transform: none; }
+}
+
+body.revealing .runs-out {
+  animation: line-drop 200ms ease-out both;
+  animation-delay: var(--line-delay, 700ms);
 }
 
 @media (prefers-reduced-motion: reduce) {

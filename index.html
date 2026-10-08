@@ -244,8 +244,8 @@
 
         <!-- Row 1: hero and stacked metrics -->
         <div class="hero-row" id="result-summary">
+          <p class="hero-label" id="hero-label" tabindex="-1">This offer pays</p>
           <div class="hero-main">
-            <p class="hero-label" id="hero-label" tabindex="-1">This offer pays</p>
             <p class="hero-number">
               <span class="visually-hidden" id="hero-spoken">$17.39 per hour</span>
               <span aria-hidden="true"><span id="hero-whole">$17</span><span class="hero-cents" id="hero-cents">.39</span><span class="hero-unit" id="hero-unit">/hr</span></span>
@@ -357,42 +357,45 @@
             </details>
           </section>
 
-          <!-- 6 Your price -->
-          <fieldset class="section result-block">
-            <legend><span class="step">6</span> Your price</legend>
+          <!-- 6 and 7 side by side -->
+          <div class="results-pair">
+            <!-- 6 Your price -->
+            <fieldset class="section result-block">
+              <legend><span class="step">6</span> Your price</legend>
 
-            <div class="field">
-              <label for="quote">Price to send</label>
-              <div class="unit-input">
-                <span class="unit">$</span>
-                <input id="quote" name="quote" type="text" inputmode="decimal" placeholder="310" aria-describedby="quote-hint">
-              </div>
-              <button type="button" class="link-button" id="use-estimate">Use my estimate</button>
-              <p class="hint" id="quote-hint">Leave blank to use your estimate. This won't change your estimate or your target.</p>
-            </div>
-
-            <p id="quote-result">At $310, you'd earn $26.96/hr before expenses and $25.22/hr after.</p>
-          </fieldset>
-
-          <!-- 7 Your reply -->
-          <fieldset class="section result-block">
-            <legend><span class="step">7</span> Your reply</legend>
-
-            <div class="field">
-              <label for="reply">Your reply to the client</label>
-              <textarea id="reply" name="reply" rows="6" autocomplete="off">Hi! Thanks for reaching out about the menu. For a 2-page menu with 2 rounds of changes and print-ready files, my price is $310. I know that's more than the $200 you mentioned, so I'm happy to talk about what would fit your budget. Let me know if you have any questions!</textarea>
-            </div>
-
-            <div class="reply-actions">
-              <div class="notice" id="reply-notice" hidden>
-                <p>Your numbers changed after you edited this reply.</p>
-                <button type="button" id="update-draft">Update draft</button>
+              <div class="field">
+                <label for="quote">Price to send</label>
+                <div class="unit-input">
+                  <span class="unit">$</span>
+                  <input id="quote" name="quote" type="text" inputmode="decimal" placeholder="310" aria-describedby="quote-hint">
+                </div>
+                <button type="button" class="link-button" id="use-estimate">Use my estimate</button>
+                <p class="hint" id="quote-hint">Leave blank to use your estimate. This won't change your estimate or your target.</p>
               </div>
 
-              <button type="button" id="copy-reply">Copy reply</button>
-              <span id="copy-status" role="status"></span>
-            </div>
-          </fieldset>
+              <p id="quote-result">At $310, you'd earn $26.96/hr before expenses and $25.22/hr after.</p>
+            </fieldset>
+
+            <!-- 7 Your reply -->
+            <fieldset class="section result-block">
+              <legend><span class="step">7</span> Your reply</legend>
+
+              <div class="field">
+                <label for="reply">Your reply to the client</label>
+                <textarea id="reply" name="reply" rows="6" autocomplete="off">Hi! Thanks for reaching out about the menu. For a 2-page menu with 2 rounds of changes and print-ready files, my price is $310. I know that's more than the $200 you mentioned, so I'm happy to talk about what would fit your budget. Let me know if you have any questions!</textarea>
+              </div>
+
+              <div class="reply-actions">
+                <div class="notice" id="reply-notice" hidden>
+                  <p>Your numbers changed after you edited this reply.</p>
+                  <button type="button" id="update-draft">Update draft</button>
+                </div>
+
+                <button type="button" id="copy-reply">Copy reply</button>
+                <span id="copy-status" role="status"></span>
+              </div>
+            </fieldset>
+          </div>
         </div>
       </div>
     </section>

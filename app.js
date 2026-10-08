@@ -145,6 +145,7 @@ function renderMetrics(items) {
 }
 
 function renderHero(r) {
+  stopCountUp();
   const sentence = byId("hero-sentence");
   const warning = byId("offer-warning");
 
@@ -227,7 +228,12 @@ const GROUP_NAMES = {
 const BLOCK_GAP = 4;
 const GROUP_GAP = 14;
 const BLOCK_MIN = 8;
-const BLOCK_MAX = 22;
+
+// Reveal timing, in ms. The CSS uses these through custom properties.
+const REVEAL_BLOCKS_START_MS = 150;
+const REVEAL_STAGGER_MS = 18;
+const REVEAL_FILL_MS = 400;
+const REVEAL_BLOCK_MS = 220;
 const BLOCK_HEIGHT = 64;
 const LINE_ABOVE = 34;
 const LABEL_SPACE = 12;
@@ -325,19 +331,18 @@ function layoutBlocks(r) {
     return element.querySelector(".group-label").offsetWidth;
   });
 
-  // Block width fills the space: (width minus gaps) divided by blocks, 8px to 22px.
+  // Block width fills the space: (width minus gaps) divided by blocks, at least 8px.
   // Gaps between groups are 14px, or wider where a group's label needs the room,
   // so a label never reaches into the next group. Widening the gaps narrows the
   // blocks, which can need more room again, so this settles over a few passes.
   let innerGaps = 0;
   blocksByGroup.forEach(function (blocks) { innerGaps += (blocks.length - 1) * BLOCK_GAP; });
-  let blockWidth = BLOCK_MAX;
+  let blockWidth = BLOCK_MIN;
   let extras = groups.map(function () { return 0; });
   for (let pass = 0; pass < 4; pass++) {
     const groupGaps = extras.reduce(function (sum, extra) { return sum + extra; },
       (groups.length - 1) * GROUP_GAP);
-    blockWidth = Math.min(BLOCK_MAX, Math.max(BLOCK_MIN,
-      (width - innerGaps - groupGaps) / (total / unit)));
+    blockWidth = Math.max(BLOCK_MIN, (width - innerGaps - groupGaps) / (total / unit));
     extras = blocksByGroup.map(function (blocks, g) {
       if (g === groups.length - 1) return 0;
       const blocksWidth = (total === 0 ? 0 : blocks.reduce(function (sum, size) {
@@ -358,6 +363,15 @@ function layoutBlocks(r) {
   let lineBlock = null;
   let lineFraction = 0;
 
+  // For the reveal: blocks fill in left to right, about 0.4 seconds in all,
+  // then the lime line drops in.
+  const blockCount = blocksByGroup.reduce(function (sum, blocks) { return sum + blocks.length; }, 0);
+  const stagger = Math.min(REVEAL_STAGGER_MS, REVEAL_FILL_MS / Math.max(1, blockCount));
+  container.style.setProperty("--stagger", stagger.toFixed(1) + "ms");
+  container.style.setProperty("--line-delay",
+    Math.round(REVEAL_BLOCKS_START_MS + blockCount * stagger + REVEAL_BLOCK_MS) + "ms");
+  let blockIndex = 0;
+
   elements.forEach(function (element, g) {
     element.style.marginRight = extras[g] + "px";
     const sizes = blocksByGroup[g];
@@ -370,6 +384,7 @@ function layoutBlocks(r) {
     blocks.forEach(function (block, i) {
       const end = start + sizes[i] * unit;
       block.style.width = (sizes[i] * blockWidth) + "px";
+      block.style.setProperty("--i", blockIndex++);
 
       // Fully paid, fully unpaid (28% opacity), or split by the line.
       const paid = end <= covered + 1e-9;
@@ -398,12 +413,13 @@ function layoutBlocks(r) {
   const line = byId("runs-out");
   show(line, showLine && Boolean(lineBlock));
   if (showLine && lineBlock) {
-    // Measured from the chart's own edge, since blocks sit inside their group.
-    const box = container.getBoundingClientRect();
-    const blockBox = lineBlock.getBoundingClientRect();
-    const x = blockBox.left - box.left + lineFraction * blockBox.width;
+    // Measured from the chart's own edge (the block's group sits inside it).
+    // Layout offsets, not on-screen boxes, so the reveal's grow-in animation
+    // can't shift the line.
+    const group = lineBlock.closest(".block-group");
+    const x = group.offsetLeft + lineBlock.offsetLeft + lineFraction * lineBlock.offsetWidth;
     line.style.left = x + "px";
-    line.style.top = (blockBox.top - box.top - LINE_ABOVE) + "px";
+    line.style.top = (group.offsetTop + lineBlock.offsetTop - LINE_ABOVE) + "px";
     line.style.height = (LINE_ABOVE + BLOCK_HEIGHT) + "px";
     byId("runs-out-label").textContent = calc.formatPrice(offer.amount) + " runs out at " +
       calc.formatHours(offer.hoursCovered);
@@ -870,6 +886,49 @@ function showOfferField() {
   show(byId("bar-offer-field"), hasOffer);
 }
 
+// Reveal: the hero number counts up from $0 (500ms, ease-out). Screen readers
+// already have the final value in the hidden label, so only the visible digits move.
+const COUNT_UP_MS = 500;
+let countFrame = null;
+let countTimer = null;
+
+function stopCountUp() {
+  if (countFrame) cancelAnimationFrame(countFrame);
+  clearTimeout(countTimer);
+  countFrame = null;
+  countTimer = null;
+}
+
+function paintHeroNumber(r, value) {
+  if (r.offer) {
+    const money = calc.formatMoney(value);
+    const point = money.lastIndexOf(".");
+    byId("hero-whole").textContent = money.slice(0, point);
+    byId("hero-cents").textContent = money.slice(point);
+  } else {
+    byId("hero-whole").textContent = calc.formatWholeMoney(Math.round(value));
+  }
+}
+
+function countUpHero(r) {
+  stopCountUp();
+  const target = r.offer ? r.offer.hourlyBefore : r.estimate;
+  const started = performance.now();
+  paintHeroNumber(r, 0);
+  function frame(now) {
+    const t = Math.min(1, (now - started) / COUNT_UP_MS);
+    paintHeroNumber(r, target * (1 - Math.pow(1 - t, 3)));
+    countFrame = t < 1 ? requestAnimationFrame(frame) : null;
+    if (t === 1) stopCountUp();
+  }
+  countFrame = requestAnimationFrame(frame);
+  // If frames don't run (for example a background tab), still land on the value.
+  countTimer = setTimeout(function () {
+    stopCountUp();
+    paintHeroNumber(r, target);
+  }, COUNT_UP_MS + 100);
+}
+
 // Screens: inputs (white) and results (black), one at a time, no reload.
 
 function showScreen(name) {
@@ -906,6 +965,7 @@ window.addEventListener("popstate", function (event) {
 // "Check the offer": with errors, go to the first one. Otherwise show the result
 // and move focus to its first line, so screen readers announce it.
 function checkOffer() {
+  if (document.body.classList.contains("revealing")) return;
   clearTimeout(commitTimer);
   update(true);
   const firstError = Object.keys(FIELD_IDS).filter(function (name) {
@@ -916,7 +976,34 @@ function checkOffer() {
     return;
   }
   history.pushState({ screen: "results" }, "", "#results");
-  openResults();
+  revealResults();
+}
+
+// The reveal plays once per press of "Check the offer", about 1 second in all:
+// screen 1 fades out as the page turns black, screen 2 fades in, the hero counts
+// up, the blocks fill in, and the lime line drops in last. Under reduced motion,
+// the final state shows right away. Later changes use the normal transitions.
+const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+const REVEAL_FADE_MS = 100;
+const REVEAL_TOTAL_MS = 1100;
+
+function revealResults() {
+  const body = document.body;
+  if (reduceMotion.matches) {
+    openResults();
+    return;
+  }
+  const results = byId("result");
+  body.classList.add("revealing", "reveal-out");
+  setTimeout(function () {
+    results.classList.add("reveal-hidden");
+    body.classList.remove("reveal-out");
+    openResults();
+    if (lastResult && !byId("result-summary").hidden) countUpHero(lastResult);
+    void results.offsetWidth;
+    results.classList.remove("reveal-hidden");
+    setTimeout(function () { body.classList.remove("revealing"); }, REVEAL_TOTAL_MS);
+  }, REVEAL_FADE_MS);
 }
 
 function editDetails() {

@@ -119,10 +119,10 @@ Both screens live in the same page (one `index.html`). Only one shows at a time.
 
 ### Screen 1: inputs (white)
 - Content max width 1312px, centered, 64px side padding, 40px below the header.
-- **Top row:** headline left ("What does this job / really pay?"). Right, max 380px, bottom-aligned with the headline: the intro line (16px `--ink`) and "Example numbers. Change them to match your project." (14px `--muted`). 40px below, a `--line` hairline.
+- **Top row:** the same two columns as the form below. Headline in the left column ("What does this job / really pay?"). In the right column, starting exactly at its left edge, max 380px, bottom-aligned with the headline: the intro line (16px `--ink`) and "Example numbers. Change them to match your project." (14px `--muted`). 40px below, a `--line` hairline.
 - **Two columns**, equal width, 64px gap, 28px below the hairline:
   - **Left column:** 1 The job, then 2 The work.
-  - **Right column:** 3 Your numbers, then 4 Their offer, then the button.
+  - **Right column:** 3 Your numbers, then 4 Their offer, then the button. It's sticky (`top: 84px`, the 56px header plus 28px), so it stays in view while the left column scrolls.
   - Sections inside a column are separated by a `--line` hairline with 28px above and below.
   - This keeps the reading order 1, 2, 3, 4 (down the left, then down the right) and ends on the button.
 - **2 The work** starts with the hint "Example hours. Change any to match how you work." and ends with a total row: 2px `--ink` line above, "Total hours" 15px 700 left, "11.5 hrs" 22px 700 right (live).
@@ -154,8 +154,9 @@ Both screens live in the same page (one `index.html`). Only one shows at a time.
 - **Row 1 (hero):** two columns, `1fr` and 300px, 64px gap, 40px top padding, 28px bottom padding, `--night-line` hairline below.
   - Left: label, hero number, sentence.
   - Right: 1px `--night-line` left border, 32px left padding, the three metrics **stacked** vertically, each separated by a hairline.
+  - The label sits on its own row above both columns, so the top of the metrics column lines up exactly with the top of the hero number.
 - **Row 2 (charts):** two columns, `minmax(0, 1fr)` and 440px, 56px gap, 32px top padding. Left: the hours chart. Right: 1px `--night-line` left border, 40px left padding, the pay per hour chart.
-- **Row 3, below the fold:** max width 760px, left-aligned, each separated by hairlines with 32px spacing: Show the math, Your price, Your reply.
+- **Row 3, below the fold:** the full content width. "Show the math" spans it. Below that, "Your price" (left) and "Your reply" (right) sit side by side in two equal columns with a 64px gap. Each row has a `--night-line` hairline above with 32px spacing.
 - Phone layout: not now. Skip until Kayla says to start it.
 
 ### Inputs (both screens)
@@ -190,7 +191,7 @@ Question it answers: Where does the time go, and which part does the offer actua
   - Communication: diagonal lines at 135°, `--night-text` on transparent, 1.5px lines every 5px
   - Revisions: diagonal lines at 45°
   - Delivery: dots, 1.1px, every 5px
-- **Unit size:** 30 min while total hours are 24 or fewer, 1 hr up to 48, 2 hrs beyond. Update the "1 block =" note to match. Block width fills the available space: (width minus gaps) divided by block count, max 22px, min 8px.
+- **Unit size:** 30 min while total hours are 24 or fewer, 1 hr up to 48, 2 hrs beyond. Update the "1 block =" note to match. Block width fills the full width of the chart's column: (width minus gaps) divided by block count, min 8px, no maximum.
 - **Partial blocks:** a group whose hours aren't a whole number of units ends with a narrower block sized to the remainder.
 - **Where the money runs out** (only when there's an offer and it covers expenses): a 2px lime vertical line at the "hours the offer covers" position (7.2 hrs), from 34px above the blocks to their bottom. Label at the top, right of the line: "$200 runs out at 7.2 hrs", 13px 600 lime. Every block (or part of a block) after the line drops to 28% opacity. If the offer covers all the hours, no line, no dimming, and the label reads "$200 covers all 11.5 hrs" next to the title.
 - If the offer is below expenses, no line; every block is dimmed, and the label reads "$15 doesn't cover your expenses".
@@ -231,6 +232,14 @@ Question it answers: How far is this offer from my target?
 
 ## Motion
 - Block opacity and positions, the "runs out" line, the dots, and the gap band move with 180ms ease-out when values change. Nothing animates on load. All of it off under `prefers-reduced-motion`.
+
+### The reveal (pressing "Check the offer")
+Plays once per press of the button, about 1 second in all. Not on load, not on the browser's Back or Forward, and never replayed when values change on screen 2 (those use the normal 180ms transitions).
+1. **Fade (200ms):** screen 1 fades out as the page and header turn black (100ms), then screen 2 fades in (100ms).
+2. **Hero count-up (500ms, ease-out cubic):** the hero number counts from $0 to its value. Screen readers get the final value right away from the hidden label; only the visible digits move. If a value changes during the count, the real value takes over.
+3. **Blocks fill in:** left to right, each growing up from its base (220ms), starting 150ms after screen 2 appears, staggered 18ms apart (less for big jobs, so the fill takes at most 400ms).
+4. **The lime line drops in last:** the "runs out" line and its label fade in while dropping 12px (200ms), right after the last block.
+- Under `prefers-reduced-motion`, none of this plays: the final state shows immediately.
 
 ## Don'ts
 - No cards, tiles, rounded panels, or shadows. The only rounded things are pills, circles, and the reply box.
