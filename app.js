@@ -1878,7 +1878,8 @@ function revealResults() {
   const orb = document.createElement("div");
   orb.className = "reveal-orb";
   orb.setAttribute("aria-hidden", "true");
-  Object.assign(orb.style, rectFrame(from));
+  // Round from the first frame, like the button's circle, not only once the grow starts.
+  Object.assign(orb.style, rectFrame(from), { borderRadius: "50%" });
   body.appendChild(orb);
   body.classList.add("revealing", "reveal-out");
 
