@@ -1223,6 +1223,9 @@ function route(state) {
   cancelReveal();
   closePanels();
   if (state.screen === "projects") {
+    // Remember the calculation and screen we came from, for "Back to ...".
+    const from = currentScreen();
+    if (from === "inputs" || from === "results") returnState = { screen: from, project: currentId || undefined };
     leaveProject();
     openProjects();
     return;
@@ -1505,6 +1508,22 @@ function finishHeaderRename(save) {
 
 // Projects
 
+// Where "Back to ..." on the Projects page goes: the calculation you came from.
+// After a reload straight onto Projects, that's the unsaved calculation.
+let returnState = { screen: "inputs" };
+
+function backTarget() {
+  if (returnState.project && !projectStore.findProject(projectList, returnState.project)) {
+    return { screen: "inputs" };
+  }
+  return returnState;
+}
+
+function renderBackButton() {
+  const project = projectStore.findProject(projectList, backTarget().project);
+  byId("back-to-calc-label").textContent = "Back to " + (project ? project.name : "calculator");
+}
+
 function openProjects() {
   showScreen("projects");
   renderProjects();
@@ -1553,6 +1572,7 @@ function renderProjects() {
   show(byId("projects-empty"), list.length === 0);
   show(byId("project-table"), list.length > 0);
   show(byId("new-calc"), list.length > 0);
+  renderBackButton();
 
   const body = byId("project-rows");
   body.textContent = "";
@@ -1839,6 +1859,7 @@ byId("save-name").addEventListener("input", function () {
     setFieldError(byId("save-name"), projectStore.validateName(byId("save-name").value) || "");
   }
 });
+byId("back-to-calc").addEventListener("click", function () { go(backTarget()); });
 byId("new-calc").addEventListener("click", newCalculation);
 byId("new-calc-empty").addEventListener("click", newCalculation);
 byId("start-over-yes").addEventListener("click", startFresh);
