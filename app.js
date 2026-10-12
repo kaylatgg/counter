@@ -516,10 +516,10 @@ function layoutHoursChart(r) {
 
 // Chart 2: Your rate drops as hours grow
 
-// Hidden when the offer is below expenses: then the curve rises, which would
-// contradict the title. The hero and the hours chart already explain the loss.
+// Hidden when the offer is at or below expenses: then the curve is flat or rises,
+// which would contradict the title. The hero and the hours chart already explain it.
 function showsRateChart(r) {
-  return Boolean(r.offer) && !r.offer.belowExpenses;
+  return Boolean(r.offer) && r.offer.amount > r.expenses;
 }
 
 function renderOfferChart(r) {
@@ -540,16 +540,10 @@ function renderOfferChart(r) {
     ? "After your " + calc.formatPrice(r.expenses) + " in expenses, " + amount
     : upperFirst(amount)) + " spread over more hours pays less per hour.";
 
-  let summary;
-  if (offer.hourlyAfter === 0) {
-    summary = "After expenses, this offer pays nothing for your time.";
-  } else {
-    summary = "After expenses, the offer pays " + calc.formatMoney(offer.hourlyAfter) +
-      " an hour for " + hoursInWords(r.hours.total) + ". It pays your " +
-      calc.formatPrice(r.rate) + " target or more " + (offer.coversAllHours ? "" : "only ") +
-      "up to " + calc.formatHours(offer.hoursCovered) + ".";
-  }
-  byId("offer-summary").textContent = summary;
+  byId("offer-summary").textContent = "After expenses, the offer pays " +
+    calc.formatMoney(offer.hourlyAfter) + " an hour for " + hoursInWords(r.hours.total) +
+    ". It pays your " + calc.formatPrice(r.rate) + " target or more " +
+    (offer.coversAllHours ? "" : "only ") + "up to " + calc.formatHours(offer.hoursCovered) + ".";
 
   layoutRateChart(r);
 }

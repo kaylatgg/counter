@@ -66,7 +66,7 @@ Note: the logo lands on the same 11.5 hrs and $310 as the menu, and the poster o
     - **Commas in money fields,** so "$1983770" reads as "$1,983,770". Plain digits while typing, so editing isn't fighting the commas.
     - **Errors on screen 1.** The button lost its line and looked broken (gray under the pointer). It now stays ink and says how many fields to fix. The two labels in 04 Their offer are top-aligned.
     - **Page width.** The corner glow made the page 1700px wide at 1440px. html and body now clip sideways overflow.
-23. **Rate chart hides when the offer is below expenses (October 12, 2026).** Below expenses, the after-expense rate is negative, so the curve rises as hours grow, the opposite of its title "Your rate drops as hours grow." A chart that contradicts its own title costs trust. The hero and the hours chart already explain the loss. The chart's text labels also got a halo in the page color, because gridlines crossed them at 320px.
+23. **Rate chart hides when the offer is at or below expenses (October 12, 2026).** Below expenses, the after-expense rate is negative, so the curve rises as hours grow; at exactly the expenses it's a flat line at $0. Either way it's the opposite of its title "Your rate drops as hours grow." the opposite of its title "Your rate drops as hours grow." A chart that contradicts its own title costs trust. The hero and the hours chart already explain the loss. The chart's text labels also got a halo in the page color, because gridlines crossed them at 320px.
 
 ## Known limits of version 1
 
