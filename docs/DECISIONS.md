@@ -9,7 +9,7 @@ Everything below is **provisional example data**. None of it is validated.
 
 | Item | Example value | Status |
 |---|---|---|
-| Job | Restaurant menu, 2 pages (default) | Provisional. Check it's familiar to students |
+| Job | Menu, 2 pages (default; was "Restaurant menu") | Provisional. Check it's familiar to students |
 | Concepts and sketches | 2 hrs | Example, not a benchmark |
 | Layout per page | 2 hrs | Example, not a benchmark |
 | Emails, calls, meetings | 1.5 hrs | Example, not a benchmark |
@@ -57,10 +57,11 @@ Note: the logo lands on the same 11.5 hrs and $310 as the menu, and the poster o
 18. **Visual direction v5, "Sunset" (October 11, 2026).** Replaces v4 (see docs/DESIGN.md v5). Calm and light: a warm gray page, big Geist light numbers, Geist Mono for data. One sunset gradient always means "the answer": the screen 1 glow, the button's circle, the hero panel, and paid hours. Stripes always mean unpaid or forgotten hours. New chart "Your rate drops as hours grow" uses the offer after expenses, so it crosses the target at the same 7.2 hrs where the hours chart's money runs out. "6h" is allowed only in small mono chart labels; everything else keeps "hrs".
 19. **Projects (October 11, 2026).** Counter opens on a list of saved projects instead of one example job, so students can keep several offers side by side and come back to them. Saved in localStorage only, with a note saying so, because accounts are out of scope. Decided with Kayla: New project is its own screen; Rename and Delete's confirmation happen inline in the row (nothing covers the page); "Edited" dates are relative ("today at 3:42 PM", "yesterday") then plain dates; a blank rename keeps the old name; duplicate names are shortened to fit 60 characters. Broken saved data is skipped project by project, so one bad entry never loses the rest. If saving fails, the page says so and keeps working.
 20. **Projects become optional (October 11, 2026).** Replaces the flow in decision 19: Counter opens on the calculator again, because the first thing a student needs is the answer, not a list. "Save as project" in the header names and keeps a calculation (suggested name "[Job type], [Mon D]"); after that it autosaves. The unsaved calculation is kept as a separate draft so a refresh never loses work, and it can never overwrite a saved project. The separate New project form is gone; the Projects page's button is now "New calculation". Decided with Kayla: screen 2's header becomes two sticky rows; "New calculation" starts from the menu example and, if the draft has changes, asks first with Save as project, Start over, and Cancel; Save as project is hidden on the Projects page.
+21. **Fields and more jobs (October 11, 2026).** A field choice (Graphic design, Illustration, Photography) sits above the job pills, so illustrators and photographers can use Counter too. Nine jobs plus Custom in every field. **Every example number is provisional, not validated**; check them with students in each field before testing. The examples were chosen so no two jobs share a total, so switching jobs always visibly changes the result (earlier, Logo matched Menu and Poster matched Social posts). "Restaurant menu" became "Menu". The reply's opener is now "Hi! Thanks for reaching out." with no job word, decided with Kayla, so it reads well for every job. The expenses hint changes by field. Projects store the field; older ones load as Graphic design.
 
 ## Known limits of version 1
 
-- Graphic design jobs only, with guessed example hours.
+- Three fields and nine jobs, all with guessed example hours.
 - Default hours are guesses until checked with students.
 - The phone layout puts the result below the inputs. Watch whether people find it.
 - Projects save only in this browser on this device. No accounts, sync, or market rate data, on purpose.

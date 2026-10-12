@@ -58,11 +58,14 @@ function sample() {
 
 group("Fresh calculations and saving one as a project");
 
-test("a fresh calculation has the job's example numbers", function () {
+test("a fresh calculation has the job's example numbers and its field", function () {
   const draft = store.exampleDraft("logo");
+  assert.strictEqual(draft.field, "graphic");
   assert.strictEqual(draft.job, "logo");
   assert.strictEqual(draft.inputs.count, "3");
-  assert.strictEqual(draft.inputs.itemHours, "1.5");
+  assert.strictEqual(draft.inputs.itemHours, "2");
+  assert.strictEqual(store.exampleDraft("event").field, "photography");
+  assert.strictEqual(store.exampleDraft("custom", "illustration").field, "illustration");
   assert.strictEqual(draft.inputs.rate, "25");
   assert.strictEqual(draft.inputs.offerStatus, "amount");
   assert.strictEqual(draft.inputs.offer, "200");
@@ -95,7 +98,8 @@ test("the project gets its own copy of the inputs", function () {
 });
 
 test("the suggested name is the job and today's date", function () {
-  assert.strictEqual(store.defaultProjectName("menu", new Date(2026, 9, 11)), "Restaurant menu, Oct 11");
+  assert.strictEqual(store.defaultProjectName("menu", new Date(2026, 9, 11)), "Menu, Oct 11");
+  assert.strictEqual(store.defaultProjectName("session", new Date(2026, 9, 11)), "Portrait session, Oct 11");
   assert.strictEqual(store.defaultProjectName("poster", new Date(2026, 0, 3)), "Poster or flyer, Jan 3");
 });
 
@@ -266,6 +270,29 @@ test("numbers saved as numbers are read as text", function () {
   const raw = make("Old", "menu", "old", MON);
   raw.inputs.rate = 30;
   assert.strictEqual(store.parseProjects(JSON.stringify([raw]))[0].inputs.rate, "30");
+});
+
+test("the field is saved, and older projects without one load as Graphic design", function () {
+  const photo = store.createProject("Shoot", store.exampleDraft("custom", "photography"), "p", MON);
+  assert.strictEqual(photo.field, "photography");
+  const loaded = store.parseProjects(JSON.stringify([photo]))[0];
+  assert.strictEqual(loaded.field, "photography");
+  assert.strictEqual(loaded.job, "custom");
+
+  const old = make("Old menu", "menu", "old", MON);
+  delete old.field;
+  assert.strictEqual(store.parseProjects(JSON.stringify([old]))[0].field, "graphic");
+  const oldCustom = make("Old custom", "custom", "oc", MON);
+  delete oldCustom.field;
+  assert.strictEqual(store.parseProjects(JSON.stringify([oldCustom]))[0].field, "graphic");
+});
+
+test("a field that doesn't match the job is corrected from the job", function () {
+  const raw = make("Event", "event", "e", MON);
+  raw.field = "graphic";
+  assert.strictEqual(store.parseProjects(JSON.stringify([raw]))[0].field, "photography");
+  raw.field = "sculpture";
+  assert.strictEqual(store.parseProjects(JSON.stringify([raw]))[0].field, "photography");
 });
 
 test("a repeated id keeps only the first", function () {

@@ -118,16 +118,36 @@
           <fieldset class="section">
             <legend><span class="step">01.</span> The job</legend>
 
-            <!-- A segmented control: real radios underneath. -->
+            <!-- The field: text tabs on real radios. Picking one shows its jobs. -->
+            <div class="field-tabs" role="radiogroup" aria-label="Field">
+              <input id="field-graphic" name="field" type="radio" value="graphic" checked>
+              <label for="field-graphic">Graphic design</label>
+              <input id="field-illustration" name="field" type="radio" value="illustration">
+              <label for="field-illustration">Illustration</label>
+              <input id="field-photography" name="field" type="radio" value="photography">
+              <label for="field-photography">Photography</label>
+            </div>
+
+            <!-- The job: a segmented control on real radios. Only the field's jobs show. -->
             <div class="segmented job-choice" role="radiogroup" aria-label="Type of job">
               <input id="job-menu" name="job" type="radio" value="menu" checked>
-              <label for="job-menu">Restaurant menu</label>
+              <label for="job-menu">Menu</label>
               <input id="job-logo" name="job" type="radio" value="logo">
               <label for="job-logo">Logo</label>
               <input id="job-social" name="job" type="radio" value="social">
               <label for="job-social">Social posts</label>
               <input id="job-poster" name="job" type="radio" value="poster">
               <label for="job-poster">Poster or flyer</label>
+              <input id="job-portrait" name="job" type="radio" value="portrait">
+              <label for="job-portrait">Portrait commission</label>
+              <input id="job-editorial" name="job" type="radio" value="editorial">
+              <label for="job-editorial">Editorial illustration</label>
+              <input id="job-session" name="job" type="radio" value="session">
+              <label for="job-session">Portrait session</label>
+              <input id="job-event" name="job" type="radio" value="event">
+              <label for="job-event">Event</label>
+              <input id="job-product" name="job" type="radio" value="product">
+              <label for="job-product">Product photos</label>
               <input id="job-custom" name="job" type="radio" value="custom">
               <label for="job-custom">Custom</label>
             </div>
@@ -183,7 +203,7 @@
               </div>
 
               <div class="work-row">
-                <div class="row-label"><label for="item-hours" id="item-label">Design, per page</label></div>
+                <div class="row-label"><label for="item-hours" id="item-label">Layout, per page</label></div>
                 <div class="row-bar" id="bar-item-hours" aria-hidden="true"></div>
                 <div class="unit-input">
                   <input id="item-hours" name="itemHours" type="text" inputmode="decimal" value="2" aria-describedby="unit-item-hours page-hours-hint">
@@ -355,7 +375,7 @@
           <div class="hero-top">
             <p class="hero-label" id="hero-label" tabindex="-1">This offer pays</p>
             <div class="hero-aside">
-              <p class="hero-job" id="hero-job">Restaurant menu · 2 pages · 2 rounds</p>
+              <p class="hero-job" id="hero-job">Menu · 2 pages · 2 rounds</p>
               <p class="hero-sentence" id="hero-sentence">for 11.5 hours of real work. That's $7.61 an hour under your $25 target.</p>
               <p class="warning" id="offer-warning" hidden></p>
             </div>
@@ -476,7 +496,7 @@
 
               <div class="field">
                 <label for="reply">Your reply to the client</label>
-                <textarea id="reply" name="reply" rows="6" autocomplete="off">Hi! Thanks for reaching out about the menu. For a restaurant menu with 2 pages and 2 rounds of changes, my price is $310. I know that's more than the $200 you mentioned, so I'm happy to talk about what would fit your budget. Let me know if you have any questions!</textarea>
+                <textarea id="reply" name="reply" rows="6" autocomplete="off">Hi! Thanks for reaching out. For a menu with 2 pages and 2 rounds of changes, my price is $310. I know that's more than the $200 you mentioned, so I'm happy to talk about what would fit your budget. Let me know if you have any questions!</textarea>
               </div>
 
               <div class="reply-actions">

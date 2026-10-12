@@ -25,12 +25,16 @@ function validateName(name) {
 }
 
 // A fresh calculation: the job's example numbers, no quote, the reply not edited.
-function exampleDraft(jobKey) {
+// fieldKey matters only for Custom, which is in every field.
+function exampleDraft(jobKey, fieldKey) {
   const example = projectCalc.JOBS[jobKey].example;
   const inputs = {};
   projectCalc.HOURS_FIELDS.forEach(function (field) { inputs[field] = String(example[field]); });
   Object.keys(STARTING_NUMBERS).forEach(function (field) { inputs[field] = STARTING_NUMBERS[field]; });
-  return { job: jobKey, inputs: inputs, quote: "", reply: "", replyEdited: false };
+  return {
+    field: projectCalc.fieldForJob(jobKey, fieldKey), job: jobKey,
+    inputs: inputs, quote: "", reply: "", replyEdited: false,
+  };
 }
 
 // True when a draft is still exactly its job's example: nothing to lose.
@@ -41,7 +45,7 @@ function isUntouched(draft) {
   return sameInputs && draft.quote === "" && !draft.replyEdited;
 }
 
-// "Restaurant menu, Oct 11"
+// "Menu, Oct 11"
 function defaultProjectName(jobKey, now) {
   return projectCalc.JOBS[jobKey].name + ", " + MONTHS[now.getMonth()] + " " + now.getDate();
 }
@@ -51,6 +55,7 @@ function createProject(name, draft, id, now) {
   return {
     id: id,
     name: String(name).trim().slice(0, NAME_MAX),
+    field: projectCalc.fieldForJob(draft.job, draft.field),
     job: draft.job,
     inputs: Object.assign({}, draft.inputs),
     quote: draft.quote,
@@ -65,7 +70,7 @@ function isDate(value) {
   return typeof value === "string" && !isNaN(Date.parse(value));
 }
 
-// Checks the parts a project and a draft share: the job, every input, the
+// Checks the parts a project and a draft share: the field, the job, every input, the
 // quote, and the reply. Returns a clean copy, or null if something needed is broken.
 function cleanCalculation(raw) {
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
@@ -79,6 +84,8 @@ function cleanCalculation(raw) {
   }
   if (inputs.offerStatus !== "amount" && inputs.offerStatus !== "none") return null;
   return {
+    // Older saves have no field: they were all Graphic design.
+    field: projectCalc.fieldForJob(raw.job, raw.field),
     job: raw.job,
     inputs: inputs,
     quote: typeof raw.quote === "string" ? raw.quote : "",

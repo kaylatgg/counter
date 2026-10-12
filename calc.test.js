@@ -560,50 +560,88 @@ function runJob(key) {
   return calc.calculate(checked.values);
 }
 
-test("there are five jobs, each with every work number", function () {
-  assert.deepStrictEqual(Object.keys(calc.JOBS), ["menu", "logo", "social", "poster", "custom"]);
+// The Total column from the job table in CLAUDE.md. All provisional examples.
+const JOB_TOTALS = {
+  menu: 11.5, logo: 13, social: 8.5, poster: 9.5,
+  portrait: 9, editorial: 12.5,
+  session: 10, event: 14.5, product: 13.5,
+  custom: 0,
+};
+
+test("three fields; every job is in one, and each field ends with Custom", function () {
+  assert.deepStrictEqual(Object.keys(calc.WORK_FIELDS), ["graphic", "illustration", "photography"]);
+  assert.deepStrictEqual(calc.WORK_FIELDS.graphic.jobs, ["menu", "logo", "social", "poster", "custom"]);
+  assert.deepStrictEqual(calc.WORK_FIELDS.illustration.jobs, ["portrait", "editorial", "custom"]);
+  assert.deepStrictEqual(calc.WORK_FIELDS.photography.jobs, ["session", "event", "product", "custom"]);
   Object.keys(calc.JOBS).forEach(function (key) {
     assert.deepStrictEqual(Object.keys(calc.JOBS[key].example).sort(), calc.HOURS_FIELDS.slice().sort());
   });
 });
 
-test("restaurant menu: 6 + 1.5 + 3 + 1 = 11.5 hrs, $310", function () {
+test("every job's example total matches the table", function () {
+  Object.keys(JOB_TOTALS).forEach(function (key) {
+    closeTo(runJob(key).hours.total, JOB_TOTALS[key]);
+  });
+  assert.deepStrictEqual(Object.keys(JOB_TOTALS).sort(), Object.keys(calc.JOBS).sort());
+});
+
+test("no two jobs (besides Custom) share the same total", function () {
+  const totals = Object.keys(calc.JOBS).filter(function (key) { return key !== "custom"; })
+    .map(function (key) { return calc.formatNumber(runJob(key).hours.total); });
+  assert.strictEqual(new Set(totals).size, totals.length, "totals: " + totals.join(", "));
+});
+
+test("menu: still 11.5 hrs and $310", function () {
   const r = runJob("menu");
   closeTo(r.hours.production, 6);
-  closeTo(r.hours.total, 11.5);
   assert.strictEqual(r.estimate, 310);
 });
 
-test("logo: 2 + 3 x 1.5 = 6.5 production, 11.5 hrs, $310", function () {
+test("logo: 2 + 3 x 2 = 8 production, 13 hrs, $345", function () {
   const r = runJob("logo");
-  closeTo(r.hours.production, 6.5);
-  closeTo(r.hours.communication, 1.5);
-  closeTo(r.hours.revisions, 2);
-  closeTo(r.hours.delivery, 1.5);
-  closeTo(r.hours.total, 11.5);
-  assert.strictEqual(r.estimate, 310);
+  closeTo(r.hours.production, 8);
+  assert.strictEqual(r.estimate, 345);
 });
 
-test("social media posts: 2 + 6 x 0.5 = 5 production, 8.5 hrs, $235", function () {
-  const r = runJob("social");
-  closeTo(r.hours.production, 5);
-  closeTo(r.hours.revisions, 2);
-  closeTo(r.hours.total, 8.5);
-  closeTo(r.subtotal, 232.5);
-  assert.strictEqual(r.estimate, 235);
-});
-
-test("poster or flyer: 3 + 2 x 0.75 = 4.5 production, 8.5 hrs, $235", function () {
-  const r = runJob("poster");
-  closeTo(r.hours.production, 4.5);
-  closeTo(r.hours.total, 8.5);
-  assert.strictEqual(r.estimate, 235);
+test("portrait session: 3 + 20 x 0.2 = 7 production, 10 hrs, $270", function () {
+  const r = runJob("session");
+  closeTo(r.hours.production, 7);
+  closeTo(r.hours.revisions, 1);
+  assert.strictEqual(r.estimate, 270);
 });
 
 test("custom: starts at 0 hours, so it shows the \"add hours\" state", function () {
-  const r = runJob("custom");
-  closeTo(r.hours.total, 0);
-  assert.strictEqual(r.hasHours, false);
+  assert.strictEqual(runJob("custom").hasHours, false);
+});
+
+test("a job's field; Custom keeps the one picked, and older saves get Graphic design", function () {
+  assert.strictEqual(calc.fieldForJob("event"), "photography");
+  assert.strictEqual(calc.fieldForJob("portrait", "graphic"), "illustration");
+  assert.strictEqual(calc.fieldForJob("custom", "photography"), "photography");
+  assert.strictEqual(calc.fieldForJob("custom"), "graphic");
+});
+
+test("reply: counts of 1 are singular", function () {
+  assert.strictEqual(calc.replyText("portrait", 1, 1, 245, null),
+    "Hi! Thanks for reaching out. For a portrait commission with 1 figure and 1 round of changes, " +
+    "my price is $245. Let me know if you have any questions!");
+});
+
+test("reply: counts of 2 or more are plural, with the offer line when the price is higher", function () {
+  assert.strictEqual(calc.replyText("menu", 2, 2, 310, 200),
+    "Hi! Thanks for reaching out. For a menu with 2 pages and 2 rounds of changes, my price is $310. " +
+    "I know that's more than the $200 you mentioned, so I'm happy to talk about what would fit your budget. " +
+    "Let me know if you have any questions!");
+  assert.ok(calc.replyText("event", 60, 0, 380, 400).indexOf("For an event shoot with 60 photos and 0 rounds of changes") !== -1);
+  assert.ok(calc.replyText("social", 6, 3, 235, 300).indexOf("a set of social posts with 6 posts and 3 rounds") !== -1);
+  assert.strictEqual(calc.replyText("social", 6, 3, 235, 300).indexOf("I know"), -1);
+});
+
+test("every job has its reply phrase", function () {
+  const phrases = Object.keys(calc.JOBS).map(function (key) { return calc.JOBS[key].phrase; });
+  assert.deepStrictEqual(phrases, ["a menu", "a logo", "a set of social posts", "a poster or flyer",
+    "a portrait commission", "an editorial illustration", "a portrait session", "an event shoot",
+    "a product shoot", "a custom project"]);
 });
 
 test("messages name the job's item and setup row", function () {
@@ -629,7 +667,7 @@ test("the delivery row follows the job", function () {
 });
 
 test("with no job given, messages use the menu's names", function () {
-  assert.strictEqual(errorsFor({ itemHours: "x" }).itemHours, "Use a number for design, per page.");
+  assert.strictEqual(errorsFor({ itemHours: "x" }).itemHours, "Use a number for layout, per page.");
   assert.strictEqual(errorsFor({ setupHours: "x" }).setupHours, "Use a number for concepts and sketches.");
 });
 

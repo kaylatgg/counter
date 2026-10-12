@@ -471,6 +471,44 @@ legend {
   margin: 0 0 24px;
 }
 
+/* The field: text tabs with an underline, above the job pills. Real radios. */
+.field-tabs {
+  display: flex;
+  gap: 28px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid var(--line);
+}
+
+.field-tabs input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+}
+
+.field-tabs label {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  margin-bottom: -1px;
+  border-bottom: 2px solid transparent;
+  font-size: 16px;
+  color: var(--ink-2);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.field-tabs input:checked + label {
+  border-bottom-color: var(--ink);
+  color: var(--ink);
+}
+
+.field-tabs input:focus-visible + label {
+  outline: 2px solid var(--ink);
+  outline-offset: 3px;
+}
+
 /* Segmented controls: the job and "Did they offer an amount?" Real radios. */
 .segmented {
   display: inline-flex;
@@ -1979,6 +2017,7 @@ textarea {
     background: var(--ink-2);
   }
 
+  .field-tabs input:not(:checked) + label:hover,
   .edit-button:hover,
   .row-action:hover {
     color: var(--ink);

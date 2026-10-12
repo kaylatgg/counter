@@ -7,7 +7,7 @@ const FIELDS = {
   count: { name: "pages", whole: true },
   rounds: { name: "rounds of changes", whole: true },
   setupHours: { name: "concepts and sketches", hours: true },
-  itemHours: { name: "design, per page", hours: true },
+  itemHours: { name: "layout, per page", hours: true },
   communicationHours: { name: "emails, calls, and meetings", hours: true },
   roundHours: { name: "each round of changes", hours: true },
   deliveryHours: { name: "print setup and export", hours: true },
@@ -17,56 +17,140 @@ const FIELDS = {
   quote: { name: "your price" },
 };
 
-// Graphic design jobs. Each one names its item ("pages", "concepts"), its
-// setup row, its delivery row, and brings provisional example numbers. Production is always
-// setup + count x hours per item, so the math is the same for every job.
+// Jobs. Each one names its stepper ("Pages"), its item ("page", "pages"), its
+// setup, per-item, and delivery rows, and its phrase for the reply, and brings
+// provisional example numbers. Production is always setup + count x hours per
+// item, so the math is the same for every job.
 const JOBS = {
   menu: {
-    name: "Restaurant menu", phrase: "a restaurant menu", about: "menu",
-    item: "page", items: "pages", setup: "Concepts and sketches",
-    delivery: "Print setup and export",
+    name: "Menu", phrase: "a menu", countLabel: "Pages", item: "page", items: "pages",
+    setup: "Concepts and sketches", perItem: "Layout, per page", delivery: "Print setup and export",
     example: { count: 2, rounds: 2, setupHours: 2, itemHours: 2,
       communicationHours: 1.5, roundHours: 1.5, deliveryHours: 1 },
   },
   logo: {
-    name: "Logo", phrase: "a logo", about: "logo",
-    item: "concept", items: "concepts", setup: "Research and sketches",
-    delivery: "Formats and color versions",
-    example: { count: 3, rounds: 2, setupHours: 2, itemHours: 1.5,
+    name: "Logo", phrase: "a logo", countLabel: "Concepts", item: "concept", items: "concepts",
+    setup: "Research and sketches", perItem: "Design, per concept", delivery: "Formats and color versions",
+    example: { count: 3, rounds: 2, setupHours: 2, itemHours: 2,
       communicationHours: 1.5, roundHours: 1, deliveryHours: 1.5 },
   },
   social: {
-    name: "Social posts", phrase: "a set of social media posts", about: "posts",
-    item: "post", items: "posts", setup: "Template and style",
-    delivery: "Resizing and export",
+    name: "Social posts", phrase: "a set of social posts", countLabel: "Posts", item: "post", items: "posts",
+    setup: "Template and style", perItem: "Design, per post", delivery: "Resizing and export",
     example: { count: 6, rounds: 2, setupHours: 2, itemHours: 0.5,
       communicationHours: 1, roundHours: 1, deliveryHours: 0.5 },
   },
   poster: {
-    name: "Poster or flyer", phrase: "a poster or flyer", about: "poster",
-    item: "size", items: "sizes", setup: "Concept and layout",
-    delivery: "Print setup and export",
-    example: { count: 2, rounds: 2, setupHours: 3, itemHours: 0.75,
+    name: "Poster or flyer", phrase: "a poster or flyer", countLabel: "Sizes", item: "size", items: "sizes",
+    setup: "Concept and layout", perItem: "Design, per size", delivery: "Print setup and export",
+    example: { count: 2, rounds: 2, setupHours: 4, itemHours: 0.75,
       communicationHours: 1, roundHours: 1, deliveryHours: 1 },
   },
+  portrait: {
+    name: "Portrait commission", phrase: "a portrait commission", countLabel: "Figures",
+    item: "figure", items: "figures",
+    setup: "Sketches", perItem: "Drawing, per figure", delivery: "Scan and export",
+    example: { count: 1, rounds: 2, setupHours: 1.5, itemHours: 4,
+      communicationHours: 1, roundHours: 1, deliveryHours: 0.5 },
+  },
+  editorial: {
+    name: "Editorial illustration", phrase: "an editorial illustration", countLabel: "Illustrations",
+    item: "illustration", items: "illustrations",
+    setup: "Research and sketches", perItem: "Drawing, per illustration", delivery: "Final files",
+    example: { count: 1, rounds: 2, setupHours: 2, itemHours: 6,
+      communicationHours: 1, roundHours: 1.5, deliveryHours: 0.5 },
+  },
+  session: {
+    name: "Portrait session", phrase: "a portrait session", countLabel: "Edited photos",
+    item: "photo", items: "photos",
+    setup: "Shoot and travel", perItem: "Editing, per photo", delivery: "Gallery and export",
+    example: { count: 20, rounds: 1, setupHours: 3, itemHours: 0.2,
+      communicationHours: 1, roundHours: 1, deliveryHours: 1 },
+  },
+  event: {
+    name: "Event", phrase: "an event shoot", countLabel: "Edited photos",
+    item: "photo", items: "photos",
+    setup: "Shoot and travel", perItem: "Editing, per photo", delivery: "Gallery and export",
+    example: { count: 60, rounds: 1, setupHours: 5, itemHours: 0.1,
+      communicationHours: 1.5, roundHours: 1, deliveryHours: 1 },
+  },
+  product: {
+    name: "Product photos", phrase: "a product shoot", countLabel: "Products",
+    item: "product", items: "products",
+    setup: "Setup and lighting", perItem: "Shooting and editing, per product", delivery: "Retouch and export",
+    example: { count: 8, rounds: 1, setupHours: 2, itemHours: 1,
+      communicationHours: 1, roundHours: 1.5, deliveryHours: 1 },
+  },
+  // Every field ends with Custom: the same blank job in each.
   custom: {
-    name: "Custom project", phrase: "a custom project", about: "project",
-    item: "piece", items: "pieces", setup: "Setup",
-    delivery: "File prep and export",
+    name: "Custom project", tab: "Custom", phrase: "a custom project", countLabel: "Pieces",
+    item: "piece", items: "pieces",
+    setup: "Setup", perItem: "Work, per piece", delivery: "File prep and export",
     example: { count: 1, rounds: 0, setupHours: 0, itemHours: 0,
       communicationHours: 0, roundHours: 0, deliveryHours: 0 },
   },
 };
 
+// Fields of creative work. Each lists its jobs in tab order (Custom last) and
+// names the expenses people in that field usually have.
+const WORK_FIELDS = {
+  graphic: {
+    name: "Graphic design",
+    jobs: ["menu", "logo", "social", "poster", "custom"],
+    expensesHint: "Money you spend on this job, like fonts, stock photos, or printed proofs.",
+  },
+  illustration: {
+    name: "Illustration",
+    jobs: ["portrait", "editorial", "custom"],
+    expensesHint: "Money you spend on this job, like paper, paint, printing, or shipping.",
+  },
+  photography: {
+    name: "Photography",
+    jobs: ["session", "event", "product", "custom"],
+    expensesHint: "Money you spend on this job, like gear rental, mileage, or props.",
+  },
+};
+
+// The field a job belongs to. Custom is in every field, so it needs the one
+// the person picked; without one (older saves), it's Graphic design.
+function fieldForJob(jobKey, fieldKey) {
+  if (WORK_FIELDS[fieldKey] && WORK_FIELDS[fieldKey].jobs.indexOf(jobKey) !== -1) return fieldKey;
+  const keys = Object.keys(WORK_FIELDS);
+  for (let i = 0; i < keys.length; i++) {
+    if (WORK_FIELDS[keys[i]].jobs.indexOf(jobKey) !== -1) return keys[i];
+  }
+  return "graphic";
+}
+
 // The fields, named for one job, so messages say "concepts" for a logo.
 function fieldsFor(jobKey) {
   const job = JOBS[jobKey] || JOBS.menu;
   return Object.assign({}, FIELDS, {
-    count: { name: job.items, whole: true },
+    count: { name: job.countLabel.toLowerCase(), whole: true },
     setupHours: { name: job.setup.toLowerCase(), hours: true },
-    itemHours: { name: "design, per " + job.item, hours: true },
+    itemHours: { name: job.perItem.toLowerCase(), hours: true },
     deliveryHours: { name: job.delivery.toLowerCase(), hours: true },
   });
+}
+
+// "1 page", "2 pages"
+function countWords(amount, singular, plural) {
+  return formatNumber(amount) + " " + (formatNumber(amount) === "1" ? singular : plural);
+}
+
+// The reply draft. price and offer are amounts; offer is null with no offer.
+// "Hi! Thanks for reaching out. For a menu with 2 pages and 2 rounds of
+// changes, my price is $310."
+function replyText(jobKey, count, rounds, price, offer) {
+  const job = JOBS[jobKey];
+  let text = "Hi! Thanks for reaching out. For " + job.phrase + " with " +
+    countWords(count, job.item, job.items) + " and " +
+    countWords(rounds, "round", "rounds") + " of changes, my price is " + formatPrice(price) + ".";
+  if (offer !== null && price > offer) {
+    text += " I know that's more than the " + formatPrice(offer) +
+      " you mentioned, so I'm happy to talk about what would fit your budget.";
+  }
+  return text + " Let me know if you have any questions!";
 }
 
 // The fields the hours depend on. The page can show group totals
@@ -419,6 +503,9 @@ function formatPrice(amount) {
 const calc = {
   FIELDS,
   JOBS,
+  WORK_FIELDS,
+  fieldForJob,
+  replyText,
   HOURS_FIELDS,
   fieldsFor,
   parseNumber,

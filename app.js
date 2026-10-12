@@ -157,7 +157,7 @@ function renderStats(items) {
   });
 }
 
-// "Restaurant menu · 2 pages · 2 rounds"
+// "Menu · 2 pages · 2 rounds"
 function jobSummary(values) {
   return job().name + " · " + countOf(values.count, job().item, job().items) + " · " +
     countOf(values.rounds, "round", "rounds");
@@ -707,18 +707,10 @@ function renderQuote(r, quoteError) {
 // Reply
 
 // The draft from CLAUDE.md, using the quote if there is one, or the estimate.
-// "For a logo with 3 concepts and 2 rounds of changes, my price is $310."
+// "Hi! Thanks for reaching out. For a menu with 2 pages and 2 rounds of changes, my price is $310."
 function buildReply(r, values) {
-  const price = calc.formatPrice(r.quote.amount);
-  const items = countOf(values.count, job().item, job().items);
-  const rounds = countOf(values.rounds, "round", "rounds") + " of changes";
-  let text = "Hi! Thanks for reaching out about the " + job().about + ". For " + job().phrase +
-    " with " + items + " and " + rounds + ", my price is " + price + ".";
-  if (r.offer && r.quote.amount > r.offer.amount) {
-    text += " I know that's more than the " + calc.formatPrice(r.offer.amount) +
-      " you mentioned, so I'm happy to talk about what would fit your budget.";
-  }
-  return text + " Let me know if you have any questions!";
+  return calc.replyText(currentJob(), values.count, values.rounds, r.quote.amount,
+    r.offer ? r.offer.amount : null);
 }
 
 // Once the person edits the reply, it's never overwritten. If the numbers
@@ -944,6 +936,17 @@ function renderErrorState(errors) {
 // The job: five choices in a segmented control. Each names its item ("concepts") and setup row,
 // and brings example numbers. The math is the same for all of them.
 
+function currentField() {
+  return document.querySelector('input[name="field"]:checked').value;
+}
+
+// Changing the field shows its jobs and picks the first one, then works like
+// switching jobs (including the replace-numbers question).
+function switchField() {
+  byId("job-" + calc.WORK_FIELDS[currentField()].jobs[0]).checked = true;
+  switchJob();
+}
+
 function currentJob() {
   return document.querySelector('input[name="job"]:checked').value;
 }
@@ -959,13 +962,21 @@ function upperFirst(text) {
 // Puts the job's names on every label, button, and header that mentions it.
 function renderJob() {
   const j = job();
-  const items = upperFirst(j.items);
-  byId("count-label").textContent = items;
-  byId("bar-count-label").textContent = items;
-  byId("steppers-items").textContent = items;
+  const field = calc.WORK_FIELDS[currentField()];
+  byId("count-label").textContent = j.countLabel;
+  byId("bar-count-label").textContent = j.countLabel;
+  byId("steppers-items").textContent = j.countLabel;
   byId("setup-label").textContent = j.setup;
-  byId("item-label").textContent = "Design, per " + j.item;
+  byId("item-label").textContent = j.perItem;
   byId("delivery-label").textContent = j.delivery;
+  byId("expenses-hint").textContent = field.expensesHint;
+
+  // Only this field's jobs show. Hidden radios also drop out of arrow-key order.
+  document.querySelectorAll('input[name="job"]').forEach(function (radio) {
+    const inField = field.jobs.indexOf(radio.value) !== -1;
+    radio.hidden = !inField;
+    radio.nextElementSibling.hidden = !inField;
+  });
   document.querySelectorAll('button[data-target="count"]').forEach(function (button) {
     button.setAttribute("aria-label",
       (button.dataset.step === "1" ? "One more " : "One less ") + j.item);
@@ -1294,6 +1305,7 @@ function snapshot() {
   const inputs = {};
   projectStore.INPUT_NAMES.forEach(function (name) { inputs[name] = raw[name]; });
   return {
+    field: currentField(),
     job: currentJob(),
     inputs: inputs,
     quote: raw.quote,
@@ -1324,6 +1336,7 @@ function fillCalculator(values) {
   stopCountUp();
   clearTimeout(commitTimer);
 
+  byId("field-" + calc.fieldForJob(values.job, values.field)).checked = true;
   byId("job-" + values.job).checked = true;
   loadedJob = values.job;
   Object.keys(FIELD_IDS).forEach(function (name) {
@@ -1815,6 +1828,9 @@ document.querySelectorAll('input[name="offerStatus"]').forEach(function (radio) 
   });
 });
 
+document.querySelectorAll('input[name="field"]').forEach(function (radio) {
+  radio.addEventListener("change", switchField);
+});
 document.querySelectorAll('input[name="job"]').forEach(function (radio) {
   radio.addEventListener("change", switchJob);
 });
