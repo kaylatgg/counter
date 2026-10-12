@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Counter</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -86,18 +86,19 @@
         <button type="button" class="round-button" id="new-calc-empty">New calculation</button>
       </div>
 
-      <table class="project-table" id="project-table">
-        <thead>
-          <tr>
-            <th scope="col">Name</th>
-            <th scope="col">Job</th>
-            <th scope="col">Estimate</th>
-            <th scope="col">Offer pays</th>
-            <th scope="col">Edited</th>
-            <th scope="col"><span class="visually-hidden">Actions</span></th>
+      <!-- Explicit table roles, kept when the phone layout restyles the rows. -->
+      <table class="project-table" id="project-table" role="table">
+        <thead role="rowgroup">
+          <tr role="row">
+            <th scope="col" role="columnheader">Name</th>
+            <th scope="col" role="columnheader">Job</th>
+            <th scope="col" role="columnheader">Estimate</th>
+            <th scope="col" role="columnheader">Offer pays</th>
+            <th scope="col" role="columnheader">Edited</th>
+            <th scope="col" role="columnheader"><span class="visually-hidden">Actions</span></th>
           </tr>
         </thead>
-        <tbody id="project-rows"></tbody>
+        <tbody id="project-rows" role="rowgroup"></tbody>
       </table>
 
       <p class="mono-note storage-note">Projects save in this browser on this device.</p>
@@ -320,7 +321,9 @@
           <button type="button" class="check-button" id="check-offer">
             <span class="check-main">
               <span class="check-title" id="check-title">Check the offer</span>
-              <span class="check-preview" id="check-preview">11.5 hrs of work for $200</span>
+              <span class="check-preview" id="check-preview"><span class="preview-long" id="preview-long">11.5 hrs of work for $200</span><span class="preview-short" id="preview-short">11.5 hrs · $200</span></span>
+              <!-- Phone only: a thin live bar of the hours, under the line above. -->
+              <span class="check-hours" id="check-hours" aria-hidden="true"></span>
             </span>
             <span class="check-circle" id="check-circle" aria-hidden="true">
               <svg width="20" height="20" viewBox="0 0 20 20" focusable="false"><path d="M3.5 10h12M10.5 4.5 16 10l-5.5 5.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -335,9 +338,9 @@
 
       <!-- Second header row: Edit details and the live controls -->
       <div class="results-header">
-        <button type="button" class="edit-button" id="edit-details">
+        <button type="button" class="edit-button" id="edit-details" aria-label="Edit details">
           <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true" focusable="false"><path d="M10 6H2.5M5.5 2.5 2 6l3.5 3.5" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          Edit details
+          <span class="edit-long">Edit details</span><span class="edit-short" aria-hidden="true">Edit</span>
         </button>
 
         <div class="control-bar" role="group" aria-label="Quick changes">
@@ -411,6 +414,9 @@
               <div class="bar-labels" id="bar-labels"></div>
             </div>
 
+            <!-- Phone only: the group names and hours, in two columns under the bar. -->
+            <ul class="group-legend" id="group-legend" aria-hidden="true"></ul>
+
             <ul class="visually-hidden" id="hours-list">
               <li>Production: 6 hrs</li>
               <li>Communication: 1.5 hrs</li>
@@ -457,15 +463,17 @@
                 <span class="math-estimate" id="math-estimate">$310</span>
               </summary>
 
-              <table id="receipt">
-                <thead>
-                  <tr>
-                    <th scope="col"><span class="visually-hidden">Item</span></th>
-                    <th scope="col"><span class="visually-hidden">Math</span></th>
-                    <th scope="col"><span class="visually-hidden">Amount</span></th>
+              <!-- Explicit table roles: the phone layout restyles the rows, and
+                   Safari drops table meaning from restyled tables without them. -->
+              <table id="receipt" role="table">
+                <thead role="rowgroup">
+                  <tr role="row">
+                    <th scope="col" role="columnheader"><span class="visually-hidden">Item</span></th>
+                    <th scope="col" role="columnheader"><span class="visually-hidden">Math</span></th>
+                    <th scope="col" role="columnheader"><span class="visually-hidden">Amount</span></th>
                   </tr>
                 </thead>
-                <tbody id="receipt-rows"></tbody>
+                <tbody id="receipt-rows" role="rowgroup"></tbody>
               </table>
 
               <p class="receipt-note">Taxes are not included. None of these numbers are take-home pay.</p>

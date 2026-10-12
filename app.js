@@ -193,6 +193,7 @@ function renderHero(r, values) {
     }
     show(sentence, !r.offer.belowExpenses);
     show(warning, r.offer.belowExpenses);
+    fitHeroNumber();
 
     // No plus or minus signs: the label says which way the difference goes.
     let comparison;
@@ -225,6 +226,7 @@ function renderHero(r, values) {
     sentence.textContent = text;
     show(sentence, true);
     show(warning, false);
+    fitHeroNumber();
 
     const forgotten = r.outsideProduction;
     renderStats([
@@ -399,8 +401,21 @@ function layoutHoursChart(r) {
     lineLabel.textContent = calc.formatPrice(offer.amount) + " runs out at " +
       calc.formatHours(offer.hoursCovered);
     line.style.left = lineX + "px";
-    // The label sits right of the line, unless that would run past the edge.
-    if (lineX + LABEL_SPACE + lineLabel.offsetWidth > width) line.classList.add("flip");
+    // Desktop: the label sits right of the line, unless that would run past the
+    // edge. Phone: left of the line, unless there's no room (the CSS swaps sides).
+    lineLabel.style.left = "";
+    lineLabel.style.right = "";
+    if (isPhone()) {
+      const w = lineLabel.offsetWidth;
+      if (lineX - LABEL_SPACE - w < 0) line.classList.add("flip");
+      // Too long for either side: it stays above the line, inside the chart.
+      if (lineX - LABEL_SPACE - w < 0 && lineX + LABEL_SPACE + w > width) {
+        lineLabel.style.left = (Math.max(0, width - w) - lineX) + "px";
+        lineLabel.style.right = "auto";
+      }
+    } else if (lineX + LABEL_SPACE + lineLabel.offsetWidth > width) {
+      line.classList.add("flip");
+    }
   }
 
   // A bracket over the forgotten groups.
@@ -417,6 +432,24 @@ function layoutHoursChart(r) {
     // Keep the label inside the chart.
     label.style.left = Math.min(0, width - (left + label.offsetWidth)) + "px";
   }
+
+  // Phone: group names and hours in a 2-column legend under the bar, each with
+  // a swatch of how it's drawn (paid, unpaid, or with no offer, solid or striped).
+  const legend = ensureChildren(byId("group-legend"), groups.length, function () {
+    const item = document.createElement("li");
+    item.innerHTML = '<span class="legend-swatch"></span><span class="group-name"></span><span class="group-hours"></span>';
+    return item;
+  });
+  let legendStart = 0;
+  groups.forEach(function (group, i) {
+    let drawn;
+    if (covered === null) drawn = group === "production" ? "solid" : "striped";
+    else drawn = covered > legendStart + 1e-9 ? "paid" : "striped";
+    legendStart += r.hours[group];
+    legend[i].firstElementChild.className = "legend-swatch " + drawn;
+    legend[i].querySelector(".group-name").textContent = GROUP_NAMES[group];
+    legend[i].querySelector(".group-hours").textContent = calc.formatNumber(r.hours[group]) + "h";
+  });
 
   // Under each group: hours and name. Labels never overlap.
   const labels = ensureChildren(byId("bar-labels"), groups.length, function () {
@@ -497,7 +530,7 @@ function layoutRateChart(r) {
   const plot = byId("rate-plot");
   const width = plot.clientWidth;
   if (!width) return;
-  const height = 210;
+  const height = isPhone() ? 170 : 210;
   const pad = { left: 40, right: 4, top: 12, bottom: 26 };
   const offer = r.offer;
   const total = r.hours.total;
@@ -668,11 +701,14 @@ function renderReceipt(r, values) {
   body.textContent = "";
   rows.forEach(function (row) {
     const tr = document.createElement("tr");
+    tr.setAttribute("role", "row");
     if (row[3]) tr.className = row[3];
     const th = document.createElement("th");
     th.scope = "row";
+    th.setAttribute("role", "rowheader");
     th.textContent = row[0];
     const amount = document.createElement("td");
+    amount.setAttribute("role", "cell");
     amount.textContent = row[2];
     // The final row has no math, so its larger label can use that column too.
     if (row[3] === "total") {
@@ -680,6 +716,7 @@ function renderReceipt(r, values) {
       tr.append(th, amount);
     } else {
       const math = document.createElement("td");
+      math.setAttribute("role", "cell");
       math.textContent = row[1];
       tr.append(th, math, amount);
     }
@@ -820,18 +857,32 @@ function renderRowBars(values) {
 }
 
 // "11.5 hrs of work for $200", or "11.5 hrs of work at $25/hr" with no offer.
+// On a phone the button is the bottom bar: a shorter line ("11.5 hrs · $200")
+// and a thin bar of the hours under it.
 function renderCheckButton(values, hours) {
   const preview = byId("check-preview");
   const hasOffer = values.hasOffer;
   byId("check-title").textContent = hasOffer ? "Check the offer" : "Get my estimate";
-  if (!hours) {
-    show(preview, false);
-    return;
-  }
-  preview.textContent = calc.formatHours(hours.total) + " of work " + (hasOffer
+  show(preview, Boolean(hours));
+  show(byId("check-hours"), Boolean(hours));
+  if (!hours) return;
+  const total = calc.formatHours(hours.total);
+  byId("preview-long").textContent = total + " of work " + (hasOffer
     ? "for " + calc.formatPrice(values.offer)
     : "at " + calc.formatPrice(values.rate) + "/hr");
-  show(preview, true);
+  byId("preview-short").textContent = hasOffer
+    ? total + " · " + calc.formatPrice(values.offer)
+    : total + " at " + calc.formatPrice(values.rate) + "/hr";
+
+  // Solid for production, stripes for the rest. Widths share the space by hours.
+  const groups = WORK_GROUPS.filter(function (group) { return hours[group] > 1e-9; });
+  const segments = ensureChildren(byId("check-hours"), groups.length, function () {
+    return document.createElement("span");
+  });
+  groups.forEach(function (group, i) {
+    segments[i].className = "check-segment" + (group === "production" ? "" : " forgotten");
+    segments[i].style.flexGrow = hours[group];
+  });
 }
 
 // Control bar: the item count, rounds, offer, and rate on screen 2 are the same values
@@ -1097,8 +1148,45 @@ let lastResult = null;
 function relayoutCharts() {
   layoutTally(lastHours);
   if (!lastResult || byId("result").hidden) return;
+  fitHeroNumber();
   layoutHoursChart(lastResult);
   if (lastResult.offer) layoutRateChart(lastResult);
+}
+
+// Phone layout: below 760px, the same value as the one media query in styles.css.
+const phoneQuery = window.matchMedia("(max-width: 759px)");
+
+function isPhone() {
+  return phoneQuery.matches;
+}
+
+// On a phone the hero number stays on one line: if it's wider than the panel,
+// its size comes down to fit. On desktop it keeps its set size.
+function fitHeroNumber() {
+  const digits = document.querySelector(".hero-digits");
+  digits.style.fontSize = "";
+  if (!isPhone()) return;
+  const room = byId("result-summary").clientWidth;
+  if (!room || digits.scrollWidth <= room) return;
+  const size = parseFloat(getComputedStyle(digits).fontSize);
+  digits.style.fontSize = Math.floor(size * room / digits.scrollWidth) + "px";
+}
+
+// On a phone the live controls sit in a panel right under the hero; on desktop
+// they're in the header row. Moving them keeps reading and Tab order the same
+// as what's on screen.
+function placeControls() {
+  const controls = document.querySelector(".control-bar");
+  if (isPhone()) {
+    byId("hero-panel").insertAdjacentElement("afterend", controls);
+  } else {
+    document.querySelector(".results-header").appendChild(controls);
+  }
+}
+
+function onLayoutChange() {
+  placeControls();
+  relayoutCharts();
 }
 
 // Typing updates right away, then commits after about 1 second without typing.
@@ -1434,7 +1522,14 @@ function renderHeader() {
   const button = byId("save-project");
   button.hidden = !inCalculator;
   button.disabled = Boolean(project);
-  button.textContent = project ? "Saved" : "Save as project";
+  if (project) {
+    button.textContent = "Saved";
+    button.removeAttribute("aria-label");
+  } else {
+    // On a phone only "Save" fits; the name stays "Save as project".
+    button.innerHTML = '<span class="save-long">Save as project</span><span class="save-short">Save</span>';
+    button.setAttribute("aria-label", "Save as project");
+  }
 }
 
 function closePanels() {
@@ -1559,6 +1654,7 @@ function projectSummary(project) {
 
 function cell(row, className, text) {
   const td = document.createElement("td");
+  td.setAttribute("role", "cell");
   td.className = className;
   if (text) td.textContent = text;
   row.appendChild(td);
@@ -1591,12 +1687,14 @@ function renderProjects() {
   body.textContent = "";
   list.forEach(function (project) {
     const row = document.createElement("tr");
+    row.setAttribute("role", "row");
     row.dataset.id = project.id;
     const summary = projectSummary(project);
     const mode = rowMode && rowMode.id === project.id ? rowMode.mode : null;
 
     const nameCell = document.createElement("th");
     nameCell.scope = "row";
+    nameCell.setAttribute("role", "rowheader");
     nameCell.className = "project-name";
     row.appendChild(nameCell);
     if (mode === "rename") {
@@ -1833,7 +1931,20 @@ document.querySelectorAll('input[name="field"]').forEach(function (radio) {
 });
 document.querySelectorAll('input[name="job"]').forEach(function (radio) {
   radio.addEventListener("change", switchJob);
+  // On a phone the pills scroll sideways; the picked one scrolls into view.
+  radio.addEventListener("focus", function () {
+    radio.nextElementSibling.scrollIntoView({ block: "nearest", inline: "nearest" });
+  });
 });
+
+// Phone: the header is clear at the top of screen 1, then gets a background.
+window.addEventListener("scroll", function () {
+  document.body.classList.toggle("scrolled", window.scrollY > 4);
+}, { passive: true });
+
+if (phoneQuery.addEventListener) phoneQuery.addEventListener("change", onLayoutChange);
+else phoneQuery.addListener(onLayoutChange);
+placeControls();
 byId("job-replace-yes").addEventListener("click", function () { answerReplace(true); });
 byId("job-replace-no").addEventListener("click", function () { answerReplace(false); });
 

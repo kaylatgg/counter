@@ -2,7 +2,7 @@
 
 Source of truth for how Counter looks. Replaces every earlier version. CLAUDE.md still owns the flow, math, copy, validation, accessibility, and tests.
 
-Reference images: `docs/design-v5-screen1.png` and `docs/design-v5-screen2.png`. Match them. If an image and this file differ, this file wins. If something isn't covered, ask. Ignore all older reference images.
+Reference images: `docs/design-v5-screen1.png` and `docs/design-v5-screen2.png` (desktop), `docs/design-v5-phone.png` (phone). Match them. If an image and this file differ, this file wins. If something isn't covered, ask. Ignore all older reference images.
 
 ## The idea
 
@@ -127,9 +127,58 @@ Decided while building:
 - **The reveal** fades screen 1 (200ms), grows the orb from the button's circle to the hero panel (400ms), then fades screen 2 in, counts the number up, sweeps the bars (600ms), and shows the red dot last.
 - **The corner glow** uses the sunset colors as one radial gradient, hottest at the center, blurred.
 
+## Phone layout (below 760px)
+
+Approved by Kayla, October 11, 2026. Reference: `docs/design-v5-phone.png` (390px wide). It must also work at 320px with no sideways page scroll.
+Same tokens, fonts, colors, and rules as desktop. Only the layout and sizes change.
+
+Sizes:
+- Side padding 20px.
+- Headline: `clamp(40px, 12vw, 84px)`. Intro 16px. Section titles 22px.
+- Hero number: `clamp(80px, 27vw, 220px)`, always on one line.
+- Stat values 32px. Chart titles 20px.
+- Every tap target is at least 44px tall: header buttons, Field tabs, job pills, Yes / Not yet, all steppers.
+
+**Header (both screens)**
+- 56px. Screen 1: "counter" left. Screen 2: "← Edit" left in place of the wordmark.
+  Reason: on a phone, getting back to your inputs matters more than the logo.
+- Right: "Projects N" (`--paper` pill) and "Save" (ink pill). "Save as project" is shortened to "Save". After saving, it behaves the same as on desktop.
+  Reason: the full label doesn't fit next to Projects.
+- Sticky on both screens on phone. Clear at the top of screen 1 so the glow shows, then `--bg` with a 1px `--line` bottom border once you scroll.
+  Reason: the form is long on a phone, so Save and Projects stay in reach.
+- On screen 2, the project name and its "Saved" status (when there is a project) go in one mono line under the header.
+
+**Screen 1: inputs**
+- One column in order: headline, intro, 01 The job, 02 The work, 03 Your numbers, 04 Their offer.
+  Reason: same order as desktop, so people learn one flow.
+- Corner glow: smaller, in the top right corner behind the header buttons only. Never behind the headline or intro.
+  Reason: `--ink-2` text on orange fails contrast.
+- Field tabs: one row. Job pills: one row that scrolls sideways, bleeding off the right edge so the last pill is cut off. No wrapping.
+  Reason: the cut-off pill shows there is more to swipe.
+- Steppers side by side. Work rows: label on top, then the bar and the hours input on one line.
+- Rate and expenses side by side. Amount offered at half width under Yes / Not yet.
+- **Bottom bar replaces the tally panel and the button.** Fixed, 12px from the sides, `calc(14px + env(safe-area-inset-bottom))` from the bottom, 28px radius, ink. Left: "Check the offer" (17px) and the live mono "11.5 hrs · $200", with a thin live hours bar under it (solid then stripes, light on ink). Right: 52px `--sunset` circle with the ink arrow. With no offer: "Get my estimate" and "11.5 hrs at $25/hr".
+  Reason: the total and the button are what you check while typing, so they stay under your thumb.
+- Add bottom padding to the page so the bar never covers the last field.
+
+**Screen 2: result**
+- Hero: 12px side margin, 28px radius. "This offer pays" and the mono job summary on top, the number, then the sentence under it in ink.
+- Live controls in a `--paper` panel (20px radius) right under the hero, not sticky: the item stepper, the rounds stepper, then Offer and Target on one row.
+  Reason: the desktop bar doesn't fit a phone. Right under the answer is where people try "what if".
+- Stats in a 2x2 grid.
+- Hours chart full width, 64px tall. Group names move into a 2-column legend under the bar. The runs-out label sits left of the dashed line, or right of it if there's no room.
+  Reason: four labels under thin bars would overlap.
+- Rate chart full width, about 170px tall. Same label rules as desktop.
+- Then Show the math, Your price, Your reply (stacked), and the footer. "Copy reply" full width.
+
+**Projects page and save field**
+- Projects list: one column, each project is a full-width row (name, job, date), at least 56px tall.
+- Save field: drops in under the header, full width: name input, then Save and Cancel side by side.
+
+**Motion:** the same reveal. The circle in the bottom bar grows into the hero. Off under reduced motion.
+
 ## Don'ts
 
 - No black page, no lime, no heavy font weights for numbers.
 - Gradient only in the four places listed.
 - No text lighter than `--ink-2` on the gradient.
-- Phone layout: not now.

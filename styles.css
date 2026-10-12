@@ -2108,6 +2108,722 @@ textarea {
   }
 }
 
+/* Phone-only pieces, hidden on larger screens. */
+.preview-short,
+.check-hours,
+.save-short,
+.edit-short,
+.group-legend {
+  display: none;
+}
+
+/* Phone: below 760px (docs/DESIGN.md, "Phone layout"). Same tokens, fonts,
+   and colors; only the layout and sizes change. */
+
+@media (max-width: 759px) {
+  html {
+    /* Focused fields stay clear of the sticky header and the bottom bar. */
+    scroll-padding-top: 112px;
+  }
+
+  html:has(body.on-inputs) {
+    scroll-padding-bottom: calc(120px + env(safe-area-inset-bottom));
+  }
+
+  html:has(body.on-results) {
+    scroll-padding-top: 112px;
+  }
+
+  /* Header: 56px, sticky on both screens. Clear at the top of screen 1 so the
+     glow shows, then a background and a hairline once you scroll. */
+  .topbar,
+  .on-results .topbar {
+    position: sticky;
+    top: 0;
+    z-index: 11;
+    padding: 0 20px;
+    background: transparent;
+    border-bottom: 1px solid transparent;
+  }
+
+  body.scrolled .topbar,
+  .on-results .topbar,
+  .on-projects .topbar {
+    background: var(--bg);
+    border-bottom-color: var(--line);
+  }
+
+  /* First row: 6px + 44px buttons + 6px = 56px. The project name line wraps under it. */
+  .topbar-inner {
+    flex-wrap: wrap;
+    align-content: flex-start;
+    gap: 0 8px;
+    height: auto;
+    min-height: 56px;
+    padding: 6px 0;
+  }
+
+  .wordmark {
+    margin-right: auto;
+  }
+
+  /* The project name and "Saved": one mono line under the header. */
+  .crumb {
+    order: 3;
+    flex-basis: 100%;
+    margin-top: -6px;
+    font-family: var(--mono);
+    font-size: 12px;
+  }
+
+  .crumb-name,
+  .crumb-input {
+    min-height: 44px;
+    max-width: calc(100% - 64px);
+    font-family: var(--mono);
+    font-size: 12px;
+  }
+
+  .projects-link {
+    margin-left: 0;
+    min-height: 44px;
+    padding: 0 14px;
+    border-radius: 999px;
+    background: var(--paper);
+  }
+
+  .projects-count {
+    min-width: 0;
+    padding: 0;
+    background: none;
+  }
+
+  .save-button {
+    min-height: 44px;
+    padding: 0 18px;
+  }
+
+  .save-long,
+  .edit-long,
+  .preview-long {
+    display: none;
+  }
+
+  .save-short,
+  .edit-short,
+  .preview-short {
+    display: inline;
+  }
+
+  /* Screen 2: "Edit" sits where the wordmark is. */
+  .on-results .topbar .wordmark {
+    visibility: hidden;
+  }
+
+  #edit-details {
+    position: fixed;
+    top: 6px;
+    left: 20px;
+    z-index: 12;
+    min-height: 44px;
+  }
+
+  .results-header {
+    position: static;
+    min-height: 0;
+    padding: 0;
+    background: none;
+  }
+
+  /* The smaller glow sits behind the header buttons only, never the headline.
+     Clipped to its own corner box, so it can't make the page scroll sideways. */
+  .glow {
+    top: 0;
+    right: 0;
+    width: 240px;
+    height: 150px;
+    overflow: hidden;
+  }
+
+  .glow-sun {
+    inset: auto;
+    top: -170px;
+    right: -130px;
+    width: 300px;
+    height: 300px;
+    filter: blur(28px);
+  }
+
+  .glow-ring {
+    display: none;
+  }
+
+  /* Screen 1 */
+
+  .screen-projects,
+  .screen-inputs,
+  .site-footer,
+  .on-results .site-footer {
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+
+  .screen-projects,
+  .screen-inputs {
+    padding-top: 12px;
+  }
+
+  h1 {
+    font-size: clamp(40px, 12vw, 84px);
+  }
+
+  .lede {
+    margin-top: 16px;
+    font-size: 16px;
+  }
+
+  .inputs-columns {
+    padding-top: 40px;
+  }
+
+  .inputs-column + .inputs-column,
+  .inputs-column .section + .section {
+    margin-top: 44px;
+  }
+
+  .section > legend {
+    gap: 12px;
+    font-size: 22px;
+  }
+
+  .field-tabs {
+    gap: 16px;
+  }
+
+  .field-tabs label {
+    font-size: 15px;
+  }
+
+  /* Job pills: one row that scrolls sideways and runs off the right edge, so
+     the cut-off pill shows there's more. The page itself never scrolls sideways. */
+  .segmented {
+    position: relative;
+  }
+
+  .segmented label {
+    min-height: 44px;
+  }
+
+  .job-choice {
+    display: flex;
+    width: calc(100% + 20px);
+    margin-right: -20px;
+    overflow-x: auto;
+    border-radius: 999px 0 0 999px;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .job-choice::-webkit-scrollbar {
+    display: none;
+  }
+
+  .job-choice label {
+    flex: none;
+  }
+
+  .steppers {
+    flex-wrap: nowrap;
+    gap: 24px;
+    margin-top: 28px;
+  }
+
+  .stepper {
+    gap: 4px;
+  }
+
+  .stepper input {
+    font-size: 28px;
+  }
+
+  /* Work rows: the label on top, then the bar and the hours input on one line. */
+  .work-row {
+    grid-template-columns: minmax(0, 1fr) 90px;
+    row-gap: 8px;
+  }
+
+  .row-label {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0 8px;
+    grid-column: 1 / -1;
+  }
+
+  .forgotten-note {
+    margin-left: 0;
+  }
+
+  .row-bar {
+    justify-self: start;
+    max-width: 100%;
+  }
+
+  .unit-input,
+  .bar-input {
+    min-height: 44px;
+  }
+
+  .field-row {
+    gap: 20px;
+  }
+
+  .field-row .unit-input input,
+  .result-block .unit-input input,
+  .currency {
+    font-size: 32px;
+  }
+
+  /* Amount offered: half width, under Yes / Not yet. */
+  .offer-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  #offer-field {
+    max-width: calc(50% - 10px);
+  }
+
+  /* The bottom bar replaces the tally panel and the button: always under your
+     thumb, clear of the iPhone's home bar. */
+  .tally {
+    display: none;
+  }
+
+  .tally + .section {
+    margin-top: 0;
+  }
+
+  .check-button {
+    position: fixed;
+    left: 12px;
+    right: 12px;
+    bottom: calc(14px + env(safe-area-inset-bottom));
+    z-index: 9;
+    width: auto;
+    height: 76px;
+    margin: 0;
+    padding: 0 12px 0 20px;
+    border-radius: 28px;
+  }
+
+  /* Title and the mono line share a row; on the narrowest phones the mono
+     line wraps under the title instead of colliding with it. */
+  .check-main {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 2px 12px;
+    min-width: 0;
+  }
+
+  .check-title {
+    font-size: 17px;
+    white-space: nowrap;
+  }
+
+  .check-preview {
+    margin-left: auto;
+    font-size: 11px;
+    white-space: nowrap;
+  }
+
+  /* A thin live bar of the hours: solid, then stripes, light on ink. */
+  .check-hours {
+    display: flex;
+    flex-basis: 100%;
+    gap: 2px;
+    height: 6px;
+    margin-top: 8px;
+  }
+
+  .check-hours[hidden] {
+    display: none;
+  }
+
+  .check-segment {
+    flex-basis: 0;
+    background: var(--paper);
+  }
+
+  .check-segment.forgotten {
+    background: repeating-linear-gradient(90deg, var(--paper) 0 1px, transparent 1px 3px);
+    outline: 1px solid var(--paper);
+    outline-offset: -1px;
+  }
+
+  .check-circle {
+    width: 52px;
+    height: 52px;
+    margin-left: 12px;
+  }
+
+  /* Room at the bottom so the bar never covers the last field or the footer. */
+  body.on-inputs {
+    padding-bottom: calc(104px + env(safe-area-inset-bottom));
+  }
+
+  /* Screen 2 */
+
+  .hero-panel {
+    min-height: 0;
+    margin: 0 12px;
+    padding: 20px;
+  }
+
+  /* "This offer pays" and the job summary on top, the number, then the sentence. */
+  .hero-content {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    column-gap: 12px;
+    min-height: 0;
+  }
+
+  .hero-top,
+  .hero-aside {
+    display: contents;
+  }
+
+  .hero-label {
+    grid-row: 1;
+    grid-column: 1;
+    font-size: 14px;
+  }
+
+  .hero-job {
+    grid-row: 1;
+    grid-column: 2;
+    align-self: center;
+    font-size: 11px;
+  }
+
+  .hero-number {
+    grid-row: 2;
+    grid-column: 1 / -1;
+    margin-top: 20px;
+    white-space: nowrap;
+  }
+
+  .hero-digits {
+    font-size: clamp(80px, 27vw, 220px);
+  }
+
+  .hero-unit {
+    font-size: 16px;
+  }
+
+  .hero-sentence,
+  .warning {
+    grid-row: 3;
+    grid-column: 1 / -1;
+    margin-top: 16px;
+    font-size: 16px;
+    text-align: left;
+    justify-content: flex-start;
+  }
+
+  /* The live controls: a panel right under the hero, not sticky. */
+  .control-bar {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 4px 12px;
+    margin: 12px 12px 0;
+    padding: 8px 16px 12px 20px;
+    border-radius: 20px;
+    background: var(--paper);
+  }
+
+  .bar-stepper {
+    grid-column: 1 / -1;
+    flex-wrap: wrap;
+  }
+
+  .bar-stepper label {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .bar-stepper button {
+    margin: 0;
+  }
+
+  .bar-stepper button::before {
+    inset: 2px;
+  }
+
+  .bar-field:last-child {
+    justify-self: end;
+  }
+
+  .results-body {
+    padding: 0 20px 56px;
+  }
+
+  .stats {
+    gap: 20px;
+    margin-top: 12px;
+  }
+
+  .stats > div {
+    padding-top: 20px;
+  }
+
+  .stats dt {
+    font-size: 13px;
+  }
+
+  .stats dd {
+    font-size: 32px;
+  }
+
+  .charts-row {
+    gap: 48px;
+    margin-top: 44px;
+  }
+
+  .chart h3,
+  .result-block > legend {
+    font-size: 20px;
+  }
+
+  /* Hours chart: 64px bars; group names move into a legend under the bar. */
+  .bars {
+    margin-top: 16px;
+    padding-top: 28px;
+  }
+
+  .bracket,
+  .bar-labels {
+    display: none;
+  }
+
+  .bar-row {
+    height: 64px;
+  }
+
+  .runs-out {
+    top: 0;
+    height: calc(28px + 64px);
+  }
+
+  /* The runs-out label sits left of the line, or right if there's no room. */
+  .runs-out .runs-out-label {
+    left: auto;
+    right: 8px;
+  }
+
+  .runs-out.flip .runs-out-label,
+  .runs-out.flag .runs-out-label {
+    left: 8px;
+    right: auto;
+  }
+
+  .runs-out.flag .runs-out-label {
+    left: 0;
+  }
+
+  .group-legend {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px 16px;
+    margin-top: 16px;
+    font-size: 13px;
+  }
+
+  .group-legend li {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+  }
+
+  .group-legend .legend-swatch {
+    flex: none;
+    width: 14px;
+  }
+
+  .group-hours {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--ink-2);
+  }
+
+  .rate-plot {
+    margin-top: 16px;
+  }
+
+  .results-more > .receipt,
+  .results-pair {
+    margin-top: 44px;
+  }
+
+  #copy-reply {
+    width: 100%;
+  }
+
+  /* Show the math: the math sits on its own line under each item, so it
+     never wraps and the table fits. */
+  .receipt table,
+  .receipt tbody {
+    display: block;
+  }
+
+  .receipt thead {
+    display: none;
+  }
+
+  .receipt tbody tr {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    column-gap: 12px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .receipt tbody tr.sum {
+    border-top: 1px solid var(--ink);
+  }
+
+  .receipt th,
+  .receipt td,
+  .receipt tr.sum > * {
+    padding: 0;
+    border: 0;
+  }
+
+  .receipt tbody th {
+    grid-row: 1;
+    grid-column: 1;
+  }
+
+  .receipt td:last-child {
+    grid-row: 1;
+    grid-column: 2;
+  }
+
+  .receipt td:nth-child(2):not(:last-child) {
+    grid-row: 2;
+    grid-column: 1 / -1;
+    padding: 2px 0 0;
+    text-align: left;
+  }
+
+  .receipt td:nth-child(2):not(:last-child):empty {
+    display: none;
+  }
+
+  .receipt tr.total {
+    border-bottom: 0;
+    padding-top: 16px;
+  }
+
+  /* Projects: one column, a full-width row per project. */
+  .home-top {
+    align-items: center;
+  }
+
+  .back-to-calc {
+    min-height: 44px;
+  }
+
+  .project-table,
+  .project-table tbody {
+    display: block;
+  }
+
+  .project-table {
+    margin-top: 32px;
+  }
+
+  .project-table thead {
+    display: none;
+  }
+
+  .project-table tr {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: baseline;
+    gap: 2px 12px;
+    min-height: 56px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .project-table tbody th,
+  .project-table td {
+    padding: 0;
+    border: 0;
+  }
+
+  .project-name {
+    grid-column: 1 / -1;
+    width: auto;
+  }
+
+  .project-open,
+  .row-rename {
+    min-height: 44px;
+    font-size: 22px;
+  }
+
+  .project-estimate,
+  .project-offer {
+    display: none;
+  }
+
+  .project-table td.project-actions {
+    grid-column: 1 / -1;
+    text-align: left;
+    white-space: normal;
+  }
+
+  .row-action:first-child {
+    padding-left: 0;
+  }
+
+  /* The save field and the start-over question, full width under the header. */
+  .header-panel,
+  .save-error {
+    margin: 8px 12px 0;
+  }
+
+  .header-panel {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 16px 20px;
+  }
+
+  .save-form {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .save-form .field {
+    width: 100%;
+  }
+
+  .panel-actions {
+    flex-wrap: wrap;
+    padding-bottom: 0;
+  }
+
+  .panel-actions .action-button {
+    flex: 1;
+    min-height: 44px;
+  }
+}
+
 /* The reveal: plays once when "Check the offer" is pressed (app.js adds and
    removes these classes). Never under reduced motion. */
 
