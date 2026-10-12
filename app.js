@@ -1159,10 +1159,11 @@ function countUpHero(r) {
   }, COUNT_UP_MS + 100);
 }
 
-// Screens: the projects home, the new project form, and inside a project,
-// screen 1 (inputs) and screen 2 (results). One at a time, no reload.
+// Screens: the calculator (screen 1 and screen 2) and the projects list.
+// One at a time, no reload. The calculator holds either the unsaved draft or
+// one saved project (currentId).
 
-const SCREENS = { home: "screen-home", new: "screen-new", inputs: "screen-inputs", results: "result" };
+const SCREENS = { projects: "screen-projects", inputs: "screen-inputs", results: "result" };
 
 function showScreen(name) {
   Object.keys(SCREENS).forEach(function (key) {
@@ -1170,9 +1171,12 @@ function showScreen(name) {
     document.body.classList.toggle("on-" + key, key === name);
   });
   byId("skip-link").hidden = name !== "inputs";
-  placeCrumb(name);
-  if (name === "inputs" || name === "results") rememberScreen(name);
+  renderHeader();
   window.scrollTo(0, 0);
+}
+
+function currentScreen() {
+  return Object.keys(SCREENS).filter(function (key) { return !byId(SCREENS[key]).hidden; })[0];
 }
 
 // The browser's Back button goes from results to inputs, with every value kept.
@@ -1193,20 +1197,20 @@ function openInputs() {
   byId("page-title").focus();
 }
 
-// Routes: every screen has a history step and an address, so Back works and a
-// reload lands in the same place. { screen, project } where project is an id.
+// Routes: every screen has an address, so Back works and a reload lands in the
+// same place. { screen, project } where project is an id, or none for the draft.
 function addressFor(state) {
-  if (state.screen === "new") return "#new";
-  if (state.screen === "inputs") return "#p/" + state.project;
-  if (state.screen === "results") return "#p/" + state.project + "/result";
-  return "#projects";
+  if (state.screen === "projects") return "#projects";
+  if (state.project) return "#p/" + state.project + (state.screen === "results" ? "/result" : "");
+  return state.screen === "results" ? "#result" : location.pathname + location.search;
 }
 
 function stateFromAddress(hash) {
   const match = /^#p\/([^/]+)(\/result)?$/.exec(hash);
   if (match) return { screen: match[2] ? "results" : "inputs", project: decodeURIComponent(match[1]) };
-  if (hash === "#new") return { screen: "new" };
-  return { screen: "home" };
+  if (hash === "#projects") return { screen: "projects" };
+  if (hash === "#result") return { screen: "results" };
+  return { screen: "inputs" };
 }
 
 function go(state, replace) {
@@ -1217,31 +1221,39 @@ function go(state, replace) {
 function route(state) {
   // Leaving mid-reveal (Back, or a link) stops it, so it can't open screen 2 later.
   cancelReveal();
-  if (state.screen === "inputs" || state.screen === "results") {
+  closePanels();
+  if (state.screen === "projects") {
+    leaveProject();
+    openProjects();
+    return;
+  }
+  if (state.project) {
     if (!projectStore.findProject(projectList, state.project)) {
-      go({ screen: "home" }, true);
+      go({ screen: "inputs" }, true);
       return;
     }
     if (state.project !== currentId) openProject(state.project);
-    if (state.screen === "results") openResults();
-    else openInputs();
-    return;
+  } else if (currentId || !draftOnScreen) {
+    openDraft();
   }
-  leaveProject();
-  if (state.screen === "new") openNewForm();
-  else openHome();
+  if (state.screen === "results") openResults();
+  else openInputs();
 }
 
 window.addEventListener("popstate", function (event) {
   route(event.state || stateFromAddress(location.hash));
 });
 
-// Saving: every project lives in one list, kept in this browser.
+// Saving. Projects live in one list; the unsaved calculation is a draft under
+// its own key, so a refresh doesn't lose it and it never overwrites a project.
 
 let projectList = [];
 let currentId = null;
+let draft = null;
+// True when the calculator holds the draft (not a project, and not stale).
+let draftOnScreen = false;
 let lastSaved = null;
-let loadingProject = false;
+let loadingValues = false;
 
 // localStorage itself can throw (blocked storage), so it's reached through this.
 function storage() {
@@ -1252,19 +1264,28 @@ function storage() {
   }
 }
 
-// Writes the list. If that fails, the page keeps working and says so.
+// If saving fails, the page keeps working and says so.
+function showSaveResult(ok) {
+  show(byId("save-error"), !ok);
+  show(byId("save-status"), ok);
+  return ok;
+}
+
 function persist() {
-  const saved = projectStore.saveProjects(storage(), projectList).ok;
-  show(byId("save-error"), !saved);
-  show(byId("save-status"), saved);
-  return saved;
+  const ok = showSaveResult(projectStore.saveProjects(storage(), projectList).ok);
+  renderHeader();
+  return ok;
+}
+
+function persistDraft() {
+  return showSaveResult(projectStore.saveDraft(storage(), draft).ok);
 }
 
 function currentProject() {
   return projectStore.findProject(projectList, currentId);
 }
 
-// Everything a project keeps from the page.
+// Everything a calculation keeps from the page.
 function snapshot() {
   const raw = readForm();
   const inputs = {};
@@ -1278,42 +1299,37 @@ function snapshot() {
   };
 }
 
-// Autosave: after every change, if anything a project keeps is different.
+// Autosave after every change: into the open project, or into the draft.
 function autosave() {
-  if (!currentId || loadingProject) return;
+  if (loadingValues || (!currentId && !draftOnScreen)) return;
   const snap = snapshot();
   const text = JSON.stringify(snap);
   if (text === lastSaved) return;
   lastSaved = text;
-  projectList = projectStore.updateProject(projectList, currentId, snap, new Date(), true);
-  persist();
+  if (currentId) {
+    projectList = projectStore.updateProject(projectList, currentId, snap, new Date(), true);
+    persist();
+  } else {
+    draft = snap;
+    persistDraft();
+  }
 }
 
-// Which screen the project was last on. Not an edit, so the date stays.
-function rememberScreen(name) {
-  const project = currentProject();
-  if (!project || project.screen === name) return;
-  projectList = projectStore.updateProject(projectList, currentId, { screen: name }, new Date(), false);
-  persist();
-}
-
-// Puts a project's values into the page.
-function openProject(id) {
-  const project = projectStore.findProject(projectList, id);
-  currentId = id;
-  loadingProject = true;
+// Puts a calculation's values into the page.
+function fillCalculator(values) {
+  loadingValues = true;
   stopCountUp();
   clearTimeout(commitTimer);
 
-  byId("job-" + project.job).checked = true;
-  loadedJob = project.job;
+  byId("job-" + values.job).checked = true;
+  loadedJob = values.job;
   Object.keys(FIELD_IDS).forEach(function (name) {
-    if (name !== "quote") byId(FIELD_IDS[name]).value = project.inputs[name];
+    if (name !== "quote") byId(FIELD_IDS[name]).value = values.inputs[name];
   });
-  byId(project.inputs.offerStatus === "none" ? "offer-none" : "offer-yes").checked = true;
-  byId("quote").value = project.quote;
-  byId("reply").value = project.reply;
-  currentDraft = project.reply;
+  byId(values.inputs.offerStatus === "none" ? "offer-none" : "offer-yes").checked = true;
+  byId("quote").value = values.quote;
+  byId("reply").value = values.reply;
+  currentDraft = values.reply;
   draftWhenEdited = null;
   shownErrors = {};
   show(byId("job-replace"), false);
@@ -1325,41 +1341,145 @@ function openProject(id) {
   update(true);
 
   // An edited reply stays as written. The notice shows only if the numbers change later.
-  if (project.replyEdited) {
+  if (values.replyEdited) {
     draftWhenEdited = currentDraft;
-    byId("reply").value = project.reply;
+    byId("reply").value = values.reply;
     show(byId("reply-notice"), false);
   }
-  loadingProject = false;
+  loadingValues = false;
   lastSaved = JSON.stringify(snapshot());
-  renderCrumb();
-  show(byId("save-status"), true);
+}
+
+function openProject(id) {
+  currentId = id;
+  draftOnScreen = false;
+  fillCalculator(currentProject());
+  renderHeader();
+}
+
+function openDraft() {
+  currentId = null;
+  if (!draft) draft = projectStore.exampleDraft("menu");
+  fillCalculator(draft);
+  draftOnScreen = true;
+  renderHeader();
 }
 
 function leaveProject() {
+  if (currentId) draftOnScreen = false;
   currentId = null;
   lastSaved = null;
 }
 
-// The header inside a project: "Projects / name", and "Saved".
+// "New calculation": a fresh menu example. If the unsaved one has changes,
+// ask first.
+let afterSave = null;
 
-function placeCrumb(name) {
-  const crumb = byId("crumb");
-  const inProject = name === "inputs" || name === "results";
-  crumb.hidden = !inProject;
-  if (!inProject) return;
-  byId(name === "results" ? "results-crumb-slot" : "topbar-crumb-slot").appendChild(crumb);
+function startFresh() {
+  draft = projectStore.exampleDraft("menu");
+  persistDraft();
+  draftOnScreen = false;
+  go({ screen: "inputs" });
 }
 
-function renderCrumb() {
+function newCalculation() {
+  if (draft && !projectStore.isUntouched(draft)) {
+    closePanels();
+    show(byId("start-over"), true);
+    byId("start-over-cancel").focus();
+  } else {
+    startFresh();
+  }
+}
+
+// "Save as project" from the start-over question: show the draft, save it,
+// then start the new calculation.
+function saveThenStartOver() {
+  go({ screen: "inputs" });
+  openSaveField(startFresh);
+}
+
+// The header: project name and "Saved" in a project, "Projects 3", and the save button.
+
+function renderHeader() {
+  const screen = currentScreen();
+  const inCalculator = screen === "inputs" || screen === "results";
   const project = currentProject();
-  if (!project) return;
-  byId("crumb-name").textContent = project.name;
-  byId("crumb-name").setAttribute("aria-label", project.name + ", rename project");
+  byId("crumb").hidden = !(inCalculator && project);
+  if (project) {
+    byId("crumb-name").textContent = project.name;
+    byId("crumb-name").setAttribute("aria-label", project.name + ", rename project");
+  }
+  byId("projects-count").textContent = projectList.length;
+  const link = byId("projects-link");
+  if (screen === "projects") link.setAttribute("aria-current", "page");
+  else link.removeAttribute("aria-current");
+
+  const button = byId("save-project");
+  button.hidden = !inCalculator;
+  button.disabled = Boolean(project);
+  button.textContent = project ? "Saved" : "Save as project";
 }
 
-// Click the name to rename: Enter or leaving the field saves, Escape cancels.
-// A blank name keeps the old one.
+function closePanels() {
+  show(byId("save-panel"), false);
+  show(byId("start-over"), false);
+  setFieldError(byId("save-name"), "");
+}
+
+// "Save as project": a name field under the header, filled in and selected so
+// typing replaces it. then runs after a successful save.
+function openSaveField(then) {
+  closePanels();
+  afterSave = then || null;
+  const input = byId("save-name");
+  input.value = projectStore.defaultProjectName(currentJob(), new Date());
+  show(byId("save-panel"), true);
+  input.focus();
+  input.select();
+}
+
+function cancelSaveField() {
+  afterSave = null;
+  closePanels();
+  byId("save-project").focus();
+}
+
+function saveAsProject(event) {
+  event.preventDefault();
+  const input = byId("save-name");
+  const error = projectStore.validateName(input.value);
+  setFieldError(input, error || "");
+  if (error) {
+    input.focus();
+    return;
+  }
+  const project = projectStore.createProject(input.value, snapshot(), projectStore.newProjectId(), new Date());
+  projectList = projectList.concat([project]);
+  persist();
+  // The work now lives in the project, so the draft starts fresh.
+  draft = projectStore.exampleDraft("menu");
+  persistDraft();
+  closePanels();
+
+  const then = afterSave;
+  afterSave = null;
+  if (then) {
+    then();
+    return;
+  }
+  currentId = project.id;
+  draftOnScreen = false;
+  lastSaved = JSON.stringify(snapshot());
+  const state = { screen: currentScreen(), project: project.id };
+  history.replaceState(state, "", addressFor(state));
+  renderHeader();
+  show(byId("save-status"), true);
+  byId("crumb-name").focus();
+}
+
+// Click the project name to rename: Enter or leaving the field saves, Escape
+// cancels. A blank name keeps the old one.
 function startHeaderRename() {
   const input = byId("crumb-input");
   input.value = currentProject().name;
@@ -1379,16 +1499,16 @@ function finishHeaderRename(save) {
   }
   show(input, false);
   show(byId("crumb-name"), true);
-  renderCrumb();
+  renderHeader();
   byId("crumb-name").focus();
 }
 
-// Projects home
+// Projects
 
-function openHome() {
-  showScreen("home");
-  renderHome();
-  byId("home-title").focus();
+function openProjects() {
+  showScreen("projects");
+  renderProjects();
+  byId("projects-title").focus();
 }
 
 // Estimate and offer per hour for a row, from the saved numbers.
@@ -1427,12 +1547,12 @@ function rowButton(parent, action, text, label, className) {
 // rowMode: { id, mode: "rename" | "delete" } for the one row being changed.
 let rowMode = null;
 
-function renderHome() {
+function renderProjects() {
   const list = projectStore.sortByEdited(projectList);
   const now = new Date();
   show(byId("projects-empty"), list.length === 0);
   show(byId("project-table"), list.length > 0);
-  show(byId("new-project"), list.length > 0);
+  show(byId("new-calc"), list.length > 0);
 
   const body = byId("project-rows");
   body.textContent = "";
@@ -1478,6 +1598,7 @@ function renderHome() {
     }
     body.appendChild(row);
   });
+  renderHeader();
 }
 
 function rowElement(id, selector) {
@@ -1487,7 +1608,7 @@ function rowElement(id, selector) {
 
 function setRowMode(mode) {
   rowMode = mode;
-  renderHome();
+  renderProjects();
 }
 
 function finishRowRename(id, save) {
@@ -1508,7 +1629,8 @@ function onRowClick(event) {
   const action = button.dataset.action;
 
   if (action === "open") {
-    go({ screen: projectStore.findProject(projectList, id).screen, project: id });
+    // A saved project opens on its result.
+    go({ screen: "results", project: id });
   } else if (action === "rename") {
     setRowMode({ id: id, mode: "rename" });
     const input = rowElement(id, ".row-rename");
@@ -1527,7 +1649,7 @@ function onRowClick(event) {
     setRowMode(null);
     rowElement(id, '[data-action="delete"]').focus();
   } else if (action === "confirm-delete") {
-    // Focus moves to the next row's name, or the previous one, or New project.
+    // Focus moves to the next row's name, or the previous one, or New calculation.
     const rows = Array.prototype.slice.call(byId("project-rows").children);
     const index = rows.indexOf(button.closest("tr"));
     const neighbor = rows[index + 1] || rows[index - 1];
@@ -1536,7 +1658,7 @@ function onRowClick(event) {
     persist();
     setRowMode(null);
     if (nextId) rowElement(nextId, ".project-open").focus();
-    else byId("new-project-empty").focus();
+    else byId("new-calc-empty").focus();
   }
 }
 
@@ -1549,86 +1671,6 @@ function onRowKey(event) {
   } else if (event.key === "Escape") {
     finishRowRename(id, false);
   }
-}
-
-// New project
-
-function openNewForm() {
-  showScreen("new");
-  byId("new-name").value = "";
-  document.querySelectorAll('input[name="newJob"]').forEach(function (radio) { radio.checked = false; });
-  setNewErrors({});
-  byId("new-name").focus();
-}
-
-function newJobChoice() {
-  const checked = document.querySelector('input[name="newJob"]:checked');
-  return checked ? checked.value : null;
-}
-
-function newFormErrors() {
-  const errors = {};
-  const nameError = projectStore.validateName(byId("new-name").value);
-  if (nameError) errors.name = nameError;
-  if (!newJobChoice()) errors.job = "Choose a job type.";
-  return errors;
-}
-
-// Errors under each field, linked with aria-describedby.
-function setNewErrors(errors) {
-  setFieldError(byId("new-name"), errors.name || "");
-  const group = byId("new-job");
-  let error = byId("new-job-error");
-  if (errors.job) {
-    if (!error) {
-      error = document.createElement("p");
-      error.className = "error";
-      error.id = "new-job-error";
-      error.innerHTML = ALERT_ICON + '<span class="error-text"></span>';
-      group.insertAdjacentElement("afterend", error);
-    }
-    error.querySelector(".error-text").textContent = errors.job;
-    group.setAttribute("aria-describedby", "new-job-error");
-    group.setAttribute("aria-invalid", "true");
-  } else {
-    if (error) error.remove();
-    group.removeAttribute("aria-describedby");
-    group.removeAttribute("aria-invalid");
-  }
-}
-
-let newFormTried = false;
-
-function createFromForm(event) {
-  event.preventDefault();
-  newFormTried = true;
-  const errors = newFormErrors();
-  setNewErrors(errors);
-  if (errors.name) {
-    byId("new-name").focus();
-    return;
-  }
-  if (errors.job) {
-    (document.querySelector('input[name="newJob"]')).focus();
-    return;
-  }
-  newFormTried = false;
-  const project = projectStore.createProject(byId("new-name").value, newJobChoice(),
-    projectStore.newProjectId(), new Date());
-  projectList = projectList.concat([project]);
-  persist();
-  // The form's history step becomes the project, so Back goes to the list.
-  go({ screen: "inputs", project: project.id }, true);
-}
-
-// After a failed try, errors clear as soon as they're fixed.
-function onNewFormChange() {
-  if (newFormTried) setNewErrors(newFormErrors());
-}
-
-function cancelNewForm() {
-  if (history.state && history.state.screen === "new") history.back();
-  else go({ screen: "home" });
 }
 
 // "Check the offer": with errors, go to the first one. Otherwise show the result
@@ -1644,7 +1686,8 @@ function checkOffer() {
     byId(FIELD_IDS[firstError]).focus();
     return;
   }
-  const state = { screen: "results", project: currentId };
+  // fromInputs: Back from here returns to screen 1 of the same calculation.
+  const state = { screen: "results", project: currentId || undefined, fromInputs: true };
   history.pushState(state, "", addressFor(state));
   revealResults();
 }
@@ -1708,11 +1751,14 @@ function revealResults() {
   }, REVEAL_FADE_MS));
 }
 
+// Back to screen 1. Uses the browser's Back when screen 2 was opened from screen 1,
+// so history stays tidy; otherwise (opened from Projects, or after a reload) it
+// adds a step to screen 1.
 function editDetails() {
-  if (history.state && history.state.screen === "results") {
+  if (history.state && history.state.fromInputs) {
     history.back();
   } else {
-    openInputs();
+    go({ screen: "inputs", project: currentId || undefined });
   }
 }
 
@@ -1777,23 +1823,36 @@ if (document.fonts && document.fonts.ready) {
   document.fonts.ready.then(relayoutCharts);
 }
 
-// Projects: the home list, the new project form, and the header inside a project.
-byId("new-project").addEventListener("click", function () { go({ screen: "new" }); });
-byId("new-project-empty").addEventListener("click", function () { go({ screen: "new" }); });
+// Projects and saving: the header, the save field, the start-over question, and the list.
+byId("projects-link").addEventListener("click", function (event) {
+  event.preventDefault();
+  go({ screen: "projects" });
+});
+byId("save-project").addEventListener("click", function () { openSaveField(null); });
+byId("save-form").addEventListener("submit", saveAsProject);
+byId("save-cancel").addEventListener("click", cancelSaveField);
+byId("save-name").addEventListener("keydown", function (event) {
+  if (event.key === "Escape") cancelSaveField();
+});
+byId("save-name").addEventListener("input", function () {
+  if (byId("save-name").getAttribute("aria-invalid")) {
+    setFieldError(byId("save-name"), projectStore.validateName(byId("save-name").value) || "");
+  }
+});
+byId("new-calc").addEventListener("click", newCalculation);
+byId("new-calc-empty").addEventListener("click", newCalculation);
+byId("start-over-yes").addEventListener("click", startFresh);
+byId("start-over-save").addEventListener("click", saveThenStartOver);
+byId("start-over-cancel").addEventListener("click", function () {
+  closePanels();
+  byId(projectList.length ? "new-calc" : "new-calc-empty").focus();
+});
 byId("project-rows").addEventListener("click", onRowClick);
 byId("project-rows").addEventListener("keydown", onRowKey);
 byId("project-rows").addEventListener("focusout", function (event) {
   if (event.target.classList.contains("row-rename")) {
     finishRowRename(event.target.closest("tr").dataset.id, true);
   }
-});
-byId("new-form").addEventListener("submit", createFromForm);
-byId("new-form").addEventListener("input", onNewFormChange);
-byId("new-form").addEventListener("change", onNewFormChange);
-byId("new-cancel").addEventListener("click", cancelNewForm);
-byId("crumb-projects").addEventListener("click", function (event) {
-  event.preventDefault();
-  go({ screen: "home" });
 });
 byId("crumb-name").addEventListener("click", startHeaderRename);
 byId("crumb-input").addEventListener("keydown", function (event) {
@@ -1806,19 +1865,13 @@ byId("crumb-input").addEventListener("keydown", function (event) {
 });
 byId("crumb-input").addEventListener("blur", function () { finishHeaderRename(true); });
 
-// Start: load saved projects, then go where the address says (the list by
-// default). Inside a project, Back still leads to the list.
-const loaded = projectStore.loadProjects(storage());
-projectList = loaded.projects;
-renderJob();
-showOfferField();
+// Start: load saved projects and the draft, then go where the address says
+// (the calculator by default).
+projectList = projectStore.loadProjects(storage()).projects;
+draft = projectStore.loadDraft(storage()).draft;
 const startState = stateFromAddress(location.hash);
-history.replaceState({ screen: "home" }, "", addressFor({ screen: "home" }));
-if (startState.screen === "home") {
-  route({ screen: "home" });
-} else {
-  go(startState);
-}
+history.replaceState(startState, "", addressFor(startState));
+route(startState);
 
 // Bars and dots animate only after the first render, never on load.
 requestAnimationFrame(function () {

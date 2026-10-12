@@ -44,29 +44,74 @@ function fakeStorage(options) {
 const MON = new Date(2026, 9, 12, 15, 42);   // Mon Oct 12, 2026, 3:42 PM
 const TUE = new Date(2026, 9, 13, 9, 5);
 
+// A project saved from a job's fresh example.
+function make(name, job, id, date) {
+  return store.createProject(name, store.exampleDraft(job), id, date);
+}
+
 function sample() {
   return [
-    store.createProject("Luigi's menu", "menu", "a", MON),
-    store.createProject("Bakery logo", "logo", "b", TUE),
+    make("Luigi's menu", "menu", "a", MON),
+    make("Bakery logo", "logo", "b", TUE),
   ];
 }
 
-group("Creating");
+group("Fresh calculations and saving one as a project");
 
-test("a new project starts with its job's example numbers", function () {
-  const project = store.createProject("  Luigi's menu  ", "logo", "a", MON);
+test("a fresh calculation has the job's example numbers", function () {
+  const draft = store.exampleDraft("logo");
+  assert.strictEqual(draft.job, "logo");
+  assert.strictEqual(draft.inputs.count, "3");
+  assert.strictEqual(draft.inputs.itemHours, "1.5");
+  assert.strictEqual(draft.inputs.rate, "25");
+  assert.strictEqual(draft.inputs.offerStatus, "amount");
+  assert.strictEqual(draft.inputs.offer, "200");
+  assert.strictEqual(draft.quote, "");
+  assert.strictEqual(draft.replyEdited, false);
+});
+
+test("saving keeps everything from the calculation, with a trimmed name and dates", function () {
+  const draft = store.exampleDraft("menu");
+  draft.inputs.rounds = "3";
+  draft.quote = "300";
+  draft.reply = "Hi!";
+  draft.replyEdited = true;
+  const project = store.createProject("  Luigi's menu  ", draft, "a", MON);
   assert.strictEqual(project.name, "Luigi's menu");
-  assert.strictEqual(project.job, "logo");
-  assert.strictEqual(project.inputs.count, "3");
-  assert.strictEqual(project.inputs.itemHours, "1.5");
-  assert.strictEqual(project.inputs.rate, "25");
-  assert.strictEqual(project.inputs.offerStatus, "amount");
-  assert.strictEqual(project.inputs.offer, "200");
-  assert.strictEqual(project.quote, "");
-  assert.strictEqual(project.replyEdited, false);
-  assert.strictEqual(project.screen, "inputs");
+  assert.strictEqual(project.job, "menu");
+  assert.strictEqual(project.inputs.rounds, "3");
+  assert.strictEqual(project.quote, "300");
+  assert.strictEqual(project.reply, "Hi!");
+  assert.strictEqual(project.replyEdited, true);
   assert.strictEqual(project.created, MON.toISOString());
   assert.strictEqual(project.edited, MON.toISOString());
+});
+
+test("the project gets its own copy of the inputs", function () {
+  const draft = store.exampleDraft("menu");
+  const project = store.createProject("Menu", draft, "a", MON);
+  draft.inputs.rate = "99";
+  assert.strictEqual(project.inputs.rate, "25");
+});
+
+test("the suggested name is the job and today's date", function () {
+  assert.strictEqual(store.defaultProjectName("menu", new Date(2026, 9, 11)), "Restaurant menu, Oct 11");
+  assert.strictEqual(store.defaultProjectName("poster", new Date(2026, 0, 3)), "Poster or flyer, Jan 3");
+});
+
+test("an untouched calculation has nothing to lose; any change counts", function () {
+  assert.strictEqual(store.isUntouched(store.exampleDraft("logo")), true);
+  const changed = store.exampleDraft("logo");
+  changed.inputs.offer = "250";
+  assert.strictEqual(store.isUntouched(changed), false);
+  const quoted = store.exampleDraft("logo");
+  quoted.quote = "300";
+  assert.strictEqual(store.isUntouched(quoted), false);
+  const edited = store.exampleDraft("logo");
+  edited.replyEdited = true;
+  assert.strictEqual(store.isUntouched(edited), false);
+  // A different job's example, still unchanged, is untouched too.
+  assert.strictEqual(store.isUntouched(store.exampleDraft("custom")), true);
 });
 
 test("names are required and 60 characters at most", function () {
@@ -88,16 +133,15 @@ test("saves under one key and loads the same projects back", function () {
   assert.deepStrictEqual(loaded.projects, list);
 });
 
-test("keeps the quote, the reply, the edited flag, and the last screen", function () {
+test("keeps the quote, the reply, and the edited flag", function () {
   const storage = fakeStorage();
   const list = store.updateProject(sample(), "a",
-    { quote: "280", reply: "Hi Luigi!", replyEdited: true, screen: "results" }, TUE, true);
+    { quote: "280", reply: "Hi Luigi!", replyEdited: true }, TUE, true);
   store.saveProjects(storage, list);
   const project = store.findProject(store.loadProjects(storage).projects, "a");
   assert.strictEqual(project.quote, "280");
   assert.strictEqual(project.reply, "Hi Luigi!");
   assert.strictEqual(project.replyEdited, true);
-  assert.strictEqual(project.screen, "results");
 });
 
 test("nothing saved yet gives an empty list", function () {
@@ -120,7 +164,7 @@ test("lists newest edit first", function () {
 test("an update moves the edited date only when asked", function () {
   const moved = store.updateProject(sample(), "a", { quote: "300" }, TUE, true);
   assert.strictEqual(store.findProject(moved, "a").edited, TUE.toISOString());
-  const kept = store.updateProject(sample(), "a", { screen: "results" }, TUE, false);
+  const kept = store.updateProject(sample(), "a", { quote: "300" }, TUE, false);
   assert.strictEqual(store.findProject(kept, "a").edited, MON.toISOString());
 });
 
@@ -163,7 +207,7 @@ test("the copy is separate: changing it leaves the original alone", function () 
 });
 
 test("a copy of a 60-character name is shortened to fit", function () {
-  const list = [store.createProject("z".repeat(60), "menu", "a", MON)];
+  const list = [make("z".repeat(60), "menu", "a", MON)];
   const copy = store.findProject(store.duplicateProject(list, "a", "c", TUE), "c");
   assert.strictEqual(copy.name.length, 60);
   assert.ok(copy.name.endsWith(" copy"));
@@ -192,7 +236,7 @@ test("JSON that isn't a list gives an empty list", function () {
 });
 
 test("broken projects are skipped, good ones kept", function () {
-  const good = store.createProject("Good", "menu", "good", MON);
+  const good = make("Good", "menu", "good", MON);
   const noName = Object.assign({}, good, { id: "x1", name: "  " });
   const badJob = Object.assign({}, good, { id: "x2", job: "website" });
   const badDate = Object.assign({}, good, { id: "x3", edited: "someday" });
@@ -208,27 +252,25 @@ test("broken projects are skipped, good ones kept", function () {
 });
 
 test("missing optional parts get their defaults", function () {
-  const raw = store.createProject("Old", "menu", "old", MON);
+  const raw = make("Old", "menu", "old", MON);
   delete raw.quote;
   delete raw.reply;
   delete raw.replyEdited;
-  raw.screen = "somewhere";
   const project = store.parseProjects(JSON.stringify([raw]))[0];
   assert.strictEqual(project.quote, "");
   assert.strictEqual(project.reply, "");
   assert.strictEqual(project.replyEdited, false);
-  assert.strictEqual(project.screen, "inputs");
 });
 
 test("numbers saved as numbers are read as text", function () {
-  const raw = store.createProject("Old", "menu", "old", MON);
+  const raw = make("Old", "menu", "old", MON);
   raw.inputs.rate = 30;
   assert.strictEqual(store.parseProjects(JSON.stringify([raw]))[0].inputs.rate, "30");
 });
 
 test("a repeated id keeps only the first", function () {
-  const a = store.createProject("First", "menu", "same", MON);
-  const b = store.createProject("Second", "logo", "same", TUE);
+  const a = make("First", "menu", "same", MON);
+  const b = make("Second", "logo", "same", TUE);
   const list = store.parseProjects(JSON.stringify([a, b]));
   assert.deepStrictEqual(list.map(function (p) { return p.name; }), ["First"]);
 });
@@ -237,6 +279,36 @@ test("loading broken saved text from storage doesn't throw", function () {
   const storage = fakeStorage();
   storage.data[store.STORAGE_KEY] = "[{\"id\":";
   assert.deepStrictEqual(store.loadProjects(storage), { ok: true, projects: [] });
+});
+
+group("The unsaved draft");
+
+test("saves under its own key and loads back", function () {
+  const storage = fakeStorage();
+  const draft = store.exampleDraft("social");
+  draft.inputs.offer = "180";
+  assert.deepStrictEqual(store.saveDraft(storage, draft), { ok: true });
+  assert.deepStrictEqual(store.loadDraft(storage), { ok: true, draft: draft });
+});
+
+test("saving the draft never touches the projects", function () {
+  const storage = fakeStorage();
+  store.saveProjects(storage, sample());
+  const before = storage.data[store.STORAGE_KEY];
+  store.saveDraft(storage, store.exampleDraft("logo"));
+  assert.strictEqual(storage.data[store.STORAGE_KEY], before);
+  assert.notStrictEqual(store.DRAFT_KEY, store.STORAGE_KEY);
+});
+
+test("no draft, a broken draft, or blocked storage gives no draft", function () {
+  assert.deepStrictEqual(store.loadDraft(fakeStorage()), { ok: true, draft: null });
+  const storage = fakeStorage();
+  storage.data[store.DRAFT_KEY] = "{oops";
+  assert.deepStrictEqual(store.loadDraft(storage), { ok: true, draft: null });
+  storage.data[store.DRAFT_KEY] = JSON.stringify({ job: "website", inputs: {} });
+  assert.deepStrictEqual(store.loadDraft(storage), { ok: true, draft: null });
+  assert.deepStrictEqual(store.loadDraft(fakeStorage({ broken: true })), { ok: false, draft: null });
+  assert.deepStrictEqual(store.saveDraft(fakeStorage({ full: true }), store.exampleDraft("menu")), { ok: false });
 });
 
 group("Edited dates");

@@ -1,11 +1,13 @@
-// Counter projects: saving, loading, and changing the list of projects.
+// Counter projects: the unsaved draft, and the saved list of projects.
 // Pure functions plus a small storage helper. Works in the browser (as the
 // global projectStore) and in Node (through module.exports).
 
 const projectCalc = typeof calc !== "undefined" ? calc : require("./calc.js");
 
-// Everything lives under one localStorage key, as a list of projects.
+// Saved projects live under one localStorage key, as a list. The unsaved
+// calculation (the draft) has its own key, so it can never overwrite a project.
 const STORAGE_KEY = "counter.projects";
+const DRAFT_KEY = "counter.draft";
 const NAME_MAX = 60;
 
 // The inputs a project keeps, besides the job, quote, and reply.
@@ -22,21 +24,38 @@ function validateName(name) {
   return null;
 }
 
-// A new project with the job's example numbers. `now` is a Date, `id` a string.
-function createProject(name, jobKey, id, now) {
+// A fresh calculation: the job's example numbers, no quote, the reply not edited.
+function exampleDraft(jobKey) {
   const example = projectCalc.JOBS[jobKey].example;
   const inputs = {};
   projectCalc.HOURS_FIELDS.forEach(function (field) { inputs[field] = String(example[field]); });
   Object.keys(STARTING_NUMBERS).forEach(function (field) { inputs[field] = STARTING_NUMBERS[field]; });
+  return { job: jobKey, inputs: inputs, quote: "", reply: "", replyEdited: false };
+}
+
+// True when a draft is still exactly its job's example: nothing to lose.
+// The reply text alone doesn't count, since an unedited reply is just the draft.
+function isUntouched(draft) {
+  const fresh = exampleDraft(draft.job);
+  const sameInputs = INPUT_NAMES.every(function (name) { return draft.inputs[name] === fresh.inputs[name]; });
+  return sameInputs && draft.quote === "" && !draft.replyEdited;
+}
+
+// "Restaurant menu, Oct 11"
+function defaultProjectName(jobKey, now) {
+  return projectCalc.JOBS[jobKey].name + ", " + MONTHS[now.getMonth()] + " " + now.getDate();
+}
+
+// A project made from the calculation on screen. `now` is a Date, `id` a string.
+function createProject(name, draft, id, now) {
   return {
     id: id,
-    name: String(name).trim(),
-    job: jobKey,
-    inputs: inputs,
-    quote: "",
-    reply: "",
-    replyEdited: false,
-    screen: "inputs",
+    name: String(name).trim().slice(0, NAME_MAX),
+    job: draft.job,
+    inputs: Object.assign({}, draft.inputs),
+    quote: draft.quote,
+    reply: draft.reply,
+    replyEdited: draft.replyEdited,
     created: now.toISOString(),
     edited: now.toISOString(),
   };
@@ -46,17 +65,12 @@ function isDate(value) {
   return typeof value === "string" && !isNaN(Date.parse(value));
 }
 
-// Checks one saved project. Returns a clean copy, or null if it's broken.
-// Optional parts that are missing get their defaults; anything the project
-// can't work without (id, name, job, inputs, dates) makes it broken.
-function cleanProject(raw) {
+// Checks the parts a project and a draft share: the job, every input, the
+// quote, and the reply. Returns a clean copy, or null if something needed is broken.
+function cleanCalculation(raw) {
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
-  if (typeof raw.id !== "string" || !raw.id) return null;
-  if (typeof raw.name !== "string" || !raw.name.trim()) return null;
   if (!Object.prototype.hasOwnProperty.call(projectCalc.JOBS, raw.job)) return null;
   if (!raw.inputs || typeof raw.inputs !== "object") return null;
-  if (!isDate(raw.created) || !isDate(raw.edited)) return null;
-
   const inputs = {};
   for (let i = 0; i < INPUT_NAMES.length; i++) {
     const value = raw.inputs[INPUT_NAMES[i]];
@@ -64,19 +78,36 @@ function cleanProject(raw) {
     inputs[INPUT_NAMES[i]] = String(value);
   }
   if (inputs.offerStatus !== "amount" && inputs.offerStatus !== "none") return null;
-
   return {
-    id: raw.id,
-    name: raw.name.trim().slice(0, NAME_MAX),
     job: raw.job,
     inputs: inputs,
     quote: typeof raw.quote === "string" ? raw.quote : "",
     reply: typeof raw.reply === "string" ? raw.reply : "",
     replyEdited: raw.replyEdited === true,
-    screen: raw.screen === "results" ? "results" : "inputs",
-    created: raw.created,
-    edited: raw.edited,
   };
+}
+
+// Checks one saved project. Returns a clean copy, or null if it's broken.
+// Optional parts that are missing get their defaults; anything the project
+// can't work without (id, name, job, inputs, dates) makes it broken.
+function cleanProject(raw) {
+  const calculation = cleanCalculation(raw);
+  if (!calculation) return null;
+  if (typeof raw.id !== "string" || !raw.id) return null;
+  if (typeof raw.name !== "string" || !raw.name.trim()) return null;
+  if (!isDate(raw.created) || !isDate(raw.edited)) return null;
+  return Object.assign({ id: raw.id, name: raw.name.trim().slice(0, NAME_MAX) }, calculation,
+    { created: raw.created, edited: raw.edited });
+}
+
+// Reads the saved draft. Broken or missing gives null, so the page starts fresh.
+function parseDraft(text) {
+  if (typeof text !== "string" || !text) return null;
+  try {
+    return cleanCalculation(JSON.parse(text));
+  } catch (error) {
+    return null;
+  }
 }
 
 // Reads the saved text. Broken projects (and repeated ids) are skipped, and
@@ -174,6 +205,23 @@ function saveProjects(storage, list) {
   }
 }
 
+function loadDraft(storage) {
+  try {
+    return { ok: true, draft: parseDraft(storage.getItem(DRAFT_KEY)) };
+  } catch (error) {
+    return { ok: false, draft: null };
+  }
+}
+
+function saveDraft(storage, draft) {
+  try {
+    storage.setItem(DRAFT_KEY, JSON.stringify(draft));
+    return { ok: true };
+  } catch (error) {
+    return { ok: false };
+  }
+}
+
 // "just now", "today at 3:42 PM", "yesterday", "Oct 9", "Oct 9, 2025".
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
@@ -203,11 +251,19 @@ function newProjectId() {
 
 const projectStore = {
   STORAGE_KEY,
+  DRAFT_KEY,
   NAME_MAX,
   INPUT_NAMES,
   validateName,
+  exampleDraft,
+  isUntouched,
+  defaultProjectName,
   createProject,
+  cleanCalculation,
   cleanProject,
+  parseDraft,
+  loadDraft,
+  saveDraft,
   parseProjects,
   serializeProjects,
   sortByEdited,

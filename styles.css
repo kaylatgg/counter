@@ -46,7 +46,7 @@ html {
 
 /* On screen 2 the header row is sticky, so focused fields stay clear of it. */
 html:has(body.on-results) {
-  scroll-padding-top: 72px;
+  scroll-padding-top: 136px;
 }
 
 body {
@@ -243,14 +243,126 @@ h3 {
   font-size: 12px;
 }
 
+/* Screen 2: the header is the first of two sticky rows. */
 .on-results .topbar {
-  display: none;
+  position: sticky;
+  top: 0;
+  z-index: 11;
+  background: var(--bg);
+}
+
+/* "Projects 3" and the save button, on the right of every header. */
+.projects-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  font-size: 14px;
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.projects-link[aria-current="page"] .projects-word {
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.projects-count {
+  display: inline-grid;
+  place-items: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--paper);
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--ink-2);
+}
+
+.save-button {
+  min-height: 36px;
+  padding: 0 16px;
+  border: 1px solid var(--ink);
+  border-radius: 999px;
+  background: var(--ink);
+  color: var(--paper);
+  font-size: 14px;
+}
+
+/* In a saved project the button just says "Saved", and can't be pressed. */
+.save-button:disabled {
+  border-color: var(--line);
+  background: transparent;
+  color: var(--ink-2);
+  cursor: default;
+}
+
+/* Panels under the header: the save field and the start-over question. */
+.header-panel {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 16px 28px;
+  max-width: 1184px;
+  margin: 8px auto 0;
+  padding: 20px 24px;
+  border-radius: 20px;
+  background: var(--paper);
+}
+
+.save-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 16px 28px;
+}
+
+.save-form .field {
+  width: 420px;
+  max-width: 100%;
+}
+
+.save-form .unit-input {
+  display: flex;
+  margin-top: 6px;
+  border-bottom: 1px solid var(--ink);
+}
+
+.save-form .unit-input input {
+  width: 100%;
+  padding: 0 0 4px;
+  border: 0;
+  background: transparent;
+  font-size: 24px;
+  font-weight: 300;
+  letter-spacing: -0.02em;
+}
+
+.save-form .mono-note {
+  margin-top: 6px;
+}
+
+.panel-actions {
+  display: flex;
+  gap: 8px;
+  padding-bottom: 22px;
+}
+
+#start-over .panel-actions {
+  padding-bottom: 0;
+}
+
+.start-over-question {
+  font-size: 16px;
+  align-self: center;
 }
 
 /* Screen 1: inputs */
 
-.screen-home,
-.screen-new,
+.screen-projects,
 .screen-inputs,
 .site-footer {
   position: relative;
@@ -261,8 +373,7 @@ h3 {
   padding-right: 24px;
 }
 
-.screen-home,
-.screen-new,
+.screen-projects,
 .screen-inputs {
   padding-top: 44px;
 }
@@ -717,8 +828,7 @@ legend {
 }
 
 .field-row .unit-input,
-.result-block .unit-input,
-.new-form .unit-input {
+.result-block .unit-input {
   display: flex;
   align-items: baseline;
   gap: 2px;
@@ -728,8 +838,7 @@ legend {
 }
 
 .field-row .unit-input input,
-.result-block .unit-input input,
-.new-form .unit-input input {
+.result-block .unit-input input {
   width: 100%;
   min-width: 0;
   padding: 0 0 6px;
@@ -843,22 +952,13 @@ legend {
   margin-top: 0;
 }
 
-/* Inside a project: "Projects / name", then "Saved", in the header. */
+/* In a saved project: its name, then "Saved", in the header. */
 .crumb {
   display: flex;
   align-items: baseline;
   gap: 8px;
   min-width: 0;
   font-size: 14px;
-}
-
-.crumb-link {
-  color: var(--ink-2);
-  text-underline-offset: 3px;
-}
-
-.crumb-sep {
-  color: var(--muted);
 }
 
 .crumb-name {
@@ -1049,40 +1149,12 @@ legend {
   margin-top: 32px;
 }
 
-/* New project */
-
-.new-form {
-  max-width: 640px;
-  margin-top: 48px;
-}
-
-.new-form .mono-note {
-  margin-top: 8px;
-}
-
-.new-job {
-  margin-top: 40px;
-}
-
-.new-job > legend {
-  margin-bottom: 12px;
-  font-size: 13px;
-  color: var(--muted);
-}
-
-.new-actions {
-  display: flex;
-  align-items: center;
-  gap: 24px;
-  margin-top: 48px;
-}
-
 /* Screen 2: result */
 
 /* Header row: wordmark, Edit details, then the live controls on the right. */
 .results-header {
   position: sticky;
-  top: 0;
+  top: 64px;
   z-index: 10;
   display: flex;
   flex-wrap: wrap;
@@ -1893,19 +1965,20 @@ textarea {
   .stepper button[data-step="1"]:hover,
   .bar-stepper button[data-step="1"]:hover::before,
   .action-button:not(.outline):hover,
+  .save-button:not(:disabled):hover,
   .round-button:not(.outline):hover,
   .check-button:hover {
     background: var(--ink-2);
   }
 
   .edit-button:hover,
-  .crumb-link:hover,
   .row-action:hover {
     color: var(--ink);
   }
 
   .project-open:hover,
   .crumb-name:hover,
+  .projects-link:hover .projects-word,
   .row-action:hover {
     text-decoration: underline;
     text-underline-offset: 4px;
@@ -1936,8 +2009,7 @@ textarea {
 
 @media (min-width: 960px) {
   .topbar,
-  .screen-home,
-  .screen-new,
+  .screen-projects,
   .screen-inputs,
   .site-footer {
     padding-left: 64px;
