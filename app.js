@@ -1033,11 +1033,28 @@ function renderJob() {
       (button.dataset.step === "1" ? "One more " : "One less ") + j.item);
   });
 
+  showSelectedJobPill();
+
   // "Fewer pages may not save time…" only makes sense for the menu.
   const isMenu = currentJob() === "menu";
   show(byId("page-hours-hint"), isMenu);
   byId("item-hours").setAttribute("aria-describedby",
     "unit-item-hours" + (isMenu ? " page-hours-hint" : ""));
+}
+
+// On a phone the job pills scroll sideways. The selected pill scrolls fully into
+// view (tap, keyboard, a field tab, or a loaded project), without moving the page:
+// "nearest" only scrolls what's needed. Smooth, unless reduced motion is on.
+// Desktop shows every pill, so nothing happens there.
+function showSelectedJobPill() {
+  if (!isPhone()) return;
+  const label = document.querySelector('input[name="job"]:checked').nextElementSibling;
+  if (!label.offsetParent) return;
+  label.scrollIntoView({
+    block: "nearest",
+    inline: "nearest",
+    behavior: reduceMotion.matches ? "auto" : "smooth",
+  });
 }
 
 // The job whose example numbers are in the fields. Changing any of them
@@ -1291,6 +1308,8 @@ function openResults() {
 
 function openInputs() {
   showScreen("inputs");
+  // Screen 1 was hidden while a project loaded, so its pill row scrolls now.
+  showSelectedJobPill();
   // The tally measures its width, so it draws once screen 1 is showing.
   relayoutCharts();
   byId("page-title").focus();
@@ -1931,10 +1950,6 @@ document.querySelectorAll('input[name="field"]').forEach(function (radio) {
 });
 document.querySelectorAll('input[name="job"]').forEach(function (radio) {
   radio.addEventListener("change", switchJob);
-  // On a phone the pills scroll sideways; the picked one scrolls into view.
-  radio.addEventListener("focus", function () {
-    radio.nextElementSibling.scrollIntoView({ block: "nearest", inline: "nearest" });
-  });
 });
 
 // Phone: the header is clear at the top of screen 1, then gets a background.
@@ -1967,7 +1982,11 @@ window.addEventListener("resize", function () {
 });
 
 if (document.fonts && document.fonts.ready) {
-  document.fonts.ready.then(relayoutCharts);
+  document.fonts.ready.then(function () {
+    relayoutCharts();
+    // Pill widths change once the font loads, so the selected pill is placed again.
+    showSelectedJobPill();
+  });
 }
 
 // Projects and saving: the header, the save field, the start-over question, and the list.
