@@ -1767,6 +1767,14 @@ legend {
   font-size: 11px;
 }
 
+/* A halo in the page color, so gridlines and the curve stop just short of the text. */
+#rate-plot text {
+  stroke: var(--bg);
+  stroke-width: 4px;
+  stroke-linejoin: round;
+  paint-order: stroke;
+}
+
 .rate-tick {
   fill: var(--muted);
 }
@@ -2118,7 +2126,7 @@ textarea {
     grid-template-columns: minmax(0, 1fr) 544px;
   }
 
-  /* No offer: the hours chart takes the full row. */
+  /* No offer, or one below expenses: the hours chart takes the full row. */
   .charts-row.single {
     grid-template-columns: minmax(0, 1fr);
   }

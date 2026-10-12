@@ -516,11 +516,17 @@ function layoutHoursChart(r) {
 
 // Chart 2: Your rate drops as hours grow
 
+// Hidden when the offer is below expenses: then the curve rises, which would
+// contradict the title. The hero and the hours chart already explain the loss.
+function showsRateChart(r) {
+  return Boolean(r.offer) && !r.offer.belowExpenses;
+}
+
 function renderOfferChart(r) {
   const chart = byId("offer-chart");
-  show(chart, Boolean(r.offer));
-  byId("hours-chart").parentElement.classList.toggle("single", !r.offer);
-  if (!r.offer) return;
+  show(chart, showsRateChart(r));
+  byId("hours-chart").parentElement.classList.toggle("single", !showsRateChart(r));
+  if (!showsRateChart(r)) return;
   const offer = r.offer;
 
   const items = byId("pay-list").children;
@@ -535,9 +541,7 @@ function renderOfferChart(r) {
     : upperFirst(amount)) + " spread over more hours pays less per hour.";
 
   let summary;
-  if (offer.hourlyAfter < 0) {
-    summary = "After expenses, this offer loses money however many hours the job takes.";
-  } else if (offer.hourlyAfter === 0) {
+  if (offer.hourlyAfter === 0) {
     summary = "After expenses, this offer pays nothing for your time.";
   } else {
     summary = "After expenses, the offer pays " + calc.formatMoney(offer.hourlyAfter) +
@@ -1272,7 +1276,7 @@ function relayoutCharts() {
   fitHeroNumber();
   fitStats();
   layoutHoursChart(lastResult);
-  if (lastResult.offer) layoutRateChart(lastResult);
+  if (showsRateChart(lastResult)) layoutRateChart(lastResult);
 }
 
 // Phone layout: below 760px, the same value as the one media query in styles.css.
