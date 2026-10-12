@@ -671,5 +671,53 @@ test("with no job given, messages use the menu's names", function () {
   assert.strictEqual(errorsFor({ setupHours: "x" }).setupHours, "Use a number for concepts and sketches.");
 });
 
+group("Edge cases");
+
+test("an offer at or above the estimate: the price defaults to the offer", function () {
+  const r = run({ offer: "1000" });
+  assert.strictEqual(r.estimate, 310);
+  assert.strictEqual(r.quote.amount, 1000);
+  assert.strictEqual(r.quote.isCustom, false);
+  assert.strictEqual(r.quote.defaultsTo, "offer");
+  assert.strictEqual(r.offer.aboveTarget, true);
+  assert.strictEqual(calc.formatMoney(r.offer.overPerHour), "$61.96");
+  closeTo(r.offer.gap, -690);
+  assert.strictEqual(run({ offer: "310" }).quote.amount, 310);
+  assert.strictEqual(run({ offer: "310" }).quote.defaultsTo, "offer");
+  assert.strictEqual(run().quote.defaultsTo, "estimate");
+  assert.strictEqual(run({ offer: "1000", quote: "310" }).quote.amount, 310);
+});
+
+test("reply: an offer at or above the estimate is accepted, not undercut", function () {
+  assert.strictEqual(calc.replyText("menu", 2, 2, 1000, 1000, 310),
+    "Hi! Thanks for reaching out. For a menu with 2 pages and 2 rounds of changes, " +
+    "$1,000 works for me. Let me know when you'd like to get started!");
+  assert.ok(calc.replyText("menu", 2, 2, 310, 310, 310).indexOf("$310 works for me") !== -1);
+  assert.ok(calc.replyText("menu", 2, 2, 310, 1000, 310).indexOf("my price is $310") !== -1);
+  assert.ok(calc.replyText("menu", 2, 2, 200, 200, 310).indexOf("my price is $200") !== -1);
+});
+
+test("weeks of full-time work: total hours divided by 40, rounded", function () {
+  assert.strictEqual(calc.fullTimeWeeks(3967.5), 99);
+  assert.strictEqual(calc.fullTimeWeeks(161), 4);
+  assert.strictEqual(calc.fullTimeWeeks(180), 5);
+  assert.strictEqual(calc.LONG_JOB_HOURS, 160);
+  const big = run({ count: "99", itemHours: "40", rate: "500" });
+  closeTo(big.hours.total, 3967.5);
+  assert.strictEqual(calc.fullTimeWeeks(big.hours.total), 99);
+});
+
+test("money fields show commas, and typed commas still work", function () {
+  assert.strictEqual(calc.groupDigits("1983770"), "1,983,770");
+  assert.strictEqual(calc.groupDigits("99999"), "99,999");
+  assert.strictEqual(calc.groupDigits("1000.50"), "1,000.50");
+  assert.strictEqual(calc.groupDigits("1,000"), "1,000");
+  assert.strictEqual(calc.groupDigits("25"), "25");
+  assert.strictEqual(calc.groupDigits(""), "");
+  assert.strictEqual(calc.groupDigits("12,34"), "12,34");
+  assert.strictEqual(calc.groupDigits("abc"), "abc");
+  assert.strictEqual(run({ offer: "1,000" }).offer.amount, 1000);
+});
+
 console.log("\n" + passed + " passed, " + failed + " failed");
 if (failed > 0) process.exitCode = 1;

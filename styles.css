@@ -40,6 +40,14 @@
   box-sizing: border-box;
 }
 
+/* The corner glow reaches past the screen edge; clip keeps the page from
+   scrolling sideways. hidden is the fallback for browsers without clip. */
+html,
+body {
+  overflow-x: hidden;
+  overflow-x: clip;
+}
+
 html {
   -webkit-text-size-adjust: 100%;
 }
@@ -53,7 +61,6 @@ body {
   position: relative;
   margin: 0;
   min-height: 100vh;
-  overflow-x: hidden;
   background: var(--bg);
   color: var(--ink);
   font-family: var(--font);
@@ -471,6 +478,12 @@ legend {
   margin: 0 0 24px;
 }
 
+/* Under it: "Add at least one hour of work." and the weeks note. */
+.work-error,
+.weeks-note {
+  margin: -12px 0 24px;
+}
+
 /* The field: text tabs with an underline, above the job pills. Real radios. */
 .field-tabs {
   display: flex;
@@ -847,7 +860,7 @@ legend {
 }
 
 .offer-row {
-  align-items: end;
+  align-items: start;
 }
 
 .field > label,
@@ -1415,6 +1428,11 @@ legend {
   line-height: 1.4;
 }
 
+.hero-weeks {
+  margin-top: 8px;
+  color: var(--ink-2);
+}
+
 .warning {
   display: flex;
   justify-content: flex-end;
@@ -1493,6 +1511,7 @@ legend {
 
 .stats dd {
   margin: 8px 0 0;
+  white-space: nowrap;
   font-size: 46px;
   font-weight: 300;
   letter-spacing: -0.03em;
@@ -1509,6 +1528,7 @@ legend {
 
 .stat-note {
   display: block;
+  white-space: normal;
   margin-top: 6px;
   font-family: var(--mono);
   font-size: 12px;
@@ -2013,7 +2033,7 @@ textarea {
   .action-button:not(.outline):hover,
   .save-button:not(:disabled):hover,
   .round-button:not(.outline):hover,
-  .check-button:hover {
+  .check-button:not(.has-errors):hover {
     background: var(--ink-2);
   }
 
@@ -2404,6 +2424,12 @@ textarea {
     margin-top: 0;
   }
 
+  /* The bar sits inside screen 1, so screen 1 stacks above the footer;
+     otherwise the footer text shows on top of the bar. */
+  .screen-inputs {
+    z-index: 2;
+  }
+
   .check-button {
     position: fixed;
     left: 12px;
@@ -2523,6 +2549,12 @@ textarea {
     font-size: 16px;
   }
 
+  .hero-weeks {
+    grid-row: 4;
+    grid-column: 1 / -1;
+    text-align: left;
+  }
+
   .hero-sentence,
   .warning {
     grid-row: 3;
@@ -2585,6 +2617,12 @@ textarea {
 
   .stats dd {
     font-size: 32px;
+  }
+
+  /* "of 11.5 hrs" on its own line under the number. */
+  .stat-unit-line {
+    display: block;
+    margin: 4px 0 0;
   }
 
   .charts-row {

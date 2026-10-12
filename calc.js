@@ -138,19 +138,33 @@ function countWords(amount, singular, plural) {
   return formatNumber(amount) + " " + (formatNumber(amount) === "1" ? singular : plural);
 }
 
-// The reply draft. price and offer are amounts; offer is null with no offer.
+// The reply draft. price, offer, and estimate are amounts; offer is null with no offer.
 // "Hi! Thanks for reaching out. For a menu with 2 pages and 2 rounds of
 // changes, my price is $310."
-function replyText(jobKey, count, rounds, price, offer) {
+// When the offer is at or above the estimate and the price is the offer, the
+// reply accepts it instead of asking for less: "..., $1,000 works for me."
+function replyText(jobKey, count, rounds, price, offer, estimate) {
   const job = JOBS[jobKey];
-  let text = "Hi! Thanks for reaching out. For " + job.phrase + " with " +
+  const work = "Hi! Thanks for reaching out. For " + job.phrase + " with " +
     countWords(count, job.item, job.items) + " and " +
-    countWords(rounds, "round", "rounds") + " of changes, my price is " + formatPrice(price) + ".";
+    countWords(rounds, "round", "rounds") + " of changes, ";
+  if (offer !== null && estimate != null && offer >= estimate && price === offer) {
+    return work + formatPrice(offer) + " works for me. Let me know when you'd like to get started!";
+  }
+  let text = work + "my price is " + formatPrice(price) + ".";
   if (offer !== null && price > offer) {
     text += " I know that's more than the " + formatPrice(offer) +
       " you mentioned, so I'm happy to talk about what would fit your budget.";
   }
   return text + " Let me know if you have any questions!";
+}
+
+// Over this many hours, the page asks the person to check their hours.
+const LONG_JOB_HOURS = 160;
+
+// Weeks of full-time work (40 hours a week), rounded to a whole number.
+function fullTimeWeeks(totalHours) {
+  return Math.round(totalHours / 40);
 }
 
 // The fields the hours depend on. The page can show group totals
@@ -346,6 +360,8 @@ function calculate(values) {
     const shortCents = Math.round((values.rate - hourly.before) * 100);
     result.offer.meetsTarget = shortCents <= 0;
     result.offer.shortPerHour = Math.max(0, values.rate - hourly.before);
+    result.offer.aboveTarget = shortCents < 0;
+    result.offer.overPerHour = Math.max(0, hourly.before - values.rate);
     // True when the offer pays for every hour of the job at the target rate.
     // The tolerance stops floating point noise from deciding an exact match.
     result.offer.coversAllHours =
@@ -361,13 +377,18 @@ function calculate(values) {
     }
   }
 
-  // A custom quote never changes the estimate or the target rate.
+  // A custom quote never changes the estimate or the target rate. Left blank,
+  // the price is the estimate, or their offer when it's at or above the estimate,
+  // so the price never asks the client for less than they offered.
   const isCustom = values.quote !== null;
-  const quoteAmount = isCustom ? values.quote : estimate;
+  const offerFits = result.offer !== null && result.offer.amount >= estimate;
+  const quoteAmount = isCustom ? values.quote : (offerFits ? result.offer.amount : estimate);
   const quoteHourly = hourlyFor(quoteAmount, values.expenses, total);
   result.quote = {
     amount: quoteAmount,
     isCustom: isCustom,
+    // What a blank price follows: "offer" or "estimate".
+    defaultsTo: offerFits ? "offer" : "estimate",
     hourlyBefore: quoteHourly.before,
     hourlyAfter: quoteHourly.after,
     differenceFromEstimate: quoteAmount - estimate,
@@ -482,6 +503,16 @@ function formatWholeMoney(amount) {
   return sign + "$" + wholeFormat.format(Math.abs(amount));
 }
 
+// Money field text with thousands commas: "1983770" gives "1,983,770",
+// "1000.5" gives "1,000.5". Text that isn't a plain number stays as typed.
+function groupDigits(text) {
+  const plain = String(text == null ? "" : text).trim().replace(/,/g, "");
+  if (!/^\d+(\.\d*)?$/.test(plain) || !NUMBER_PATTERN.test(String(text).trim())) return text;
+  const parts = plain.split(".");
+  const whole = parts[0].replace(/^0+(?=\d)/, "").replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  return parts.length > 1 ? whole + "." + parts[1] : whole;
+}
+
 // "11.5", "7.2", "1": up to 2 decimals, no trailing zeros.
 function formatNumber(amount) {
   return hoursFormat.format(amount);
@@ -506,6 +537,8 @@ const calc = {
   WORK_FIELDS,
   fieldForJob,
   replyText,
+  LONG_JOB_HOURS,
+  fullTimeWeeks,
   HOURS_FIELDS,
   fieldsFor,
   parseNumber,
@@ -523,6 +556,7 @@ const calc = {
   formatNumber,
   formatHours,
   formatPrice,
+  groupDigits,
 };
 
 if (typeof module !== "undefined") module.exports = calc;

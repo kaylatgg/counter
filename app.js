@@ -139,10 +139,13 @@ function renderStats(items) {
     const label = document.createElement("dt");
     label.textContent = item.label;
     const value = document.createElement("dd");
-    value.textContent = item.value;
+    const number = document.createElement("span");
+    number.className = "stat-number";
+    number.textContent = item.value;
+    value.appendChild(number);
     if (item.unit) {
       const unit = document.createElement("span");
-      unit.className = "stat-unit";
+      unit.className = "stat-unit" + (item.unitLine ? " stat-unit-line" : "");
       unit.textContent = item.unit;
       value.appendChild(unit);
     }
@@ -154,6 +157,35 @@ function renderStats(items) {
     }
     group.append(label, value);
     list.appendChild(group);
+  });
+  fitStats();
+}
+
+// Big values ("$1,983,770") shrink to fit their column, down to 22px.
+const STAT_MIN_SIZE = 22;
+
+function fitStats() {
+  document.querySelectorAll("#metrics dd").forEach(function (value) {
+    value.style.fontSize = "";
+    const room = value.clientWidth;
+    if (!room) return;
+    // Two passes, since the unit next to the number keeps its own size.
+    for (let i = 0; i < 2 && value.scrollWidth > room; i++) {
+      const size = parseFloat(getComputedStyle(value).fontSize);
+      if (size <= STAT_MIN_SIZE) return;
+      value.style.fontSize = Math.max(STAT_MIN_SIZE, Math.floor(size * room / value.scrollWidth)) + "px";
+    }
+  });
+}
+
+// Over 160 hours: "That's about 99 weeks of full-time work. Check your hours."
+function renderWeeksNotes(hours) {
+  const long = Boolean(hours) && hours.total > calc.LONG_JOB_HOURS;
+  ["work-weeks", "hero-weeks"].forEach(function (id) {
+    const note = byId(id);
+    note.textContent = long ? "That's about " + calc.fullTimeWeeks(hours.total) +
+      " weeks of full-time work. Check your hours." : "";
+    show(note, long);
   });
 }
 
@@ -169,15 +201,25 @@ function renderHero(r, values) {
   const warning = byId("offer-warning");
   byId("hero-job").textContent = jobSummary(values);
 
+  if (r.offer && r.offer.belowExpenses) {
+    // Below expenses there's no pay to show, only what the job costs.
+    const loss = calc.formatMoney(r.offer.shortfall);
+    byId("hero-label").textContent = "This offer costs you";
+    byId("hero-amount").textContent = loss.slice(1);
+    byId("hero-unit").textContent = "";
+    byId("hero-spoken").textContent = loss;
+    sentence.textContent = "before counting any of your " + hoursInWords(r.hours.total) + ".";
+  }
+
   if (r.offer) {
     const money = calc.formatMoney(r.offer.hourlyBefore);
-    byId("hero-label").textContent = "This offer pays";
-    byId("hero-amount").textContent = money.slice(1);
-    byId("hero-unit").textContent = "/hr";
-    byId("hero-spoken").textContent = money + " per hour";
-
     const target = calc.formatPrice(r.rate);
-    if (r.offer.meetsTarget) {
+    if (r.offer.belowExpenses) {
+      // Set above.
+    } else if (r.offer.aboveTarget) {
+      sentence.textContent = "for " + hoursInWords(r.hours.total) + " of real work. That's " +
+        calc.formatMoney(r.offer.overPerHour) + " an hour over your " + target + " target.";
+    } else if (r.offer.meetsTarget) {
       sentence.textContent = "for " + hoursInWords(r.hours.total) +
         " of real work. That meets your " + target + " target.";
     } else {
@@ -185,22 +227,24 @@ function renderHero(r, values) {
         calc.formatMoney(r.offer.shortPerHour) + " an hour under your " + target + " target.";
     }
 
-    // Below expenses, the warning takes the sentence's place.
-    if (r.offer.belowExpenses) {
-      warning.innerHTML = ALERT_ICON + "<span></span>";
-      warning.querySelector("span").textContent = "This offer is " +
-        calc.formatMoney(r.offer.shortfall) + " less than your expenses alone.";
+    if (!r.offer.belowExpenses) {
+      byId("hero-label").textContent = "This offer pays";
+      byId("hero-amount").textContent = money.slice(1);
+      byId("hero-unit").textContent = "/hr";
+      byId("hero-spoken").textContent = money + " per hour";
     }
-    show(sentence, !r.offer.belowExpenses);
-    show(warning, r.offer.belowExpenses);
+    // The hero itself says what a loss costs, so the warning isn't needed too.
+    show(sentence, true);
+    show(warning, false);
     fitHeroNumber();
 
-    // No plus or minus signs: the label says which way the difference goes.
+    // The label says which way the difference goes. An offer above the
+    // estimate gets a plus sign, since it's money on top of your price.
     let comparison;
     if (r.offer.gap > 0) {
       comparison = { label: "More than they offered", value: calc.formatPrice(r.offer.gap) };
     } else if (r.offer.gap < 0) {
-      comparison = { label: "Less than they offered", value: calc.formatPrice(-r.offer.gap) };
+      comparison = { label: "Above your estimate", value: "+" + calc.formatPrice(-r.offer.gap) };
     } else {
       comparison = { label: "Same as their offer", value: "$0" };
     }
@@ -210,7 +254,7 @@ function renderHero(r, values) {
       { label: "Your estimate", value: calc.formatWholeMoney(r.estimate) },
       comparison,
       { label: "Hours the offer pays for", value: calc.formatNumber(covered),
-        unit: "of " + calc.formatHours(r.hours.total) },
+        unit: "of " + calc.formatHours(r.hours.total), unitLine: true },
       { label: "After expenses", value: calc.formatMoney(r.offer.hourlyAfter), unit: "/hr" },
     ]);
   } else {
@@ -726,7 +770,10 @@ function renderReceipt(r, values) {
 
 function renderQuote(r, quoteError) {
   const line = byId("quote-result");
-  byId("quote").placeholder = String(r.estimate);
+  const followsOffer = r.quote.defaultsTo === "offer";
+  byId("quote").placeholder = calc.groupDigits(String(followsOffer ? r.offer.amount : r.estimate));
+  byId("quote-hint").textContent = "Leave blank to use " + (followsOffer ? "their offer" : "your estimate") +
+    ". This won't change your estimate or your target.";
   show(line, !quoteError);
   if (quoteError) return;
 
@@ -747,7 +794,7 @@ function renderQuote(r, quoteError) {
 // "Hi! Thanks for reaching out. For a menu with 2 pages and 2 rounds of changes, my price is $310."
 function buildReply(r, values) {
   return calc.replyText(currentJob(), values.count, values.rounds, r.quote.amount,
-    r.offer ? r.offer.amount : null);
+    r.offer ? r.offer.amount : null, r.estimate);
 }
 
 // Once the person edits the reply, it's never overwritten. If the numbers
@@ -858,13 +905,25 @@ function renderRowBars(values) {
 
 // "11.5 hrs of work for $200", or "11.5 hrs of work at $25/hr" with no offer.
 // On a phone the button is the bottom bar: a shorter line ("11.5 hrs · $200")
-// and a thin bar of the hours under it.
-function renderCheckButton(values, hours) {
-  const preview = byId("check-preview");
+// and a thin bar of the hours under it. With errors it says how many fields
+// to fix; with 0 hours it asks for hours. Either way it stays ink.
+function renderCheckButton(values, hours, errorCount) {
   const hasOffer = values.hasOffer;
   byId("check-title").textContent = hasOffer ? "Check the offer" : "Get my estimate";
-  show(preview, Boolean(hours));
-  show(byId("check-hours"), Boolean(hours));
+  byId("check-offer").classList.toggle("has-errors", Boolean(errorCount));
+  let message = "";
+  if (errorCount) {
+    message = "Fix " + errorCount + (errorCount === 1 ? " field" : " fields") + " to continue";
+  } else if (hours && !(hours.total > 0)) {
+    message = hasOffer ? "Add hours to check the offer" : "Add hours to get your estimate";
+  }
+  show(byId("check-preview"), Boolean(message || hours));
+  show(byId("check-hours"), Boolean(hours) && !message);
+  if (message) {
+    byId("preview-long").textContent = message;
+    byId("preview-short").textContent = message;
+    return;
+  }
   if (!hours) return;
   const total = calc.formatHours(hours.total);
   byId("preview-long").textContent = total + " of work " + (hasOffer
@@ -922,8 +981,11 @@ function syncMirrors(errors) {
 
 // Your price: "Use my estimate" clears the field, so the price follows the
 // estimate again (and keeps following it when the numbers change).
+// When a blank price follows their offer (it's at or above the estimate), the
+// estimate is typed in instead.
 function useEstimate() {
-  byId("quote").value = "";
+  const followsOffer = lastResult && lastResult.quote.defaultsTo === "offer";
+  byId("quote").value = followsOffer ? calc.groupDigits(String(lastResult.estimate)) : "";
   clearTimeout(commitTimer);
   update(true);
 }
@@ -968,6 +1030,9 @@ function showResultState(state) {
   show(byId("receipt-section"), state === "result");
   show(byId("empty-state"), state === "no-hours");
   show(byId("error-state"), state === "errors");
+  // The price and reply are made from the result, so without one they hide
+  // instead of showing old numbers.
+  show(document.querySelector(".results-pair"), state === "result");
   if (state !== "result") {
     show(byId("offer-chart"), false);
     show(byId("quote-result"), false);
@@ -1108,7 +1173,21 @@ function answerReplace(replace) {
 // Until then, a new error leaves the page as it was, so nothing flashes mid-typing.
 function update(commit) {
   updatePage(commit);
+  formatMoneyFields();
   autosave();
+}
+
+// Money fields show "1,000" when not focused, and "1000" while typing.
+// Typing "1,000" works too: the math reads commas.
+const MONEY_FIELDS = ["rate", "expenses", "offer", "quote", "bar-offer", "bar-rate"];
+
+function formatMoneyFields() {
+  MONEY_FIELDS.forEach(function (id) {
+    const input = byId(id);
+    if (document.activeElement === input) return;
+    const grouped = calc.groupDigits(input.value);
+    if (grouped !== input.value) input.value = grouped;
+  });
 }
 
 function updatePage(commit) {
@@ -1133,7 +1212,9 @@ function updatePage(commit) {
       renderTotals(null);
       renderRowBars(null);
     }
-    renderCheckButton(checked.values, null);
+    const errorCount = blocking.filter(function (name) { return shownErrors[name]; }).length;
+    renderWeeksNotes(hoursAreFine ? calc.workHours(checked.values) : null);
+    renderCheckButton(checked.values, null, errorCount);
     renderErrorState(errors);
     showResultState("errors");
     return;
@@ -1143,7 +1224,9 @@ function updatePage(commit) {
   renderGroupTotals(r.hours);
   renderTotals(r.hours);
   renderRowBars(checked.values);
-  renderCheckButton(checked.values, r.hours);
+  renderCheckButton(checked.values, r.hours, 0);
+  renderWeeksNotes(r.hours);
+  if (r.hasHours) showWorkError(false);
   if (!r.hasHours) {
     showResultState("no-hours");
     return;
@@ -1166,6 +1249,7 @@ function relayoutCharts() {
   layoutTally(lastHours);
   if (!lastResult || byId("result").hidden) return;
   fitHeroNumber();
+  fitStats();
   layoutHoursChart(lastResult);
   if (lastResult.offer) layoutRateChart(lastResult);
 }
@@ -1258,7 +1342,7 @@ function paintHeroNumber(r, value) {
 
 function countUpHero(r) {
   stopCountUp();
-  const target = r.offer ? r.offer.hourlyBefore : r.estimate;
+  const target = !r.offer ? r.estimate : (r.offer.belowExpenses ? r.offer.shortfall : r.offer.hourlyBefore);
   const started = performance.now();
   paintHeroNumber(r, 0);
   function frame(now) {
@@ -1451,6 +1535,7 @@ function fillCalculator(values) {
   });
   byId(values.inputs.offerStatus === "none" ? "offer-none" : "offer-yes").checked = true;
   byId("quote").value = values.quote;
+  showWorkError(false);
   byId("reply").value = values.reply;
   currentDraft = values.reply;
   draftWhenEdited = null;
@@ -1836,10 +1921,28 @@ function checkOffer() {
     byId(FIELD_IDS[firstError]).focus();
     return;
   }
+  // 0 hours: nothing to show yet, so stay here and ask for hours.
+  if (lastHours && !(lastHours.total > 0)) {
+    showWorkError(true);
+    byId("setup-hours").focus();
+    return;
+  }
   // fromInputs: Back from here returns to screen 1 of the same calculation.
   const state = { screen: "results", project: currentId || undefined, fromInputs: true };
   history.pushState(state, "", addressFor(state));
   revealResults();
+}
+
+// "Add at least one hour of work." under 02 The work, linked to the first hours field.
+function showWorkError(visible) {
+  const error = byId("work-error");
+  show(error, visible);
+  const field = byId("setup-hours");
+  const ids = (field.getAttribute("aria-describedby") || "").split(" ")
+    .filter(function (id) { return id && id !== "work-error"; });
+  if (visible) ids.push("work-error");
+  if (ids.length) field.setAttribute("aria-describedby", ids.join(" "));
+  else field.removeAttribute("aria-describedby");
 }
 
 // The reveal plays once per press of "Check the offer": screen 1 fades out, the
@@ -1928,6 +2031,14 @@ Object.keys(FIELD_IDS).forEach(function (name) {
   const input = byId(FIELD_IDS[name]);
   input.addEventListener("input", onType);
   input.addEventListener("blur", onLeaveField);
+});
+
+MONEY_FIELDS.forEach(function (id) {
+  byId(id).addEventListener("focus", function () {
+    const input = byId(id);
+    const plain = input.value.replace(/,/g, "");
+    if (plain !== input.value && calc.groupDigits(plain) === input.value) input.value = plain;
+  });
 });
 
 mirrors.forEach(function (mirror) {
