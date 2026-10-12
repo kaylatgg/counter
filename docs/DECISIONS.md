@@ -80,6 +80,7 @@ Note: the logo lands on the same 11.5 hrs and $310 as the menu, and the poster o
     - **The image is for the client,** so it shows the work (including "the work you don't see") and the price, not the student's target rate or losses. It's a PNG on a canvas, with no library, at 4:5 to fill a phone screen in messages.
     - **The image's price** is the price to send, and when that's blank, what the blank follows (their offer when it's at or above the estimate). So the image always matches the reply.
     - **On phones at 320px**, the header's paddings and gaps shrink a little so Edit, Projects, Share, and Save fit on one line, as the design asks.
+26. **Preview before saving the image (October 12, 2026).** The image goes to a client, so "Save image" now shows it first, with the price it uses spelled out, before anything downloads or opens a share sheet. It's a native `<dialog>`, so focus stays inside it, Escape works, and screen readers treat it as a modal without extra code. The preview is the same PNG that gets saved, so what you see is exactly what's sent. After downloading or sharing, the dialog closes and focus returns to "Save image".
 
 ## Known limits of version 1
 

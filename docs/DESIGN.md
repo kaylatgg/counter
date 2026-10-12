@@ -199,6 +199,11 @@ Approved by Kayla, October 12, 2026. References: `docs/design-share-desktop.png`
 - The image speaks to the client, not the student: "Design" (not "Production"), "work you don't see" (not "usually forgotten"), "$200 covers 7.2 hrs" (not "runs out"). No target rate gaps or losses.
   Reason: it explains the work without sounding like a complaint.
 - Layout, top to bottom: job summary (mono), "11 hours of work" (Geist 300), one line of intro, the hours chart with the bracket and covers line, labels alternating on two rows, the legend, then "My price" on a `--sunset` panel, and "Made with Counter" (mono, small).
+- **Preview before saving.** "Save image" opens a native `<dialog>` showing the PNG it made (the same file, not redrawn). Title "Image for your client" (Geist 300). Under it: "This is exactly what they'll see. It uses your price to send, $310." with the real price, then a mono "1080 x 1350 PNG" (desktop only). Buttons: primary "Download image" (desktop) or "Share image" (phone, when the phone can share files), and an outline "Close". Alt text: "Image for your client: 11.5 hours of work, price $310".
+  - Desktop: a centered panel on `--bg`, 28px radius, a dim backdrop. The image on the left (4:5, up to 640px tall, 1px `--line` border), the text and buttons on the right, aligned to the bottom.
+  - Phone (below 760px): a bottom sheet, full width, 28px top corners. The image on top (up to 54vh), then the text, then the two buttons side by side, clear of the home bar.
+  - Escape and Close return focus to "Save image". It only fades in, and not at all under reduced motion.
+  Reason: the image goes to a client, so the student should see exactly what will be sent, and the price in it, before it leaves.
 - The gradient rule ("only four places") is for the page. The saved image is its own canvas and uses the paid gradient and one sunset panel.
 
 ## Don'ts

@@ -3031,6 +3031,119 @@ textarea {
   }
 }
 
+/* Save image preview: a centered panel on desktop, a bottom sheet on phones.
+   It only fades in. */
+.image-dialog {
+  max-width: min(1040px, calc(100vw - 48px));
+  max-height: calc(100vh - 48px);
+  padding: 32px;
+  border: 0;
+  border-radius: 28px;
+  background: var(--bg);
+  color: var(--ink);
+}
+
+.image-dialog[open] {
+  display: grid;
+  grid-template-columns: auto minmax(260px, 320px);
+  gap: 40px;
+  animation: dialog-fade 160ms ease-out;
+}
+
+.image-dialog::backdrop {
+  background: rgba(22, 22, 22, 0.45);
+  animation: dialog-fade 160ms ease-out;
+}
+
+@keyframes dialog-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.image-preview {
+  display: block;
+  width: auto;
+  height: min(640px, calc(100vh - 112px));
+  aspect-ratio: 4 / 5;
+  border: 1px solid var(--line);
+}
+
+.image-dialog-side {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+
+.image-dialog-title {
+  font-size: 32px;
+  font-weight: 300;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+}
+
+.image-dialog-text {
+  margin-top: 12px;
+  font-size: 16px;
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+
+.image-dialog-size {
+  margin-top: 12px;
+}
+
+.image-dialog-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 28px;
+}
+
+@media (max-width: 759px) {
+  .image-dialog {
+    width: 100%;
+    max-width: 100%;
+    max-height: 100%;
+    margin: auto 0 0;
+    padding: 20px 20px calc(20px + env(safe-area-inset-bottom));
+    border-radius: 28px 28px 0 0;
+  }
+
+  .image-dialog[open] {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 20px;
+  }
+
+  .image-preview {
+    justify-self: center;
+    height: auto;
+    max-width: 100%;
+    max-height: 54vh;
+  }
+
+  .image-dialog-title {
+    font-size: 24px;
+  }
+
+  .image-dialog-text {
+    margin-top: 8px;
+  }
+
+  .image-dialog-size {
+    display: none;
+  }
+
+  .image-dialog-actions {
+    flex-wrap: nowrap;
+    margin-top: 20px;
+  }
+
+  .image-dialog-actions .round-button {
+    flex: 1;
+    padding: 0 12px;
+  }
+}
+
 /* The reveal: plays once when "Check the offer" is pressed (app.js adds and
    removes these classes). Never under reduced motion. */
 
@@ -3089,7 +3202,8 @@ body.reveal-in .rate-now-label {
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
-  *::after {
+  *::after,
+  ::backdrop {
     transition: none !important;
     animation: none !important;
   }

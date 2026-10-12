@@ -2572,23 +2572,54 @@ function downloadImage(blob, name) {
   announce("Image saved");
 }
 
+// "Save image" draws the PNG once and shows it in a dialog. The dialog's main
+// button downloads that same file (or shares it on a phone); nothing is redrawn.
+let preparedImage = null;
+
+function canShareFile(file) {
+  return isPhone() && Boolean(file) && Boolean(navigator.canShare) && navigator.canShare({ files: [file] });
+}
+
 function saveImage() {
   if (!lastResult || !lastValues) return;
-  const name = imageFileName(lastResult);
+  const r = lastResult;
+  const name = imageFileName(r);
   makeShareImage().then(function (canvas) {
     canvas.toBlob(function (blob) {
       if (!blob) return;
       const file = typeof File === "function" ? new File([blob], name, { type: "image/png" }) : null;
-      if (isPhone() && file && navigator.canShare && navigator.canShare({ files: [file] })) {
-        navigator.share({ files: [file] }).then(function () { announce("Image saved"); }, function (error) {
-          if (error && error.name === "AbortError") return;
-          downloadImage(blob, name);
-        });
-      } else {
-        downloadImage(blob, name);
-      }
+      if (preparedImage) URL.revokeObjectURL(preparedImage.url);
+      preparedImage = { blob: blob, name: name, file: file, url: URL.createObjectURL(blob) };
+
+      const price = calc.formatPrice(r.quote.amount);
+      const preview = byId("image-preview");
+      preview.src = preparedImage.url;
+      preview.alt = "Image for your client: " + hoursInWords(r.hours.total) + " of work, price " + price;
+      byId("image-dialog-text").textContent =
+        "This is exactly what they'll see. It uses your price to send, " + price + ".";
+      byId("image-save").textContent = canShareFile(file) ? "Share image" : "Download image";
+      byId("image-dialog").showModal();
     }, "image/png");
   });
+}
+
+// The dialog's main button: share the file on a phone that can, otherwise download.
+function deliverImage() {
+  const image = preparedImage;
+  if (!image) return;
+  if (canShareFile(image.file)) {
+    navigator.share({ files: [image.file] }).then(function () {
+      announce("Image saved");
+      byId("image-dialog").close();
+    }, function (error) {
+      if (error && error.name === "AbortError") return;
+      downloadImage(image.blob, image.name);
+      byId("image-dialog").close();
+    });
+  } else {
+    downloadImage(image.blob, image.name);
+    byId("image-dialog").close();
+  }
 }
 
 // Wiring
@@ -2662,6 +2693,10 @@ byId("update-draft").addEventListener("click", updateDraft);
 byId("use-estimate").addEventListener("click", useEstimate);
 byId("copy-reply").addEventListener("click", copyReply);
 byId("save-image").addEventListener("click", saveImage);
+byId("image-save").addEventListener("click", deliverImage);
+byId("image-close").addEventListener("click", function () { byId("image-dialog").close(); });
+// Escape and Close both end here: focus goes back to "Save image".
+byId("image-dialog").addEventListener("close", function () { byId("save-image").focus(); });
 byId("share-link").addEventListener("click", shareResult);
 byId("share-open").addEventListener("click", applyShare);
 byId("share-keep").addEventListener("click", keepMine);

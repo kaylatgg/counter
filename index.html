@@ -563,6 +563,20 @@
     </section>
 
     <div class="visually-hidden" id="announcer" aria-live="polite"></div>
+
+    <!-- Save image: a preview of the PNG before it's downloaded or shared. -->
+    <dialog class="image-dialog" id="image-dialog" aria-labelledby="image-dialog-title" aria-describedby="image-dialog-text">
+      <img class="image-preview" id="image-preview" alt="" width="1080" height="1350">
+      <div class="image-dialog-side">
+        <h2 class="image-dialog-title" id="image-dialog-title">Image for your client</h2>
+        <p class="image-dialog-text" id="image-dialog-text">This is exactly what they'll see.</p>
+        <p class="mono-note image-dialog-size">1080 x 1350 PNG</p>
+        <div class="image-dialog-actions">
+          <button type="button" class="round-button" id="image-save">Download image</button>
+          <button type="button" class="round-button outline" id="image-close">Close</button>
+        </div>
+      </div>
+    </dialog>
   </main>
 
   <footer class="site-footer">
