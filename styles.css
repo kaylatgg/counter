@@ -205,8 +205,13 @@ h3 {
   inset: 140px 150px 120px 100px;
 }
 
-.on-results .glow {
+/* The glow belongs to screen 1 only. */
+.glow {
   display: none;
+}
+
+.on-inputs .glow {
+  display: block;
 }
 
 /* Header (screen 1) */
@@ -220,7 +225,7 @@ h3 {
 .topbar-inner {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 32px;
   height: 64px;
   max-width: 1312px;
   margin: 0 auto;
@@ -234,6 +239,7 @@ h3 {
 }
 
 .topbar-note {
+  margin-left: auto;
   font-size: 12px;
 }
 
@@ -243,6 +249,8 @@ h3 {
 
 /* Screen 1: inputs */
 
+.screen-home,
+.screen-new,
 .screen-inputs,
 .site-footer {
   position: relative;
@@ -253,6 +261,8 @@ h3 {
   padding-right: 24px;
 }
 
+.screen-home,
+.screen-new,
 .screen-inputs {
   padding-top: 44px;
 }
@@ -707,7 +717,8 @@ legend {
 }
 
 .field-row .unit-input,
-.result-block .unit-input {
+.result-block .unit-input,
+.new-form .unit-input {
   display: flex;
   align-items: baseline;
   gap: 2px;
@@ -717,7 +728,8 @@ legend {
 }
 
 .field-row .unit-input input,
-.result-block .unit-input input {
+.result-block .unit-input input,
+.new-form .unit-input input {
   width: 100%;
   min-width: 0;
   padding: 0 0 6px;
@@ -829,6 +841,240 @@ legend {
 .on-results .site-footer p {
   max-width: none;
   margin-top: 0;
+}
+
+/* Inside a project: "Projects / name", then "Saved", in the header. */
+.crumb {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+  font-size: 14px;
+}
+
+.crumb-link {
+  color: var(--ink-2);
+  text-underline-offset: 3px;
+}
+
+.crumb-sep {
+  color: var(--muted);
+}
+
+.crumb-name {
+  max-width: 280px;
+  overflow: hidden;
+  padding: 4px 0;
+  border: 0;
+  background: none;
+  font-size: 14px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: text;
+}
+
+.crumb-input {
+  width: 280px;
+  padding: 2px 0;
+  border: 0;
+  border-bottom: 1px solid var(--ink);
+  background: transparent;
+  font-size: 14px;
+}
+
+.crumb-input:focus-visible {
+  outline: none;
+}
+
+.save-status {
+  margin-left: 4px;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--muted);
+}
+
+/* When saving fails: the page keeps working and says so. */
+.save-error {
+  position: relative;
+  z-index: 2;
+  max-width: 1184px;
+  margin: 8px auto 0;
+  padding: 12px 16px;
+  border: 1px solid var(--error);
+  border-radius: 12px;
+  background: var(--paper);
+  font-size: 14px;
+  color: var(--error);
+}
+
+/* Projects home */
+
+.home-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.projects-empty {
+  margin-top: 40px;
+}
+
+.projects-empty p {
+  max-width: var(--measure);
+  font-size: 19px;
+  line-height: 1.45;
+  color: var(--ink-2);
+}
+
+.projects-empty .round-button {
+  margin-top: 28px;
+}
+
+.project-table {
+  width: 100%;
+  margin-top: 56px;
+  border-collapse: collapse;
+}
+
+.project-table thead th {
+  padding: 0 16px 12px 0;
+  border-bottom: 1px solid var(--ink);
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--muted);
+  text-align: left;
+}
+
+.project-table tbody th,
+.project-table td {
+  padding: 18px 16px 18px 0;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+  vertical-align: middle;
+}
+
+.project-name {
+  width: 34%;
+  font-weight: 400;
+}
+
+.project-open {
+  max-width: 100%;
+  padding: 4px 0;
+  border: 0;
+  background: none;
+  font-size: 26px;
+  font-weight: 300;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+
+.row-rename {
+  width: 100%;
+  padding: 4px 0;
+  border: 0;
+  border-bottom: 1px solid var(--ink);
+  background: transparent;
+  font-size: 26px;
+  font-weight: 300;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+.row-rename:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 3px;
+}
+
+.project-job,
+.project-edited {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--ink-2);
+  white-space: nowrap;
+}
+
+.project-edited {
+  color: var(--muted);
+}
+
+.project-estimate {
+  font-size: 22px;
+  font-weight: 300;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+}
+
+.project-offer {
+  font-size: 15px;
+  color: var(--ink-2);
+  white-space: nowrap;
+}
+
+.project-table td.project-actions {
+  padding-right: 0;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.row-action {
+  min-height: 44px;
+  padding: 0 10px;
+  border: 0;
+  background: none;
+  font-size: 13px;
+  color: var(--ink-2);
+}
+
+.row-action:last-child {
+  padding-right: 0;
+}
+
+.delete-question {
+  margin-right: 12px;
+  font-size: 14px;
+  white-space: normal;
+}
+
+.project-actions .action-button + .action-button {
+  margin-left: 8px;
+}
+
+.storage-note {
+  margin-top: 32px;
+}
+
+/* New project */
+
+.new-form {
+  max-width: 640px;
+  margin-top: 48px;
+}
+
+.new-form .mono-note {
+  margin-top: 8px;
+}
+
+.new-job {
+  margin-top: 40px;
+}
+
+.new-job > legend {
+  margin-bottom: 12px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.new-actions {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  margin-top: 48px;
 }
 
 /* Screen 2: result */
@@ -1652,8 +1898,17 @@ textarea {
     background: var(--ink-2);
   }
 
-  .edit-button:hover {
+  .edit-button:hover,
+  .crumb-link:hover,
+  .row-action:hover {
     color: var(--ink);
+  }
+
+  .project-open:hover,
+  .crumb-name:hover,
+  .row-action:hover {
+    text-decoration: underline;
+    text-underline-offset: 4px;
   }
 
   .link-button:hover {
@@ -1681,6 +1936,8 @@ textarea {
 
 @media (min-width: 960px) {
   .topbar,
+  .screen-home,
+  .screen-new,
   .screen-inputs,
   .site-footer {
     padding-left: 64px;

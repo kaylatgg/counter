@@ -9,10 +9,11 @@
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500&family=Geist+Mono:wght@400;500&display=swap">
   <link rel="stylesheet" href="styles.css">
   <script src="calc.js" defer></script>
+  <script src="projects.js" defer></script>
   <script src="app.js" defer></script>
 </head>
-<body class="on-inputs">
-  <a href="#result" class="skip-link" id="skip-link">Skip to your result</a>
+<body class="on-home">
+  <a href="#result" class="skip-link" id="skip-link" hidden>Skip to your result</a>
 
   <!-- Screen 1's corner glow: the answer, glowing quietly. Behind everything. -->
   <div class="glow" aria-hidden="true">
@@ -24,13 +25,91 @@
   <header class="topbar">
     <div class="topbar-inner">
       <p class="wordmark">Counter</p>
+      <div class="crumb-slot" id="topbar-crumb-slot"></div>
       <p class="topbar-note">for creative students</p>
     </div>
   </header>
 
+  <!-- Inside a project: "Projects / name", click the name to rename, and "Saved".
+       Moved into the header of whichever screen is showing. -->
+  <div class="crumb" id="crumb" hidden>
+    <a href="#projects" class="crumb-link" id="crumb-projects">Projects</a>
+    <span class="crumb-sep" aria-hidden="true">/</span>
+    <button type="button" class="crumb-name" id="crumb-name">Project</button>
+    <input class="crumb-input" id="crumb-input" type="text" maxlength="60" autocomplete="off" aria-label="Project name" hidden>
+    <span class="save-status" id="save-status">Saved</span>
+  </div>
+
   <main>
+    <p class="save-error" id="save-error" role="alert" hidden>Couldn't save. Your changes will be lost if you leave this page.</p>
+
+    <!-- Projects home -->
+    <section class="screen-home" id="screen-home" aria-labelledby="home-title">
+      <div class="home-top">
+        <h1 id="home-title" tabindex="-1">Projects</h1>
+        <button type="button" class="round-button" id="new-project">New project</button>
+      </div>
+
+      <div class="projects-empty" id="projects-empty" hidden>
+        <p>No projects yet. Start one to see what a job really pays.</p>
+        <button type="button" class="round-button" id="new-project-empty">New project</button>
+      </div>
+
+      <table class="project-table" id="project-table">
+        <thead>
+          <tr>
+            <th scope="col">Name</th>
+            <th scope="col">Job</th>
+            <th scope="col">Estimate</th>
+            <th scope="col">Offer pays</th>
+            <th scope="col">Edited</th>
+            <th scope="col"><span class="visually-hidden">Actions</span></th>
+          </tr>
+        </thead>
+        <tbody id="project-rows"></tbody>
+      </table>
+
+      <p class="mono-note storage-note">Projects save in this browser on this device.</p>
+    </section>
+
+    <!-- New project -->
+    <section class="screen-new" id="screen-new" aria-labelledby="new-title" hidden>
+      <h1 id="new-title" tabindex="-1">New project</h1>
+
+      <form class="new-form" id="new-form" novalidate>
+        <div class="field new-name-field">
+          <label for="new-name">Project name</label>
+          <div class="unit-input">
+            <input id="new-name" type="text" maxlength="60" autocomplete="off" aria-describedby="new-name-hint">
+          </div>
+          <p class="mono-note" id="new-name-hint">60 characters max</p>
+        </div>
+
+        <fieldset class="new-job">
+          <legend id="new-job-label">Job type</legend>
+          <div class="segmented" id="new-job" role="radiogroup" aria-labelledby="new-job-label">
+            <input id="new-job-menu" name="newJob" type="radio" value="menu">
+            <label for="new-job-menu">Restaurant menu</label>
+            <input id="new-job-logo" name="newJob" type="radio" value="logo">
+            <label for="new-job-logo">Logo</label>
+            <input id="new-job-social" name="newJob" type="radio" value="social">
+            <label for="new-job-social">Social posts</label>
+            <input id="new-job-poster" name="newJob" type="radio" value="poster">
+            <label for="new-job-poster">Poster or flyer</label>
+            <input id="new-job-custom" name="newJob" type="radio" value="custom">
+            <label for="new-job-custom">Custom</label>
+          </div>
+        </fieldset>
+
+        <div class="new-actions">
+          <button type="submit" class="round-button">Create project</button>
+          <button type="button" class="link-button" id="new-cancel">Cancel</button>
+        </div>
+      </form>
+    </section>
+
     <!-- Screen 1: inputs -->
-    <section class="screen-inputs" id="screen-inputs" aria-labelledby="page-title">
+    <section class="screen-inputs" id="screen-inputs" aria-labelledby="page-title" hidden>
       <div class="inputs-top">
         <h1 id="page-title" tabindex="-1">What does this job <span class="headline-break">really pay?</span></h1>
         <p class="lede">Count all the work, see what an offer really pays per hour, then set your price or change the work.</p>
@@ -242,6 +321,7 @@
       <!-- Header row: the wordmark, Edit details, and the live controls -->
       <div class="results-header">
         <p class="wordmark">Counter</p>
+        <div class="crumb-slot" id="results-crumb-slot"></div>
         <button type="button" class="edit-button" id="edit-details">
           <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true" focusable="false"><path d="M10 6H2.5M5.5 2.5 2 6l3.5 3.5" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
           Edit details

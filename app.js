@@ -740,6 +740,7 @@ function onReplyEdit() {
   // Typing it back to exactly the draft counts as not edited.
   if (byId("reply").value === currentDraft) draftWhenEdited = null;
   show(byId("reply-notice"), draftWhenEdited !== null && draftWhenEdited !== currentDraft);
+  autosave();
 }
 
 function updateDraft() {
@@ -747,6 +748,7 @@ function updateDraft() {
   byId("reply").value = currentDraft;
   show(byId("reply-notice"), false);
   byId("reply").focus();
+  autosave();
 }
 
 // Screen 1 extras: the work total and the button's live preview
@@ -1026,6 +1028,11 @@ function answerReplace(replace) {
 // commit is true when the person has left a field, paused typing, or clicked a control.
 // Until then, a new error leaves the page as it was, so nothing flashes mid-typing.
 function update(commit) {
+  updatePage(commit);
+  autosave();
+}
+
+function updatePage(commit) {
   const checked = calc.validateInputs(readForm(), currentJob());
   const errors = checked.errors;
   showErrors(errors, commit);
@@ -1152,14 +1159,19 @@ function countUpHero(r) {
   }, COUNT_UP_MS + 100);
 }
 
-// Screens: inputs and results, one at a time, no reload.
+// Screens: the projects home, the new project form, and inside a project,
+// screen 1 (inputs) and screen 2 (results). One at a time, no reload.
+
+const SCREENS = { home: "screen-home", new: "screen-new", inputs: "screen-inputs", results: "result" };
 
 function showScreen(name) {
-  const results = name === "results";
-  byId("screen-inputs").hidden = results;
-  byId("result").hidden = !results;
-  document.body.classList.toggle("on-inputs", !results);
-  document.body.classList.toggle("on-results", results);
+  Object.keys(SCREENS).forEach(function (key) {
+    byId(SCREENS[key]).hidden = key !== name;
+    document.body.classList.toggle("on-" + key, key === name);
+  });
+  byId("skip-link").hidden = name !== "inputs";
+  placeCrumb(name);
+  if (name === "inputs" || name === "results") rememberScreen(name);
   window.scrollTo(0, 0);
 }
 
@@ -1176,16 +1188,448 @@ function openResults() {
 
 function openInputs() {
   showScreen("inputs");
+  // The tally measures its width, so it draws once screen 1 is showing.
+  relayoutCharts();
   byId("page-title").focus();
 }
 
-window.addEventListener("popstate", function (event) {
-  if (event.state && event.state.screen === "results") {
-    openResults();
-  } else {
-    openInputs();
+// Routes: every screen has a history step and an address, so Back works and a
+// reload lands in the same place. { screen, project } where project is an id.
+function addressFor(state) {
+  if (state.screen === "new") return "#new";
+  if (state.screen === "inputs") return "#p/" + state.project;
+  if (state.screen === "results") return "#p/" + state.project + "/result";
+  return "#projects";
+}
+
+function stateFromAddress(hash) {
+  const match = /^#p\/([^/]+)(\/result)?$/.exec(hash);
+  if (match) return { screen: match[2] ? "results" : "inputs", project: decodeURIComponent(match[1]) };
+  if (hash === "#new") return { screen: "new" };
+  return { screen: "home" };
+}
+
+function go(state, replace) {
+  history[replace ? "replaceState" : "pushState"](state, "", addressFor(state));
+  route(state);
+}
+
+function route(state) {
+  // Leaving mid-reveal (Back, or a link) stops it, so it can't open screen 2 later.
+  cancelReveal();
+  if (state.screen === "inputs" || state.screen === "results") {
+    if (!projectStore.findProject(projectList, state.project)) {
+      go({ screen: "home" }, true);
+      return;
+    }
+    if (state.project !== currentId) openProject(state.project);
+    if (state.screen === "results") openResults();
+    else openInputs();
+    return;
   }
+  leaveProject();
+  if (state.screen === "new") openNewForm();
+  else openHome();
+}
+
+window.addEventListener("popstate", function (event) {
+  route(event.state || stateFromAddress(location.hash));
 });
+
+// Saving: every project lives in one list, kept in this browser.
+
+let projectList = [];
+let currentId = null;
+let lastSaved = null;
+let loadingProject = false;
+
+// localStorage itself can throw (blocked storage), so it's reached through this.
+function storage() {
+  try {
+    return window.localStorage;
+  } catch (error) {
+    return { getItem: function () { throw error; }, setItem: function () { throw error; } };
+  }
+}
+
+// Writes the list. If that fails, the page keeps working and says so.
+function persist() {
+  const saved = projectStore.saveProjects(storage(), projectList).ok;
+  show(byId("save-error"), !saved);
+  show(byId("save-status"), saved);
+  return saved;
+}
+
+function currentProject() {
+  return projectStore.findProject(projectList, currentId);
+}
+
+// Everything a project keeps from the page.
+function snapshot() {
+  const raw = readForm();
+  const inputs = {};
+  projectStore.INPUT_NAMES.forEach(function (name) { inputs[name] = raw[name]; });
+  return {
+    job: currentJob(),
+    inputs: inputs,
+    quote: raw.quote,
+    reply: byId("reply").value,
+    replyEdited: draftWhenEdited !== null,
+  };
+}
+
+// Autosave: after every change, if anything a project keeps is different.
+function autosave() {
+  if (!currentId || loadingProject) return;
+  const snap = snapshot();
+  const text = JSON.stringify(snap);
+  if (text === lastSaved) return;
+  lastSaved = text;
+  projectList = projectStore.updateProject(projectList, currentId, snap, new Date(), true);
+  persist();
+}
+
+// Which screen the project was last on. Not an edit, so the date stays.
+function rememberScreen(name) {
+  const project = currentProject();
+  if (!project || project.screen === name) return;
+  projectList = projectStore.updateProject(projectList, currentId, { screen: name }, new Date(), false);
+  persist();
+}
+
+// Puts a project's values into the page.
+function openProject(id) {
+  const project = projectStore.findProject(projectList, id);
+  currentId = id;
+  loadingProject = true;
+  stopCountUp();
+  clearTimeout(commitTimer);
+
+  byId("job-" + project.job).checked = true;
+  loadedJob = project.job;
+  Object.keys(FIELD_IDS).forEach(function (name) {
+    if (name !== "quote") byId(FIELD_IDS[name]).value = project.inputs[name];
+  });
+  byId(project.inputs.offerStatus === "none" ? "offer-none" : "offer-yes").checked = true;
+  byId("quote").value = project.quote;
+  byId("reply").value = project.reply;
+  currentDraft = project.reply;
+  draftWhenEdited = null;
+  shownErrors = {};
+  show(byId("job-replace"), false);
+  show(byId("reply-notice"), false);
+  byId("copy-status").textContent = "";
+
+  renderJob();
+  showOfferField();
+  update(true);
+
+  // An edited reply stays as written. The notice shows only if the numbers change later.
+  if (project.replyEdited) {
+    draftWhenEdited = currentDraft;
+    byId("reply").value = project.reply;
+    show(byId("reply-notice"), false);
+  }
+  loadingProject = false;
+  lastSaved = JSON.stringify(snapshot());
+  renderCrumb();
+  show(byId("save-status"), true);
+}
+
+function leaveProject() {
+  currentId = null;
+  lastSaved = null;
+}
+
+// The header inside a project: "Projects / name", and "Saved".
+
+function placeCrumb(name) {
+  const crumb = byId("crumb");
+  const inProject = name === "inputs" || name === "results";
+  crumb.hidden = !inProject;
+  if (!inProject) return;
+  byId(name === "results" ? "results-crumb-slot" : "topbar-crumb-slot").appendChild(crumb);
+}
+
+function renderCrumb() {
+  const project = currentProject();
+  if (!project) return;
+  byId("crumb-name").textContent = project.name;
+  byId("crumb-name").setAttribute("aria-label", project.name + ", rename project");
+}
+
+// Click the name to rename: Enter or leaving the field saves, Escape cancels.
+// A blank name keeps the old one.
+function startHeaderRename() {
+  const input = byId("crumb-input");
+  input.value = currentProject().name;
+  show(byId("crumb-name"), false);
+  show(input, true);
+  input.focus();
+  input.select();
+}
+
+function finishHeaderRename(save) {
+  const input = byId("crumb-input");
+  if (input.hidden) return;
+  if (save) {
+    const before = projectList;
+    projectList = projectStore.renameProject(projectList, currentId, input.value, new Date());
+    if (projectList !== before) persist();
+  }
+  show(input, false);
+  show(byId("crumb-name"), true);
+  renderCrumb();
+  byId("crumb-name").focus();
+}
+
+// Projects home
+
+function openHome() {
+  showScreen("home");
+  renderHome();
+  byId("home-title").focus();
+}
+
+// Estimate and offer per hour for a row, from the saved numbers.
+function projectSummary(project) {
+  const raw = Object.assign({}, project.inputs, { quote: project.quote });
+  const checked = calc.validateInputs(raw, project.job);
+  const blocking = Object.keys(checked.errors).filter(function (name) { return name !== "quote"; });
+  if (blocking.length) return { estimate: "No estimate yet", offer: "" };
+  const r = calc.calculate(checked.values);
+  if (!r.hasHours) return { estimate: "No estimate yet", offer: "" };
+  return {
+    estimate: calc.formatWholeMoney(r.estimate),
+    offer: r.offer ? calc.formatMoney(r.offer.hourlyBefore) + "/hr" : "No offer yet",
+  };
+}
+
+function cell(row, className, text) {
+  const td = document.createElement("td");
+  td.className = className;
+  if (text) td.textContent = text;
+  row.appendChild(td);
+  return td;
+}
+
+function rowButton(parent, action, text, label, className) {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = className || "row-action";
+  button.dataset.action = action;
+  button.textContent = text;
+  if (label) button.setAttribute("aria-label", label);
+  parent.appendChild(button);
+  return button;
+}
+
+// rowMode: { id, mode: "rename" | "delete" } for the one row being changed.
+let rowMode = null;
+
+function renderHome() {
+  const list = projectStore.sortByEdited(projectList);
+  const now = new Date();
+  show(byId("projects-empty"), list.length === 0);
+  show(byId("project-table"), list.length > 0);
+  show(byId("new-project"), list.length > 0);
+
+  const body = byId("project-rows");
+  body.textContent = "";
+  list.forEach(function (project) {
+    const row = document.createElement("tr");
+    row.dataset.id = project.id;
+    const summary = projectSummary(project);
+    const mode = rowMode && rowMode.id === project.id ? rowMode.mode : null;
+
+    const nameCell = document.createElement("th");
+    nameCell.scope = "row";
+    nameCell.className = "project-name";
+    row.appendChild(nameCell);
+    if (mode === "rename") {
+      const input = document.createElement("input");
+      input.type = "text";
+      input.className = "row-rename";
+      input.maxLength = projectStore.NAME_MAX;
+      input.value = project.name;
+      input.setAttribute("aria-label", "Project name");
+      nameCell.appendChild(input);
+    } else {
+      rowButton(nameCell, "open", project.name, null, "project-open");
+    }
+
+    cell(row, "project-job", calc.JOBS[project.job].name);
+    cell(row, "project-estimate", summary.estimate);
+    cell(row, "project-offer", summary.offer);
+    cell(row, "project-edited", "Edited " + projectStore.formatEdited(project.edited, now));
+
+    const actions = cell(row, "project-actions");
+    if (mode === "delete") {
+      const question = document.createElement("span");
+      question.className = "delete-question";
+      question.textContent = "Delete " + project.name + "? This can't be undone.";
+      actions.appendChild(question);
+      rowButton(actions, "confirm-delete", "Delete", null, "action-button");
+      rowButton(actions, "cancel-delete", "Cancel", null, "action-button outline");
+    } else {
+      rowButton(actions, "rename", "Rename", "Rename " + project.name);
+      rowButton(actions, "duplicate", "Duplicate", "Duplicate " + project.name);
+      rowButton(actions, "delete", "Delete", "Delete " + project.name);
+    }
+    body.appendChild(row);
+  });
+}
+
+function rowElement(id, selector) {
+  const row = byId("project-rows").querySelector('tr[data-id="' + CSS.escape(id) + '"]');
+  return row ? row.querySelector(selector) : null;
+}
+
+function setRowMode(mode) {
+  rowMode = mode;
+  renderHome();
+}
+
+function finishRowRename(id, save) {
+  if (!rowMode || rowMode.id !== id || rowMode.mode !== "rename") return;
+  if (save) {
+    const before = projectList;
+    projectList = projectStore.renameProject(projectList, id, rowElement(id, ".row-rename").value, new Date());
+    if (projectList !== before) persist();
+  }
+  setRowMode(null);
+  rowElement(id, ".project-open").focus();
+}
+
+function onRowClick(event) {
+  const button = event.target.closest("button[data-action]");
+  if (!button) return;
+  const id = button.closest("tr").dataset.id;
+  const action = button.dataset.action;
+
+  if (action === "open") {
+    go({ screen: projectStore.findProject(projectList, id).screen, project: id });
+  } else if (action === "rename") {
+    setRowMode({ id: id, mode: "rename" });
+    const input = rowElement(id, ".row-rename");
+    input.focus();
+    input.select();
+  } else if (action === "duplicate") {
+    const copyId = projectStore.newProjectId();
+    projectList = projectStore.duplicateProject(projectList, id, copyId, new Date());
+    persist();
+    setRowMode(null);
+    rowElement(copyId, ".project-open").focus();
+  } else if (action === "delete") {
+    setRowMode({ id: id, mode: "delete" });
+    rowElement(id, '[data-action="cancel-delete"]').focus();
+  } else if (action === "cancel-delete") {
+    setRowMode(null);
+    rowElement(id, '[data-action="delete"]').focus();
+  } else if (action === "confirm-delete") {
+    // Focus moves to the next row's name, or the previous one, or New project.
+    const rows = Array.prototype.slice.call(byId("project-rows").children);
+    const index = rows.indexOf(button.closest("tr"));
+    const neighbor = rows[index + 1] || rows[index - 1];
+    const nextId = neighbor ? neighbor.dataset.id : null;
+    projectList = projectStore.deleteProject(projectList, id);
+    persist();
+    setRowMode(null);
+    if (nextId) rowElement(nextId, ".project-open").focus();
+    else byId("new-project-empty").focus();
+  }
+}
+
+function onRowKey(event) {
+  if (!event.target.classList.contains("row-rename")) return;
+  const id = event.target.closest("tr").dataset.id;
+  if (event.key === "Enter") {
+    event.preventDefault();
+    finishRowRename(id, true);
+  } else if (event.key === "Escape") {
+    finishRowRename(id, false);
+  }
+}
+
+// New project
+
+function openNewForm() {
+  showScreen("new");
+  byId("new-name").value = "";
+  document.querySelectorAll('input[name="newJob"]').forEach(function (radio) { radio.checked = false; });
+  setNewErrors({});
+  byId("new-name").focus();
+}
+
+function newJobChoice() {
+  const checked = document.querySelector('input[name="newJob"]:checked');
+  return checked ? checked.value : null;
+}
+
+function newFormErrors() {
+  const errors = {};
+  const nameError = projectStore.validateName(byId("new-name").value);
+  if (nameError) errors.name = nameError;
+  if (!newJobChoice()) errors.job = "Choose a job type.";
+  return errors;
+}
+
+// Errors under each field, linked with aria-describedby.
+function setNewErrors(errors) {
+  setFieldError(byId("new-name"), errors.name || "");
+  const group = byId("new-job");
+  let error = byId("new-job-error");
+  if (errors.job) {
+    if (!error) {
+      error = document.createElement("p");
+      error.className = "error";
+      error.id = "new-job-error";
+      error.innerHTML = ALERT_ICON + '<span class="error-text"></span>';
+      group.insertAdjacentElement("afterend", error);
+    }
+    error.querySelector(".error-text").textContent = errors.job;
+    group.setAttribute("aria-describedby", "new-job-error");
+    group.setAttribute("aria-invalid", "true");
+  } else {
+    if (error) error.remove();
+    group.removeAttribute("aria-describedby");
+    group.removeAttribute("aria-invalid");
+  }
+}
+
+let newFormTried = false;
+
+function createFromForm(event) {
+  event.preventDefault();
+  newFormTried = true;
+  const errors = newFormErrors();
+  setNewErrors(errors);
+  if (errors.name) {
+    byId("new-name").focus();
+    return;
+  }
+  if (errors.job) {
+    (document.querySelector('input[name="newJob"]')).focus();
+    return;
+  }
+  newFormTried = false;
+  const project = projectStore.createProject(byId("new-name").value, newJobChoice(),
+    projectStore.newProjectId(), new Date());
+  projectList = projectList.concat([project]);
+  persist();
+  // The form's history step becomes the project, so Back goes to the list.
+  go({ screen: "inputs", project: project.id }, true);
+}
+
+// After a failed try, errors clear as soon as they're fixed.
+function onNewFormChange() {
+  if (newFormTried) setNewErrors(newFormErrors());
+}
+
+function cancelNewForm() {
+  if (history.state && history.state.screen === "new") history.back();
+  else go({ screen: "home" });
+}
 
 // "Check the offer": with errors, go to the first one. Otherwise show the result
 // and move focus to its first line, so screen readers announce it.
@@ -1200,7 +1644,8 @@ function checkOffer() {
     byId(FIELD_IDS[firstError]).focus();
     return;
   }
-  history.pushState({ screen: "results" }, "", "#results");
+  const state = { screen: "results", project: currentId };
+  history.pushState(state, "", addressFor(state));
   revealResults();
 }
 
@@ -1217,8 +1662,19 @@ function rectFrame(rect) {
   return { left: rect.left + "px", top: rect.top + "px", width: rect.width + "px", height: rect.height + "px" };
 }
 
+// Timers of a reveal in progress, so leaving the screen can stop it.
+let revealTimers = [];
+
+function cancelReveal() {
+  revealTimers.forEach(clearTimeout);
+  revealTimers = [];
+  document.querySelectorAll(".reveal-orb").forEach(function (orb) { orb.remove(); });
+  document.body.classList.remove("revealing", "reveal-out", "reveal-in");
+}
+
 function revealResults() {
   const body = document.body;
+  cancelReveal();
   if (reduceMotion.matches || !Element.prototype.animate) {
     openResults();
     return;
@@ -1233,7 +1689,7 @@ function revealResults() {
   body.appendChild(orb);
   body.classList.add("revealing", "reveal-out");
 
-  setTimeout(function () {
+  revealTimers.push(setTimeout(function () {
     body.classList.remove("reveal-out");
     openResults();
     const to = byId("hero-panel").getBoundingClientRect();
@@ -1241,18 +1697,15 @@ function revealResults() {
     const end = Object.assign(rectFrame(to), { borderRadius: "28px" });
     orb.animate([start, end], { duration: REVEAL_GROW_MS, easing: "cubic-bezier(0.3, 0.7, 0.2, 1)", fill: "forwards" });
 
-    setTimeout(function () {
+    revealTimers.push(setTimeout(function () {
       body.classList.add("reveal-in");
       if (lastResult && !byId("result-summary").hidden) countUpHero(lastResult);
       orb.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 200, fill: "forwards" })
         .onfinish = function () { orb.remove(); };
       // Clean up even if the fade never reports finishing (for example a background tab).
-      setTimeout(function () {
-        orb.remove();
-        body.classList.remove("revealing", "reveal-in");
-      }, REVEAL_REST_MS);
-    }, REVEAL_GROW_MS);
-  }, REVEAL_FADE_MS);
+      revealTimers.push(setTimeout(cancelReveal, REVEAL_REST_MS));
+    }, REVEAL_GROW_MS));
+  }, REVEAL_FADE_MS));
 }
 
 function editDetails() {
@@ -1324,15 +1777,48 @@ if (document.fonts && document.fonts.ready) {
   document.fonts.ready.then(relayoutCharts);
 }
 
-// Always start on screen 1. A leftover #results in the address goes away.
-if (location.hash === "#results") history.replaceState(null, "", location.pathname);
+// Projects: the home list, the new project form, and the header inside a project.
+byId("new-project").addEventListener("click", function () { go({ screen: "new" }); });
+byId("new-project-empty").addEventListener("click", function () { go({ screen: "new" }); });
+byId("project-rows").addEventListener("click", onRowClick);
+byId("project-rows").addEventListener("keydown", onRowKey);
+byId("project-rows").addEventListener("focusout", function (event) {
+  if (event.target.classList.contains("row-rename")) {
+    finishRowRename(event.target.closest("tr").dataset.id, true);
+  }
+});
+byId("new-form").addEventListener("submit", createFromForm);
+byId("new-form").addEventListener("input", onNewFormChange);
+byId("new-form").addEventListener("change", onNewFormChange);
+byId("new-cancel").addEventListener("click", cancelNewForm);
+byId("crumb-projects").addEventListener("click", function (event) {
+  event.preventDefault();
+  go({ screen: "home" });
+});
+byId("crumb-name").addEventListener("click", startHeaderRename);
+byId("crumb-input").addEventListener("keydown", function (event) {
+  if (event.key === "Enter") {
+    event.preventDefault();
+    finishHeaderRename(true);
+  } else if (event.key === "Escape") {
+    finishHeaderRename(false);
+  }
+});
+byId("crumb-input").addEventListener("blur", function () { finishHeaderRename(true); });
 
-// The browser may keep a different job checked after a reload. Its example
-// numbers load with it, so the labels and the numbers always match.
-if (currentJob() !== "menu") loadExample(currentJob());
+// Start: load saved projects, then go where the address says (the list by
+// default). Inside a project, Back still leads to the list.
+const loaded = projectStore.loadProjects(storage());
+projectList = loaded.projects;
 renderJob();
 showOfferField();
-update(true);
+const startState = stateFromAddress(location.hash);
+history.replaceState({ screen: "home" }, "", addressFor({ screen: "home" }));
+if (startState.screen === "home") {
+  route({ screen: "home" });
+} else {
+  go(startState);
+}
 
 // Bars and dots animate only after the first render, never on load.
 requestAnimationFrame(function () {
