@@ -130,43 +130,59 @@ function setRichText(element, parts) {
   });
 }
 
-function renderMetrics(items) {
+// Stats: 4 columns. Each is { label, value, unit, note }.
+function renderStats(items) {
   const list = byId("metrics");
   list.textContent = "";
   items.forEach(function (item) {
     const group = document.createElement("div");
     const label = document.createElement("dt");
-    label.textContent = item[0];
+    label.textContent = item.label;
     const value = document.createElement("dd");
-    value.textContent = item[1];
+    value.textContent = item.value;
+    if (item.unit) {
+      const unit = document.createElement("span");
+      unit.className = "stat-unit";
+      unit.textContent = item.unit;
+      value.appendChild(unit);
+    }
+    if (item.note) {
+      const note = document.createElement("span");
+      note.className = "stat-note";
+      note.textContent = item.note;
+      value.appendChild(note);
+    }
     group.append(label, value);
     list.appendChild(group);
   });
 }
 
-function renderHero(r) {
+// "Restaurant menu · 2 pages · 2 rounds"
+function jobSummary(values) {
+  return job().name + " · " + countOf(values.count, job().item, job().items) + " · " +
+    countOf(values.rounds, "round", "rounds");
+}
+
+function renderHero(r, values) {
   stopCountUp();
   const sentence = byId("hero-sentence");
   const warning = byId("offer-warning");
+  byId("hero-job").textContent = jobSummary(values);
 
   if (r.offer) {
-    // "$17.39" shows as "$17" plus small raised ".39". Screen readers get it in one piece.
     const money = calc.formatMoney(r.offer.hourlyBefore);
-    const point = money.lastIndexOf(".");
     byId("hero-label").textContent = "This offer pays";
-    byId("hero-whole").textContent = money.slice(0, point);
-    byId("hero-cents").textContent = money.slice(point);
+    byId("hero-amount").textContent = money.slice(1);
     byId("hero-unit").textContent = "/hr";
     byId("hero-spoken").textContent = money + " per hour";
 
     const target = calc.formatPrice(r.rate);
     if (r.offer.meetsTarget) {
-      setRichText(sentence, ["for ", [hoursInWords(r.hours.total)],
-        " of real work. That meets your " + target + " target."]);
+      sentence.textContent = "for " + hoursInWords(r.hours.total) +
+        " of real work. That meets your " + target + " target.";
     } else {
-      setRichText(sentence, ["for ", [hoursInWords(r.hours.total)],
-        " of real work. That's ", [calc.formatMoney(r.offer.shortPerHour) + " an hour"],
-        " under your " + target + " target."]);
+      sentence.textContent = "for " + hoursInWords(r.hours.total) + " of real work. That's " +
+        calc.formatMoney(r.offer.shortPerHour) + " an hour under your " + target + " target.";
     }
 
     // Below expenses, the warning takes the sentence's place.
@@ -181,42 +197,44 @@ function renderHero(r) {
     // No plus or minus signs: the label says which way the difference goes.
     let comparison;
     if (r.offer.gap > 0) {
-      comparison = ["More than they offered", calc.formatPrice(r.offer.gap)];
+      comparison = { label: "More than they offered", value: calc.formatPrice(r.offer.gap) };
     } else if (r.offer.gap < 0) {
-      comparison = ["Less than they offered", calc.formatPrice(-r.offer.gap)];
+      comparison = { label: "Less than they offered", value: calc.formatPrice(-r.offer.gap) };
     } else {
-      comparison = ["Same as their offer", "$0"];
+      comparison = { label: "Same as their offer", value: "$0" };
     }
-    // "7.2 of 11.5". Below expenses the offer pays for none of it.
+    // "7.2 of 11.5 hrs". Below expenses the offer pays for none of it.
     const covered = r.offer.belowExpenses ? 0 : Math.min(r.offer.hoursCovered, r.hours.total);
-    renderMetrics([
-      ["Your estimate", calc.formatWholeMoney(r.estimate)],
+    renderStats([
+      { label: "Your estimate", value: calc.formatWholeMoney(r.estimate) },
       comparison,
-      ["Hours the offer pays for",
-        calc.formatNumber(covered) + " of " + calc.formatNumber(r.hours.total)],
+      { label: "Hours the offer pays for", value: calc.formatNumber(covered),
+        unit: "of " + calc.formatHours(r.hours.total) },
+      { label: "After expenses", value: calc.formatMoney(r.offer.hourlyAfter), unit: "/hr" },
     ]);
   } else {
     const estimate = calc.formatWholeMoney(r.estimate);
     byId("hero-label").textContent = "Your estimate";
-    byId("hero-whole").textContent = estimate;
-    byId("hero-cents").textContent = "";
+    byId("hero-amount").textContent = estimate.slice(1);
     byId("hero-unit").textContent = "";
     byId("hero-spoken").textContent = estimate;
 
-    const parts = [[hoursInWords(r.hours.total)], " at your ",
-      [calc.formatMoney(r.rate) + "/hr"], " target, plus ",
-      [calc.formatMoney(r.expenses)], " in expenses."];
-    if (r.rounding > 0) {
-      parts.push(" Rounded up from ", [calc.formatMoney(r.subtotal)], ".");
-    }
-    setRichText(sentence, parts);
+    let text = hoursInWords(r.hours.total) + " at your " + calc.formatMoney(r.rate) +
+      "/hr target, plus " + calc.formatMoney(r.expenses) + " in expenses.";
+    if (r.rounding > 0) text += " Rounded up from " + calc.formatMoney(r.subtotal) + ".";
+    sentence.textContent = text;
     show(sentence, true);
     show(warning, false);
 
-    renderMetrics([
-      ["Total hours", calc.formatHours(r.hours.total)],
-      ["Your time at " + calc.formatPrice(r.rate) + "/hr", calc.formatMoney(r.timeCost)],
-      ["Expenses", calc.formatMoney(r.expenses)],
+    const forgotten = r.outsideProduction;
+    renderStats([
+      { label: "Total hours", value: calc.formatNumber(r.hours.total),
+        unit: isOne(r.hours.total) ? "hr" : "hrs" },
+      { label: "Your time at " + calc.formatPrice(r.rate) + "/hr", value: calc.formatMoney(r.timeCost) },
+      { label: "Expenses", value: calc.formatMoney(r.expenses) },
+      { label: "Usually forgotten", value: calc.formatNumber(forgotten),
+        unit: isOne(forgotten) ? "hr" : "hrs",
+        note: "worth " + calc.formatMoney(forgotten * r.rate) + " at your rate" },
     ]);
   }
 }
@@ -228,22 +246,14 @@ const GROUP_NAMES = {
   delivery: "Delivery",
 };
 
-// Chart sizes from docs/DESIGN.md, in px.
-const BLOCK_GAP = 5;
-const GROUP_GAP = 26;
-const BLOCK_MIN = 8;
-
-// Reveal timing, in ms. The CSS uses these through custom properties.
-const REVEAL_BLOCKS_START_MS = 300;
-const REVEAL_STAGGER_MS = 18;
-const REVEAL_FILL_MS = 400;
-const REVEAL_BLOCK_MS = 220;
-const BLOCK_HEIGHT = 72;
-const LINE_ABOVE = 30;
-const LABEL_SPACE = 10;
-
-// The three groups people usually forget get a tag under their blocks.
+// The three groups people usually forget.
 const FORGOTTEN_GROUPS = ["communication", "revisions", "delivery"];
+
+// Chart sizes from docs/DESIGN.md, in px.
+const BAR_GAP = 4;
+const LABEL_SPACE = 8;
+// Minimum space between two labels, in px.
+const LABEL_GAP = 8;
 
 function isOne(amount) {
   return calc.formatNumber(amount) === "1";
@@ -257,35 +267,47 @@ function ensureChildren(parent, count, make) {
   return Array.prototype.slice.call(parent.children);
 }
 
-// Chart 1: Your hours, and where the money runs out
+// Places labels in one row with calc.spreadLabels so none overlap. Each item is
+// { element, left } where left is the wanted left edge. If they can't all fit
+// in one row, every second label drops to a second row. Returns true if it used two rows.
+function placeLabels(items, width) {
+  function place(row) {
+    const result = calc.spreadLabels(row.map(function (item) {
+      return { left: item.left, width: item.element.offsetWidth };
+    }), width, LABEL_GAP);
+    row.forEach(function (item, i) { item.element.style.left = result.lefts[i] + "px"; });
+    return result.fits;
+  }
+  items.forEach(function (item) { item.element.classList.remove("second-row"); });
+  if (place(items)) return false;
+  const first = items.filter(function (item, i) { return i % 2 === 0; });
+  const second = items.filter(function (item, i) { return i % 2 === 1; });
+  second.forEach(function (item) { item.element.classList.add("second-row"); });
+  place(first);
+  place(second);
+  return true;
+}
+
+// Chart 1: Where your hours go
 
 function renderHoursChart(r) {
   const total = r.hours.total;
   const offer = r.offer;
-  byId("hours-title").textContent = offer
-    ? "Your " + hoursInWords(total) + ", and where the money runs out"
-    : "Your " + hoursInWords(total);
+  byId("hours-title").textContent = "Where your " + hoursInWords(total) + " go";
 
-  const unit = calc.blockUnit(total);
-  byId("block-unit").textContent = "1 block = " + blockUnitText(unit);
-
-  // No line in these two cases, so the label sits next to the title.
-  let flag = "";
-  if (offer && offer.belowExpenses) {
-    flag = calc.formatPrice(offer.amount) + " doesn't cover your expenses";
-  } else if (offer && offer.coversAllHours) {
-    flag = calc.formatPrice(offer.amount) + " covers all " + calc.formatHours(total);
-  }
-  byId("hours-flag").textContent = flag;
-  show(byId("hours-flag"), flag !== "");
-
-  // What screen readers get instead of the blocks.
+  // What screen readers get instead of the bars.
   const items = ensureChildren(byId("hours-list"), WORK_GROUPS.length, function () {
     return document.createElement("li");
   });
   WORK_GROUPS.forEach(function (group, i) {
     items[i].textContent = GROUP_NAMES[group] + ": " + calc.formatHours(r.hours[group]);
   });
+
+  // With an offer: gradient = paid, stripes = unpaid.
+  // Without one: solid = design work, stripes = usually forgotten.
+  byId("legend-first").textContent = offer ? "paid by the offer" : "design work";
+  byId("legend-second").textContent = offer ? "unpaid" : "usually forgotten";
+  byId("legend-first-swatch").className = "legend-swatch " + (offer ? "paid" : "solid");
 
   const parts = [];
   const unpaid = offer ? offer.unpaidHours : 0;
@@ -300,148 +322,127 @@ function renderHoursChart(r) {
   }
   setRichText(byId("hours-summary"), parts);
 
-  layoutBlocks(r);
+  layoutHoursChart(r);
 }
 
-// Draws the blocks, dims what the offer doesn't pay for, and places the runs-out line.
-function layoutBlocks(r) {
-  const container = byId("blocks");
-  const width = container.clientWidth;
+// One bar per group, widths by hours. Paid hours share one continuous gradient
+// across the groups; unpaid hours are stripes. A dashed line marks where the money runs out.
+function layoutHoursChart(r) {
+  const row = byId("bar-row");
+  const width = row.clientWidth;
   if (!width) return;
 
   const total = r.hours.total;
-  const unit = calc.blockUnit(total);
-  const groups = WORK_GROUPS.filter(function (group) { return r.hours[group] > 1e-9; });
-  const blocksByGroup = groups.map(function (group) {
-    return calc.splitIntoBlocks(r.hours[group], unit);
-  });
-
-  // Reuse the group elements that exist, in the fixed order, and fill in their labels.
-  container.querySelectorAll(".block-group").forEach(function (element) {
-    if (groups.indexOf(element.dataset.group) === -1) element.remove();
-  });
-  const elements = groups.map(function (group) {
-    let element = container.querySelector('.block-group[data-group="' + group + '"]');
-    if (!element) {
-      element = document.createElement("div");
-      element.className = "block-group";
-      element.dataset.group = group;
-      element.innerHTML = '<div class="block-row"></div><p class="group-label"><b></b> <span></span>' +
-        (FORGOTTEN_GROUPS.indexOf(group) === -1 ? "" : ' <span class="tag">Usually forgotten</span>') + "</p>";
-    }
-    container.appendChild(element);
-    element.querySelector(".group-label b").textContent = calc.formatHours(r.hours[group]);
-    element.querySelector(".group-label span").textContent = GROUP_NAMES[group];
-    return element;
-  });
-  const labelWidths = elements.map(function (element) {
-    return element.querySelector(".group-label").offsetWidth;
-  });
-
-  // Block width fills the space: (width minus gaps) divided by blocks, at least 8px.
-  // Gaps between groups are 14px, or wider where a group's label needs the room,
-  // so a label never reaches into the next group. Widening the gaps narrows the
-  // blocks, which can need more room again, so this settles over a few passes.
-  let innerGaps = 0;
-  blocksByGroup.forEach(function (blocks) { innerGaps += (blocks.length - 1) * BLOCK_GAP; });
-  let blockWidth = BLOCK_MIN;
-  let extras = groups.map(function () { return 0; });
-  for (let pass = 0; pass < 4; pass++) {
-    const groupGaps = extras.reduce(function (sum, extra) { return sum + extra; },
-      (groups.length - 1) * GROUP_GAP);
-    blockWidth = Math.max(BLOCK_MIN, (width - innerGaps - groupGaps) / (total / unit));
-    extras = blocksByGroup.map(function (blocks, g) {
-      if (g === groups.length - 1) return 0;
-      const blocksWidth = (total === 0 ? 0 : blocks.reduce(function (sum, size) {
-        return sum + size * blockWidth;
-      }, 0)) + (blocks.length - 1) * BLOCK_GAP;
-      return Math.max(0, labelWidths[g] + LABEL_SPACE - (blocksWidth + GROUP_GAP));
-    });
-  }
-
-  // Where the money runs out, in hours from the start. Infinity means never.
   const offer = r.offer;
-  let covered = Infinity;
+  const groups = WORK_GROUPS.filter(function (group) { return r.hours[group] > 1e-9; });
+  const usable = width - (groups.length - 1) * BAR_GAP;
+
+  // Hours the offer pays for, from the start. null means no offer.
+  let covered = null;
   if (offer && offer.belowExpenses) covered = 0;
-  else if (offer && !offer.coversAllHours) covered = offer.hoursCovered;
+  else if (offer && offer.coversAllHours) covered = Infinity;
+  else if (offer) covered = offer.hoursCovered;
   const showLine = Boolean(offer) && !offer.belowExpenses && !offer.coversAllHours;
 
-  let start = 0;
-  let lineBlock = null;
-  let lineFraction = 0;
-
-  // For the reveal: blocks fill in left to right, about 0.4 seconds in all,
-  // then the runs-out line drops in.
-  const blockCount = blocksByGroup.reduce(function (sum, blocks) { return sum + blocks.length; }, 0);
-  const stagger = Math.min(REVEAL_STAGGER_MS, REVEAL_FILL_MS / Math.max(1, blockCount));
-  container.style.setProperty("--stagger", stagger.toFixed(1) + "ms");
-  container.style.setProperty("--line-delay",
-    Math.round(REVEAL_BLOCKS_START_MS + blockCount * stagger + REVEAL_BLOCK_MS) + "ms");
-  let blockIndex = 0;
-
-  elements.forEach(function (element, g) {
-    element.style.marginRight = extras[g] + "px";
-    const sizes = blocksByGroup[g];
-    const blocks = ensureChildren(element.querySelector(".block-row"), sizes.length, function () {
-      const block = document.createElement("div");
-      block.className = "block";
-      return block;
-    });
-
-    blocks.forEach(function (block, i) {
-      const end = start + sizes[i] * unit;
-      block.style.width = (sizes[i] * blockWidth) + "px";
-      block.style.setProperty("--i", blockIndex++);
-
-      // Fully paid, fully unpaid (28% opacity), or split by the line.
-      const paid = end <= covered + 1e-9;
-      const unpaid = start >= covered - 1e-9;
-      block.classList.toggle("unpaid", unpaid && !paid);
-      if (!paid && !unpaid) {
-        const percent = ((covered - start) / (end - start)) * 100;
-        block.style.setProperty("--paid", percent.toFixed(2) + "%");
-        block.classList.add("split");
-      } else {
-        block.classList.remove("split");
-      }
-
-      if (showLine && !lineBlock && covered >= start - 1e-9 && covered <= end + 1e-9) {
-        lineBlock = block;
-        lineFraction = (covered - start) / (end - start);
-      }
-      start = end;
-    });
-
-    // The last label stays inside the chart's right edge.
-    const label = element.querySelector(".group-label");
-    label.style.left = Math.min(0, width - (element.offsetLeft + labelWidths[g])) + "px";
+  const bars = ensureChildren(row, groups.length, function () {
+    const bar = document.createElement("div");
+    bar.className = "bar-group";
+    bar.innerHTML = '<span class="bar-paid"></span><span class="bar-unpaid"></span>';
+    return bar;
   });
 
+  let x = 0;
+  let start = 0;
+  let lineX = null;
+  const spans = [];
+  groups.forEach(function (group, i) {
+    const hours = r.hours[group];
+    const w = (hours / total) * usable;
+    const bar = bars[i];
+    bar.dataset.group = group;
+    bar.style.width = w + "px";
+    bar.classList.toggle("no-offer", covered === null);
+
+    let share;
+    if (covered === null) share = group === "production" ? 1 : 0;
+    else share = Math.max(0, Math.min(1, (covered - start) / hours));
+    const paid = bar.firstElementChild;
+    paid.style.width = (share * 100) + "%";
+    paid.style.backgroundSize = width + "px 100%";
+    paid.style.backgroundPosition = (-x) + "px 0";
+    bar.lastElementChild.style.width = ((1 - share) * 100) + "%";
+
+    if (showLine && lineX === null && covered <= start + hours + 1e-9) {
+      lineX = x + share * w;
+    }
+    spans.push({ group: group, left: x, right: x + w });
+    x += w + BAR_GAP;
+    start += hours;
+  });
+
+  // The runs-out line and its label. With no line, the label row says why.
   const line = byId("runs-out");
-  show(line, showLine && Boolean(lineBlock));
-  if (showLine && lineBlock) {
-    // Measured from the chart's own edge (the block's group sits inside it).
-    // Layout offsets, not on-screen boxes, so the reveal's grow-in animation
-    // can't shift the line.
-    const group = lineBlock.closest(".block-group");
-    const x = group.offsetLeft + lineBlock.offsetLeft + lineFraction * lineBlock.offsetWidth;
-    line.style.left = x + "px";
-    line.style.top = (group.offsetTop + lineBlock.offsetTop - LINE_ABOVE) + "px";
-    line.style.height = (LINE_ABOVE + BLOCK_HEIGHT) + "px";
-    byId("runs-out-label").textContent = calc.formatPrice(offer.amount) + " runs out at " +
-      calc.formatHours(offer.hoursCovered);
-    // The label sits right of the line, unless that would run past the edge.
-    const label = byId("runs-out-label");
-    line.classList.remove("flip");
-    if (x + LABEL_SPACE + label.offsetWidth > width) line.classList.add("flip");
+  const lineLabel = byId("runs-out-label");
+  let flag = "";
+  if (offer && offer.belowExpenses) {
+    flag = calc.formatPrice(offer.amount) + " doesn't cover your expenses";
+  } else if (offer && offer.coversAllHours) {
+    flag = calc.formatPrice(offer.amount) + " covers all " + calc.formatHours(total);
   }
+  show(line, Boolean(flag) || lineX !== null);
+  line.classList.toggle("flag", Boolean(flag));
+  line.classList.remove("flip");
+  if (flag) {
+    lineLabel.textContent = flag;
+    line.style.left = "0px";
+  } else if (lineX !== null) {
+    lineLabel.textContent = calc.formatPrice(offer.amount) + " runs out at " +
+      calc.formatHours(offer.hoursCovered);
+    line.style.left = lineX + "px";
+    // The label sits right of the line, unless that would run past the edge.
+    if (lineX + LABEL_SPACE + lineLabel.offsetWidth > width) line.classList.add("flip");
+  }
+
+  // A bracket over the forgotten groups.
+  const forgotten = spans.filter(function (span) { return FORGOTTEN_GROUPS.indexOf(span.group) !== -1; });
+  const bracket = byId("bracket");
+  show(bracket, forgotten.length > 0);
+  if (forgotten.length) {
+    const left = forgotten[0].left;
+    const right = forgotten[forgotten.length - 1].right;
+    bracket.style.left = left + "px";
+    bracket.style.width = (right - left) + "px";
+    const label = byId("bracket-label");
+    label.textContent = calc.formatHours(r.outsideProduction) + " usually forgotten";
+    // Keep the label inside the chart.
+    label.style.left = Math.min(0, width - (left + label.offsetWidth)) + "px";
+  }
+
+  // Under each group: hours and name. Labels never overlap.
+  const labels = ensureChildren(byId("bar-labels"), groups.length, function () {
+    const label = document.createElement("span");
+    label.className = "bar-label";
+    label.innerHTML = '<span class="bar-hours"><b></b><span class="unit"></span></span><span class="bar-name"></span>';
+    return label;
+  });
+  groups.forEach(function (group, i) {
+    const hours = r.hours[group];
+    labels[i].querySelector("b").textContent = calc.formatNumber(hours);
+    labels[i].querySelector(".unit").textContent = isOne(hours) ? "hr" : "hrs";
+    labels[i].querySelector(".bar-name").textContent = GROUP_NAMES[group];
+  });
+  const twoRows = placeLabels(spans.map(function (span, i) {
+    return { element: labels[i], left: span.left };
+  }), width);
+  byId("bar-labels").classList.toggle("two-rows", twoRows);
 }
 
-// Chart 2: Pay per hour
+// Chart 2: Your rate drops as hours grow
 
 function renderOfferChart(r) {
   const chart = byId("offer-chart");
   show(chart, Boolean(r.offer));
+  byId("hours-chart").parentElement.classList.toggle("single", !r.offer);
   if (!r.offer) return;
   const offer = r.offer;
 
@@ -451,143 +452,188 @@ function renderOfferChart(r) {
     calc.formatMoney(offer.hourlyAfter) + "/hr";
   items[2].textContent = "Your target rate: " + calc.formatMoney(r.rate) + "/hr";
 
-  let summary = offer.meetsTarget
-    ? "Before expenses, the offer meets your target."
-    : "Before expenses, the offer pays " + calc.formatMoney(offer.shortPerHour) +
-      " an hour less than your target.";
+  const amount = calc.formatPrice(offer.amount);
+  byId("rate-sub").textContent = (r.expenses > 0
+    ? "After your " + calc.formatPrice(r.expenses) + " in expenses, " + amount
+    : upperFirst(amount)) + " spread over more hours pays less per hour.";
+
+  let summary;
   if (offer.hourlyAfter < 0) {
-    summary += " After expenses, you would lose money on this job.";
+    summary = "After expenses, this offer loses money however many hours the job takes.";
+  } else if (offer.hourlyAfter === 0) {
+    summary = "After expenses, this offer pays nothing for your time.";
+  } else {
+    summary = "After expenses, the offer pays " + calc.formatMoney(offer.hourlyAfter) +
+      " an hour for " + hoursInWords(r.hours.total) + ". It pays your " +
+      calc.formatPrice(r.rate) + " target or more " + (offer.coversAllHours ? "" : "only ") +
+      "up to " + calc.formatHours(offer.hoursCovered) + ".";
   }
   byId("offer-summary").textContent = summary;
 
-  layoutRuler(r);
+  layoutRateChart(r);
 }
 
-// Minimum space between two labels in the same row, in px.
-const LABEL_GAP = 8;
-
-// Places each row of labels with calc.spreadLabels, so none overlap and all stay
-// inside the ruler. Each entry is { label, left } where left is the wanted left edge.
-// Optional labels are dropped, last first, if a row can't fit everything.
-function placeRow(entries, width) {
-  let visible = entries.filter(function (entry) { return !entry.label.hidden; });
-  for (;;) {
-    const items = visible.map(function (entry) {
-      return { left: entry.left(entry.label.offsetWidth), width: entry.label.offsetWidth };
-    });
-    const result = calc.spreadLabels(items, width, LABEL_GAP);
-    const optional = visible.filter(function (entry) { return entry.optional; });
-    if (result.fits || !optional.length) {
-      visible.forEach(function (entry, i) { entry.label.style.left = result.lefts[i] + "px"; });
-      return;
-    }
-    const drop = optional[optional.length - 1];
-    show(drop.label, false);
-    visible = visible.filter(function (entry) { return entry !== drop; });
-  }
+// The smallest round step that gives at most 7 grid spaces: 0.5, 1, 2, 5, 10...
+function niceStep(rough) {
+  const steps = [0.25, 0.5, 1, 2, 5, 10, 20, 50, 100, 200, 500, 1000];
+  for (let i = 0; i < steps.length; i++) if (steps[i] >= rough) return steps[i];
+  return steps[steps.length - 1];
 }
 
-function layoutRuler(r) {
-  const ruler = byId("ruler");
-  const width = ruler.clientWidth;
+const SVG_NS = "http://www.w3.org/2000/svg";
+
+function svgElement(parent, name, attributes, text) {
+  const element = document.createElementNS(SVG_NS, name);
+  Object.keys(attributes).forEach(function (key) { element.setAttribute(key, attributes[key]); });
+  if (text) element.textContent = text;
+  parent.appendChild(element);
+  return element;
+}
+
+// After expenses, the offer divided by hours, from about a third of the current
+// hours to 1.4 times. It meets the target at the same point the hours chart's
+// money runs out.
+function layoutRateChart(r) {
+  const plot = byId("rate-plot");
+  const width = plot.clientWidth;
   if (!width) return;
+  const height = 210;
+  const pad = { left: 40, right: 4, top: 12, bottom: 26 };
   const offer = r.offer;
+  const total = r.hours.total;
+  const net = offer.amount - r.expenses;
+  function value(hours) { return net / hours; }
 
-  const scale = calc.rulerScale(Math.max(offer.hourlyBefore, offer.hourlyAfter, r.rate));
-  // Below $0 draws at $0 and keeps its negative label.
-  function x(value) {
-    return (Math.max(0, value) / scale.max) * width;
+  // Hours across: grid lines on a round step.
+  const step = niceStep((total * 1.4 - total / 3) / 7);
+  let x0 = Math.ceil((total / 3) / step) * step;
+  if (x0 <= 0) x0 = step;
+  let x1 = Math.floor((total * 1.4) / step) * step;
+  if (x1 <= total) x1 = Math.ceil(total / step) * step + step;
+  if (x0 >= total) x0 = Math.max(step, Math.floor(total / step) * step - step);
+
+  // Dollars per hour up: $0, the target, and a round top value. Below $0 when
+  // the offer doesn't cover the expenses.
+  const top = calc.rulerScale(Math.max(value(x0), r.rate)).max;
+  const bottom = net < 0 ? -calc.rulerScale(-value(x0)).max : 0;
+  function px(hours) { return pad.left + ((hours - x0) / (x1 - x0)) * (width - pad.left - pad.right); }
+  function py(amount) { return pad.top + ((top - amount) / (top - bottom)) * (height - pad.top - pad.bottom); }
+
+  plot.textContent = "";
+  const svg = svgElement(plot, "svg", { width: width, height: height, viewBox: "0 0 " + width + " " + height });
+
+  for (let h = x0; h <= x1 + 1e-9; h += step) {
+    svgElement(svg, "line", { class: "rate-grid", x1: px(h), x2: px(h), y1: pad.top, y2: height - pad.bottom });
+    svgElement(svg, "text", { class: "rate-tick", x: px(h), y: height - 6, "text-anchor": "middle" },
+      calc.formatNumber(h) + "h");
   }
 
-  // Ticks every $5 while that's 10 steps or fewer, otherwise the scale's own steps.
-  let tickValues = scale.ticks;
-  if (scale.max / 5 <= 10) {
-    tickValues = [];
-    for (let value = 0; value <= scale.max + 1e-9; value += 5) tickValues.push(value);
-  }
-
-  // Tick labels sit under the line: first left-aligned, last right-aligned.
-  const ticks = ensureChildren(byId("ruler-ticks"), tickValues.length, function () {
-    const tick = document.createElement("div");
-    tick.className = "tick";
-    tick.innerHTML = "<span></span>";
-    return tick;
-  });
-  ticks.forEach(function (tick, i) {
-    tick.style.left = x(tickValues[i]) + "px";
-    tick.className = "tick" + (i === 0 ? " first" : "") + (i === ticks.length - 1 ? " last" : "");
-    // The last tick carries the unit for the whole ruler.
-    tick.querySelector("span").textContent = calc.formatWholeMoney(tickValues[i]) +
-      (i === ticks.length - 1 ? "/hr" : "");
-  });
-
-  const offerX = x(offer.hourlyBefore);
-  const afterX = x(offer.hourlyAfter);
-  const targetX = x(r.rate);
-  byId("dot-offer").style.left = offerX + "px";
-  byId("dot-after").style.left = afterX + "px";
-  byId("target-mark").style.left = targetX + "px";
-
-  // The gap: a dashed ink band from the offer to the target.
-  const band = byId("gap-band");
-  const bandWidth = targetX - offerX;
-  show(band, !offer.meetsTarget);
-  if (!offer.meetsTarget) {
-    band.style.left = offerX + "px";
-    band.style.width = bandWidth + "px";
-  }
-
-  const gapLabel = byId("gap-label");
-  const overLabel = byId("over-label");
-  const targetLabel = byId("target-label");
-  const offerLabel = byId("offer-label");
-  const afterLabel = byId("after-label");
-  gapLabel.textContent = calc.formatMoney(offer.shortPerHour) + "/hr short";
-  show(gapLabel, !offer.meetsTarget);
-  const overCents = Math.round((offer.hourlyBefore - r.rate) * 100);
-  overLabel.textContent = calc.formatMoney(overCents / 100) + "/hr over";
-  show(overLabel, overCents > 0);
-  targetLabel.textContent = "your target " + calc.formatPrice(r.rate);
-  offerLabel.textContent = "this offer " + calc.formatMoney(offer.hourlyBefore);
-  afterLabel.textContent = "after expenses " + calc.formatMoney(offer.hourlyAfter);
-
-  // Above the line: the gap amount over the band's center, the target label to
-  // the right of its mark, and the optional "$X/hr over" between the target and the offer.
-  placeRow([
-    { label: gapLabel, left: function (w) { return offerX + bandWidth / 2 - w / 2; } },
-    { label: targetLabel, left: function () { return targetX + LABEL_SPACE; } },
-    { label: overLabel, optional: true, left: function (w) { return (targetX + offerX) / 2 - w / 2; } },
-  ], width);
-
-  // "after expenses" sits above, left of its dot. If that's closer than 8px to
-  // another label above the line, it moves up to a second row.
-  const afterWidth = afterLabel.offsetWidth;
-  const afterLeft = Math.max(0, Math.min(width - afterWidth, afterX - LABEL_SPACE - afterWidth));
-  const others = [gapLabel, targetLabel, overLabel].filter(function (label) { return !label.hidden; })
-    .map(function (label) {
-      const left = parseFloat(label.style.left) || 0;
-      return { left: left, right: left + label.offsetWidth };
+  // Y labels: the target always; $0, the top, and the bottom only where they
+  // don't crowd it.
+  const yLabels = [[r.rate, calc.formatPrice(r.rate)]];
+  [[0, "$0"], [top, calc.formatPrice(top)], [bottom, "-" + calc.formatPrice(-bottom)]]
+    .forEach(function (item) {
+      if (item[0] === r.rate || (item[0] === bottom && bottom >= 0)) return;
+      if (Math.abs(py(item[0]) - py(r.rate)) >= 16) yLabels.push(item);
     });
-  const secondRow = calc.isCrowded({ left: afterLeft, right: afterLeft + afterWidth }, others, LABEL_GAP);
-  afterLabel.style.left = afterLeft + "px";
-  afterLabel.classList.toggle("second-row", secondRow);
-  ruler.classList.toggle("has-second-row", secondRow);
-
-  // Under the line: "this offer" centered under its dot. Tick labels it would
-  // touch step aside, since the offer matters more than the scale.
-  const offerWidth = offerLabel.offsetWidth;
-  const offerLeft = Math.max(0, Math.min(width - offerWidth, offerX - offerWidth / 2));
-  offerLabel.style.left = offerLeft + "px";
-  const offerBox = { left: offerLeft, right: offerLeft + offerWidth };
-  // From layout, not the screen, so a moving tick is measured where it lands.
-  ticks.forEach(function (tick, i) {
-    const span = tick.querySelector("span");
-    const w = span.offsetWidth;
-    const tickX = x(tickValues[i]);
-    const left = i === 0 ? tickX : (i === ticks.length - 1 ? tickX - w : tickX - w / 2);
-    const crowded = calc.isCrowded({ left: left, right: left + w }, [offerBox], LABEL_GAP);
-    span.style.visibility = crowded ? "hidden" : "";
+  yLabels.forEach(function (item) {
+    svgElement(svg, "text", { class: "rate-tick", x: pad.left - 8, y: py(item[0]) + 4, "text-anchor": "end" }, item[1]);
   });
+  if (bottom < 0) {
+    svgElement(svg, "line", { class: "rate-zero", x1: pad.left, x2: width - pad.right, y1: py(0), y2: py(0) });
+  }
+
+  // The target: a solid line. Its label is placed last, where there's room.
+  const targetY = py(r.rate);
+  svgElement(svg, "line", { class: "rate-target", x1: pad.left, x2: width - pad.right, y1: targetY, y2: targetY });
+
+  // The curve.
+  const points = [];
+  const samples = [];
+  for (let i = 0; i <= 80; i++) {
+    const h = x0 + ((x1 - x0) * i) / 80;
+    samples.push({ x: px(h), y: py(value(h)) });
+    points.push((i ? "L" : "M") + px(h).toFixed(1) + " " + py(value(h)).toFixed(1));
+  }
+  svgElement(svg, "path", { class: "rate-curve", d: points.join(" ") });
+
+  // Each label takes the spot with the fewest conflicts: leaving the plot is
+  // worst, then touching another label or a dot, then the curve, then the target line.
+  const taken = [];
+  function conflicts(box) {
+    let score = 0;
+    if (box.x < 0 || box.x + box.width > width || box.y < 0 || box.y + box.height > height - pad.bottom) score += 100;
+    taken.forEach(function (other) {
+      if (box.x < other.x + other.width + 4 && other.x < box.x + box.width + 4 &&
+          box.y < other.y + other.height + 4 && other.y < box.y + box.height + 4) score += 10;
+    });
+    const hitsCurve = samples.some(function (point) {
+      return point.x > box.x - 3 && point.x < box.x + box.width + 3 &&
+        point.y > box.y - 3 && point.y < box.y + box.height + 3;
+    });
+    if (hitsCurve) score += 5;
+    if (targetY > box.y - 3 && targetY < box.y + box.height + 3) score += 2;
+    return score;
+  }
+  // spots: [x, y, anchor] in order of preference.
+  function placeText(label, spots) {
+    let best = null;
+    spots.forEach(function (spot) {
+      label.setAttribute("x", spot[0]);
+      label.setAttribute("y", spot[1]);
+      label.setAttribute("text-anchor", spot[2]);
+      const score = conflicts(label.getBBox());
+      if (!best || score < best.score) best = { spot: spot, score: score };
+    });
+    label.setAttribute("x", best.spot[0]);
+    label.setAttribute("y", best.spot[1]);
+    label.setAttribute("text-anchor", best.spot[2]);
+    taken.push(label.getBBox());
+  }
+
+  // Now: a glowing red dot at the current hours.
+  const dotX = px(total);
+  const dotY = py(value(total));
+  const dot = svgElement(svg, "g", { class: "rate-now" });
+  svgElement(dot, "circle", { class: "rate-halo", cx: dotX, cy: dotY, r: 14 });
+  svgElement(dot, "circle", { class: "rate-dot", cx: dotX, cy: dotY, r: 7 });
+  taken.push({ x: dotX - 14, y: dotY - 14, width: 28, height: 28 });
+
+  // Where the curve meets the target: the same hours as "runs out".
+  let cross = null;
+  if (net > 0 && offer.hoursCovered >= x0 && offer.hoursCovered <= x1) {
+    cross = px(offer.hoursCovered);
+    svgElement(svg, "circle", { class: "rate-cross", cx: cross, cy: targetY, r: 3.5 });
+    taken.push({ x: cross - 4, y: targetY - 4, width: 8, height: 8 });
+  }
+
+  const nowLabel = svgElement(svg, "text", { class: "rate-label rate-now-label" },
+    calc.formatNumber(total) + "h → " + calc.formatMoney(value(total)) + "/hr after expenses");
+  placeText(nowLabel, [
+    [dotX + 14, dotY + 28, "start"], [dotX + 18, dotY - 18, "start"],
+    [dotX - 14, dotY + 28, "end"], [dotX - 18, dotY - 18, "end"],
+    [dotX, dotY + 30, "middle"], [dotX, dotY - 22, "middle"],
+    [dotX - 18, dotY - 34, "end"], [dotX + 18, dotY - 34, "start"],
+    [dotX, dotY - 38, "middle"], [dotX, dotY + 44, "middle"],
+  ]);
+
+  if (cross !== null) {
+    const crossLabel = svgElement(svg, "text", { class: "rate-label" },
+      "at " + calc.formatNumber(offer.hoursCovered) + "h you hit " + calc.formatPrice(r.rate));
+    placeText(crossLabel, [
+      [cross - 8, targetY - 8, "end"], [cross + 8, targetY - 8, "start"],
+      [cross - 8, targetY + 16, "end"], [cross + 8, targetY + 16, "start"],
+      [cross - 8, targetY - 24, "end"], [cross - 8, targetY + 32, "end"],
+      [cross, targetY - 24, "middle"], [cross, targetY + 32, "middle"],
+    ]);
+  }
+
+  const targetLabel = svgElement(svg, "text", { class: "rate-label" },
+    "your target " + calc.formatPrice(r.rate) + "/hr");
+  placeText(targetLabel, [
+    [width - pad.right, targetY - 8, "end"], [pad.left + 4, targetY - 8, "start"],
+    [width - pad.right, targetY + 16, "end"], [pad.left + 4, targetY + 16, "start"],
+  ]);
 }
 
 // "1 page", "2 concepts"
@@ -705,66 +751,77 @@ function updateDraft() {
 
 // Screen 1 extras: the work total and the button's live preview
 
-// The tally box: the total, the hours usually forgotten, and a strip of every block.
+// The tally panel: the total, the hours usually forgotten, and one bar of all groups.
+let lastHours = null;
+
 function renderTotals(hours) {
+  lastHours = hours;
   byId("total-hours").textContent = hours ? calc.formatNumber(hours.total) : "";
-  byId("total-unit").textContent = hours && isOne(hours.total) ? "hr" : "hrs";
-  byId("tally-forgotten").textContent = hours ? calc.formatHours(hours.total - hours.production) : "";
-  show(byId("tally-forgotten-line"), Boolean(hours));
+  byId("total-unit").textContent = hours ? (isOne(hours.total) ? "hr" : "hrs") : "";
+  const forgotten = byId("tally-forgotten");
+  forgotten.textContent = hours ? calc.formatHours(hours.total - hours.production) + " usually forgotten" : "";
+  show(forgotten, Boolean(hours));
+  layoutTally(hours);
 }
 
-// "30 min", "1 hr", "2 hrs"
-function blockUnitText(unit) {
-  return unit === 0.5 ? "30 min" : calc.formatHours(unit);
-}
-
-// Each work row's own hours, so its mini blocks stack up while you type.
-const WORK_ROWS = [
-  { id: "setup-hours", group: "production", hours: function (v) { return v.setupHours; } },
-  { id: "item-hours", group: "production", hours: function (v) { return v.count * v.itemHours; } },
-  { id: "communication-hours", group: "communication", hours: function (v) { return v.communicationHours; } },
-  { id: "round-hours", group: "revisions", hours: function (v) { return v.rounds * v.roundHours; } },
-  { id: "delivery-hours", group: "delivery", hours: function (v) { return v.deliveryHours; } },
-];
-
-// Block sizes from docs/DESIGN.md, in px. A row shows at most 60 mini blocks.
-const MINI_BLOCK_WIDTH = 7;
-const TALLY_BLOCK_WIDTH = 12;
-const MINI_BLOCK_MAX = 60;
-
-function fillBlocks(container, sizes, width, className, group) {
-  const blocks = ensureChildren(container, sizes.length, function () {
-    return document.createElement("span");
-  });
-  blocks.forEach(function (block, i) {
-    block.className = className;
-    block.dataset.group = group;
-    block.style.width = (sizes[i] * width) + "px";
-  });
-}
-
-// Screen 1's blocks: the mini blocks in each work row and the tally strip.
-// They use the same block size as the chart on screen 2.
-function renderWorkBlocks(values, hours) {
-  if (!hours) {
-    WORK_ROWS.forEach(function (row) { byId("mini-" + row.id).textContent = ""; });
-    byId("tally-strip").textContent = "";
+// Solid for production, stripes for the groups people forget, with "6h" labels.
+function layoutTally(hours) {
+  const bar = byId("tally-bar");
+  if (!hours || hours.total <= 0) {
+    bar.textContent = "";
     return;
   }
-  const unit = calc.blockUnit(hours.total);
-  byId("work-unit").textContent = "1 block = " + blockUnitText(unit);
-  WORK_ROWS.forEach(function (row) {
-    const sizes = calc.splitIntoBlocks(row.hours(values), unit).slice(0, MINI_BLOCK_MAX);
-    fillBlocks(byId("mini-" + row.id), sizes, MINI_BLOCK_WIDTH, "mini-block", row.group);
-  });
+  if (!bar.firstElementChild) {
+    bar.innerHTML = '<div class="tally-segments"></div><div class="tally-labels"></div>';
+  }
+  const width = bar.clientWidth;
+  if (!width) return;
   const groups = WORK_GROUPS.filter(function (group) { return hours[group] > 1e-9; });
-  const strip = ensureChildren(byId("tally-strip"), groups.length, function () {
-    const element = document.createElement("span");
-    element.className = "tally-group";
-    return element;
+  const usable = width - (groups.length - 1) * TALLY_GAP;
+  const segments = ensureChildren(bar.firstElementChild, groups.length, function () {
+    return document.createElement("span");
   });
+  const labels = ensureChildren(bar.lastElementChild, groups.length, function () {
+    return document.createElement("span");
+  });
+  let x = 0;
+  const items = [];
   groups.forEach(function (group, i) {
-    fillBlocks(strip[i], calc.splitIntoBlocks(hours[group], unit), TALLY_BLOCK_WIDTH, "tally-block", group);
+    const w = (hours[group] / hours.total) * usable;
+    segments[i].className = "tally-segment" + (group === "production" ? "" : " forgotten");
+    segments[i].style.width = w + "px";
+    labels[i].className = "tally-label";
+    labels[i].textContent = calc.formatNumber(hours[group]) + "h";
+    items.push({ element: labels[i], left: x });
+    x += w + TALLY_GAP;
+  });
+  placeLabels(items, width);
+}
+
+const TALLY_GAP = 2;
+
+// Each work row's own hours, drawn as a small bar.
+const WORK_ROWS = [
+  { id: "setup-hours", hours: function (v) { return v.setupHours; } },
+  { id: "item-hours", hours: function (v) { return v.count * v.itemHours; } },
+  { id: "communication-hours", hours: function (v) { return v.communicationHours; } },
+  { id: "round-hours", hours: function (v) { return v.rounds * v.roundHours; } },
+  { id: "delivery-hours", hours: function (v) { return v.deliveryHours; } },
+];
+
+// 25px per hour, narrower when one row would pass 150px, so every row shares one scale.
+const ROW_BAR_PER_HOUR = 25;
+const ROW_BAR_MAX = 150;
+
+function renderRowBars(values) {
+  const hours = values ? WORK_ROWS.map(function (row) { return row.hours(values); }) : [];
+  const most = Math.max.apply(null, hours.concat([0]));
+  const perHour = most > 0 ? Math.min(ROW_BAR_PER_HOUR, ROW_BAR_MAX / most) : ROW_BAR_PER_HOUR;
+  WORK_ROWS.forEach(function (row, i) {
+    const bar = byId("bar-" + row.id);
+    const amount = values ? hours[i] : 0;
+    bar.style.width = (amount * perHour) + "px";
+    bar.classList.toggle("empty", !(amount > 0));
   });
 }
 
@@ -861,6 +918,7 @@ function copyReply() {
 // Which parts of the result are visible: the full result, "add hours," or "fix errors."
 function showResultState(state) {
   show(byId("result-summary"), state === "result");
+  show(byId("metrics"), state === "result");
   show(byId("hours-chart"), state === "result");
   show(byId("receipt-section"), state === "result");
   show(byId("empty-state"), state === "no-hours");
@@ -881,7 +939,7 @@ function renderErrorState(errors) {
     (messages.length ? " " + messages.join(" ") : "");
 }
 
-// The job: five pill choices. Each names its item ("concepts") and setup row,
+// The job: five choices in a segmented control. Each names its item ("concepts") and setup row,
 // and brings example numbers. The math is the same for all of them.
 
 function currentJob() {
@@ -900,7 +958,6 @@ function upperFirst(text) {
 function renderJob() {
   const j = job();
   const items = upperFirst(j.items);
-  byId("topbar-job").textContent = j.name;
   byId("count-label").textContent = items;
   byId("bar-count-label").textContent = items;
   byId("steppers-items").textContent = items;
@@ -941,7 +998,7 @@ function loadExample(key) {
 }
 
 // Switching jobs loads its numbers. If the person changed any, ask first.
-// Focus stays on the pills, so arrow keys can still move between jobs.
+// Focus stays on the job control, so arrow keys can still move between jobs.
 function switchJob() {
   clearTimeout(commitTimer);
   renderJob();
@@ -984,11 +1041,11 @@ function update(commit) {
       const hours = calc.workHours(checked.values);
       renderGroupTotals(hours);
       renderTotals(hours);
-      renderWorkBlocks(checked.values, hours);
+      renderRowBars(checked.values);
     } else {
       clearGroupTotals();
       renderTotals(null);
-      renderWorkBlocks(null, null);
+      renderRowBars(null);
     }
     renderCheckButton(checked.values, null);
     renderErrorState(errors);
@@ -999,7 +1056,7 @@ function update(commit) {
   const r = calc.calculate(checked.values);
   renderGroupTotals(r.hours);
   renderTotals(r.hours);
-  renderWorkBlocks(checked.values, r.hours);
+  renderRowBars(checked.values);
   renderCheckButton(checked.values, r.hours);
   if (!r.hasHours) {
     showResultState("no-hours");
@@ -1008,7 +1065,7 @@ function update(commit) {
 
   showResultState("result");
   lastResult = r;
-  renderHero(r);
+  renderHero(r, checked.values);
   renderHoursChart(r);
   renderOfferChart(r);
   renderReceipt(r, checked.values);
@@ -1020,9 +1077,10 @@ function update(commit) {
 let lastResult = null;
 
 function relayoutCharts() {
+  layoutTally(lastHours);
   if (!lastResult || byId("result").hidden) return;
-  layoutBlocks(lastResult);
-  if (lastResult.offer) layoutRuler(lastResult);
+  layoutHoursChart(lastResult);
+  if (lastResult.offer) layoutRateChart(lastResult);
 }
 
 // Typing updates right away, then commits after about 1 second without typing.
@@ -1069,15 +1127,10 @@ function stopCountUp() {
   countTimer = null;
 }
 
+// The digits after the "$", which has its own smaller, raised span.
 function paintHeroNumber(r, value) {
-  if (r.offer) {
-    const money = calc.formatMoney(value);
-    const point = money.lastIndexOf(".");
-    byId("hero-whole").textContent = money.slice(0, point);
-    byId("hero-cents").textContent = money.slice(point);
-  } else {
-    byId("hero-whole").textContent = calc.formatWholeMoney(Math.round(value));
-  }
+  const money = r.offer ? calc.formatMoney(value) : calc.formatWholeMoney(Math.round(value));
+  byId("hero-amount").textContent = money.slice(1);
 }
 
 function countUpHero(r) {
@@ -1111,12 +1164,14 @@ function showScreen(name) {
 }
 
 // The browser's Back button goes from results to inputs, with every value kept.
-// Showing the results adds a history step; Back (or "Edit all details") removes it.
+// Showing the results adds a history step; Back (or "Edit details") removes it.
 function openResults() {
   showScreen("results");
   relayoutCharts();
-  const target = !byId("result-summary").hidden ? byId("hero-label") : byId("empty-state");
-  target.focus();
+  const target = ["hero-label", "empty-state", "error-state"].map(byId).filter(function (element) {
+    return !element.hidden && !element.closest("[hidden]");
+  })[0];
+  if (target) target.focus();
 }
 
 function openInputs() {
@@ -1149,26 +1204,54 @@ function checkOffer() {
   revealResults();
 }
 
-// The reveal plays once per press of "Check the offer", about 1 second in all:
-// screen 1 fades out, the lime band grows down from the top, the hero counts up,
-// the blocks fill in, and the runs-out line drops in last. Under reduced motion,
-// the final state shows right away. Later changes use the normal transitions.
+// The reveal plays once per press of "Check the offer": screen 1 fades out, the
+// button's gradient circle grows into the hero panel (400ms), the number counts up,
+// the paid fill sweeps left to right, then the red dot appears. Under reduced
+// motion, the final state shows right away. Later changes use the normal transitions.
 const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
-const REVEAL_FADE_MS = 150;
-const REVEAL_TOTAL_MS = 1200;
+const REVEAL_FADE_MS = 200;
+const REVEAL_GROW_MS = 400;
+const REVEAL_REST_MS = 1500;
+
+function rectFrame(rect) {
+  return { left: rect.left + "px", top: rect.top + "px", width: rect.width + "px", height: rect.height + "px" };
+}
 
 function revealResults() {
   const body = document.body;
-  if (reduceMotion.matches) {
+  if (reduceMotion.matches || !Element.prototype.animate) {
     openResults();
     return;
   }
+
+  // A copy of the gradient circle, fixed where the button's circle is.
+  const from = byId("check-circle").getBoundingClientRect();
+  const orb = document.createElement("div");
+  orb.className = "reveal-orb";
+  orb.setAttribute("aria-hidden", "true");
+  Object.assign(orb.style, rectFrame(from));
+  body.appendChild(orb);
   body.classList.add("revealing", "reveal-out");
+
   setTimeout(function () {
     body.classList.remove("reveal-out");
     openResults();
-    if (lastResult && !byId("result-summary").hidden) countUpHero(lastResult);
-    setTimeout(function () { body.classList.remove("revealing"); }, REVEAL_TOTAL_MS);
+    const to = byId("hero-panel").getBoundingClientRect();
+    const start = Object.assign(rectFrame(from), { borderRadius: from.width / 2 + "px" });
+    const end = Object.assign(rectFrame(to), { borderRadius: "28px" });
+    orb.animate([start, end], { duration: REVEAL_GROW_MS, easing: "cubic-bezier(0.3, 0.7, 0.2, 1)", fill: "forwards" });
+
+    setTimeout(function () {
+      body.classList.add("reveal-in");
+      if (lastResult && !byId("result-summary").hidden) countUpHero(lastResult);
+      orb.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 200, fill: "forwards" })
+        .onfinish = function () { orb.remove(); };
+      // Clean up even if the fade never reports finishing (for example a background tab).
+      setTimeout(function () {
+        orb.remove();
+        body.classList.remove("revealing", "reveal-in");
+      }, REVEAL_REST_MS);
+    }, REVEAL_GROW_MS);
   }, REVEAL_FADE_MS);
 }
 

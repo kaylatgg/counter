@@ -6,7 +6,7 @@
   <title>Counter</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,700..900&family=Geist:wght@400;500;600;700;800&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500&family=Geist+Mono:wght@400;500&display=swap">
   <link rel="stylesheet" href="styles.css">
   <script src="calc.js" defer></script>
   <script src="app.js" defer></script>
@@ -14,10 +14,17 @@
 <body class="on-inputs">
   <a href="#result" class="skip-link" id="skip-link">Skip to your result</a>
 
+  <!-- Screen 1's corner glow: the answer, glowing quietly. Behind everything. -->
+  <div class="glow" aria-hidden="true">
+    <div class="glow-sun"></div>
+    <div class="glow-ring glow-ring-1"></div>
+    <div class="glow-ring glow-ring-2"></div>
+  </div>
+
   <header class="topbar">
     <div class="topbar-inner">
       <p class="wordmark">Counter</p>
-      <p class="topbar-job" id="topbar-job">Restaurant menu</p>
+      <p class="topbar-note">for creative students</p>
     </div>
   </header>
 
@@ -25,7 +32,7 @@
     <!-- Screen 1: inputs -->
     <section class="screen-inputs" id="screen-inputs" aria-labelledby="page-title">
       <div class="inputs-top">
-        <h1 id="page-title" tabindex="-1">What does this job really pay?</h1>
+        <h1 id="page-title" tabindex="-1">What does this job <span class="headline-break">really pay?</span></h1>
         <p class="lede">Count all the work, see what an offer really pays per hour, then set your price or change the work.</p>
         <p class="example-note">Example numbers. Change them to match your project.</p>
       </div>
@@ -35,30 +42,20 @@
 
           <!-- 1 The job -->
           <fieldset class="section">
-            <legend><span class="step">1</span> The job</legend>
+            <legend><span class="step">01.</span> The job</legend>
 
-            <!-- Job tabs: real radios, drawn as text tabs. -->
-            <div class="job-tabs" role="radiogroup" aria-label="Type of job">
-              <div class="tab-choice">
-                <input id="job-menu" name="job" type="radio" value="menu" checked>
-                <label for="job-menu">Restaurant menu</label>
-              </div>
-              <div class="tab-choice">
-                <input id="job-logo" name="job" type="radio" value="logo">
-                <label for="job-logo">Logo</label>
-              </div>
-              <div class="tab-choice">
-                <input id="job-social" name="job" type="radio" value="social">
-                <label for="job-social">Social posts</label>
-              </div>
-              <div class="tab-choice">
-                <input id="job-poster" name="job" type="radio" value="poster">
-                <label for="job-poster">Poster or flyer</label>
-              </div>
-              <div class="tab-choice">
-                <input id="job-custom" name="job" type="radio" value="custom">
-                <label for="job-custom">Custom</label>
-              </div>
+            <!-- A segmented control: real radios underneath. -->
+            <div class="segmented job-choice" role="radiogroup" aria-label="Type of job">
+              <input id="job-menu" name="job" type="radio" value="menu" checked>
+              <label for="job-menu">Restaurant menu</label>
+              <input id="job-logo" name="job" type="radio" value="logo">
+              <label for="job-logo">Logo</label>
+              <input id="job-social" name="job" type="radio" value="social">
+              <label for="job-social">Social posts</label>
+              <input id="job-poster" name="job" type="radio" value="poster">
+              <label for="job-poster">Poster or flyer</label>
+              <input id="job-custom" name="job" type="radio" value="custom">
+              <label for="job-custom">Custom</label>
             </div>
 
             <!-- Shown when switching jobs after changing the work numbers. -->
@@ -95,16 +92,16 @@
 
           <!-- 2 The work -->
           <fieldset class="section">
-            <legend><span class="step">2</span> The work</legend>
+            <legend><span class="step">02.</span> The work</legend>
 
-            <p class="hint section-hint">Example hours. Change any to match how you work. <span id="work-unit">1 block = 30 min</span>.</p>
+            <p class="mono-note section-hint">Example hours. Change any to match how you work.</p>
 
             <fieldset class="work-group" data-group="production">
-              <legend><span class="swatch" aria-hidden="true"></span>Production <output id="total-production">6 hrs</output></legend>
+              <legend>Production <output id="total-production">6 hrs</output></legend>
 
               <div class="work-row">
                 <div class="row-label"><label for="setup-hours" id="setup-label">Concepts and sketches</label></div>
-                <div class="mini-blocks" id="mini-setup-hours" aria-hidden="true"></div>
+                <div class="row-bar" id="bar-setup-hours" aria-hidden="true"></div>
                 <div class="unit-input">
                   <input id="setup-hours" name="setupHours" type="text" inputmode="decimal" value="2" aria-describedby="unit-setup-hours">
                   <span class="unit" id="unit-setup-hours">hrs</span>
@@ -113,7 +110,7 @@
 
               <div class="work-row">
                 <div class="row-label"><label for="item-hours" id="item-label">Design, per page</label></div>
-                <div class="mini-blocks" id="mini-item-hours" aria-hidden="true"></div>
+                <div class="row-bar" id="bar-item-hours" aria-hidden="true"></div>
                 <div class="unit-input">
                   <input id="item-hours" name="itemHours" type="text" inputmode="decimal" value="2" aria-describedby="unit-item-hours page-hours-hint">
                   <span class="unit" id="unit-item-hours">hrs</span>
@@ -123,11 +120,11 @@
             </fieldset>
 
             <fieldset class="work-group" data-group="communication">
-              <legend><span class="swatch" aria-hidden="true"></span>Communication <output id="total-communication">1.5 hrs</output></legend>
+              <legend>Communication <output id="total-communication">1.5 hrs</output></legend>
 
               <div class="work-row">
-                <div class="row-label"><label for="communication-hours">Emails, calls, and meetings</label> <span class="tag">Usually forgotten</span></div>
-                <div class="mini-blocks" id="mini-communication-hours" aria-hidden="true"></div>
+                <div class="row-label"><label for="communication-hours">Emails, calls, and meetings</label> <span class="forgotten-note">usually forgotten</span></div>
+                <div class="row-bar forgotten" id="bar-communication-hours" aria-hidden="true"></div>
                 <div class="unit-input">
                   <input id="communication-hours" name="communicationHours" type="text" inputmode="decimal" value="1.5" aria-describedby="unit-communication-hours">
                   <span class="unit" id="unit-communication-hours">hrs</span>
@@ -136,11 +133,11 @@
             </fieldset>
 
             <fieldset class="work-group" data-group="revisions">
-              <legend><span class="swatch" aria-hidden="true"></span>Revisions <output id="total-revisions">3 hrs</output></legend>
+              <legend>Revisions <output id="total-revisions">3 hrs</output></legend>
 
               <div class="work-row">
-                <div class="row-label"><label for="round-hours">Hours per round of changes</label> <span class="tag">Usually forgotten</span></div>
-                <div class="mini-blocks" id="mini-round-hours" aria-hidden="true"></div>
+                <div class="row-label"><label for="round-hours">Hours per round of changes</label> <span class="forgotten-note">usually forgotten</span></div>
+                <div class="row-bar forgotten" id="bar-round-hours" aria-hidden="true"></div>
                 <div class="unit-input">
                   <input id="round-hours" name="roundHours" type="text" inputmode="decimal" value="1.5" aria-describedby="unit-round-hours">
                   <span class="unit" id="unit-round-hours">hrs</span>
@@ -149,11 +146,11 @@
             </fieldset>
 
             <fieldset class="work-group" data-group="delivery">
-              <legend><span class="swatch" aria-hidden="true"></span>Delivery <output id="total-delivery">1 hr</output></legend>
+              <legend>Delivery <output id="total-delivery">1 hr</output></legend>
 
               <div class="work-row">
-                <div class="row-label"><label for="delivery-hours" id="delivery-label">Print setup and export</label> <span class="tag">Usually forgotten</span></div>
-                <div class="mini-blocks" id="mini-delivery-hours" aria-hidden="true"></div>
+                <div class="row-label"><label for="delivery-hours" id="delivery-label">Print setup and export</label> <span class="forgotten-note">usually forgotten</span></div>
+                <div class="row-bar forgotten" id="bar-delivery-hours" aria-hidden="true"></div>
                 <div class="unit-input">
                   <input id="delivery-hours" name="deliveryHours" type="text" inputmode="decimal" value="1" aria-describedby="unit-delivery-hours">
                   <span class="unit" id="unit-delivery-hours">hrs</span>
@@ -165,25 +162,25 @@
 
         <div class="inputs-column">
 
-          <!-- The tally: the only box on the page, live while you edit hours. -->
+          <!-- The tally panel: live while you edit hours. -->
           <section class="tally" aria-labelledby="tally-title">
             <div class="tally-top">
               <h2 class="tally-title" id="tally-title">Your work so far</h2>
-              <p class="tally-forgotten" id="tally-forgotten-line"><strong id="tally-forgotten">5.5 hrs</strong> usually forgotten</p>
+              <p class="tally-forgotten mono-note" id="tally-forgotten">5.5 hrs usually forgotten</p>
             </div>
-            <p class="tally-total"><output id="total-hours">11.5</output> <span class="tally-unit" id="total-unit">hrs</span></p>
-            <div class="tally-strip" id="tally-strip" aria-hidden="true"></div>
+            <p class="tally-total"><output id="total-hours">11.5</output><span class="tally-unit" id="total-unit">hrs</span></p>
+            <div class="tally-bar" id="tally-bar" aria-hidden="true"></div>
           </section>
 
           <!-- 3 Your numbers -->
           <fieldset class="section">
-            <legend><span class="step">3</span> Your numbers</legend>
+            <legend><span class="step">03.</span> Your numbers</legend>
 
             <div class="field-row">
               <div class="field">
                 <label for="rate">Target hourly rate</label>
                 <div class="unit-input">
-                  <span class="unit">$</span>
+                  <span class="currency">$</span>
                   <input id="rate" name="rate" type="text" inputmode="decimal" value="25" aria-describedby="unit-rate rate-hint">
                   <span class="unit" id="unit-rate">/hr</span>
                 </div>
@@ -193,7 +190,7 @@
               <div class="field">
                 <label for="expenses">Project expenses</label>
                 <div class="unit-input">
-                  <span class="unit">$</span>
+                  <span class="currency">$</span>
                   <input id="expenses" name="expenses" type="text" inputmode="decimal" value="20" aria-describedby="expenses-hint">
                 </div>
                 <p class="hint" id="expenses-hint">Money you spend on this job, like fonts, stock photos, or printed proofs.</p>
@@ -203,13 +200,12 @@
 
           <!-- 4 Their offer -->
           <fieldset class="section">
-            <legend><span class="step">4</span> Their offer</legend>
+            <legend><span class="step">04.</span> Their offer</legend>
 
-            <div class="field-row">
+            <div class="field-row offer-row">
               <div class="field">
                 <p class="field-label" id="offer-question">Did they offer an amount?</p>
-                <!-- A yes/no question, so a pill switch. Real radios underneath. -->
-                <div class="switch" role="radiogroup" aria-labelledby="offer-question">
+                <div class="segmented" role="radiogroup" aria-labelledby="offer-question">
                   <input id="offer-yes" name="offerStatus" type="radio" value="amount" checked>
                   <label for="offer-yes">Yes</label>
                   <input id="offer-none" name="offerStatus" type="radio" value="none">
@@ -220,7 +216,7 @@
               <div class="field" id="offer-field">
                 <label for="offer">Amount they offered</label>
                 <div class="unit-input">
-                  <span class="unit">$</span>
+                  <span class="currency">$</span>
                   <input id="offer" name="offer" type="text" inputmode="decimal" value="200">
                 </div>
               </div>
@@ -232,8 +228,8 @@
               <span class="check-title" id="check-title">Check the offer</span>
               <span class="check-preview" id="check-preview">11.5 hrs of work for $200</span>
             </span>
-            <span class="check-arrow" aria-hidden="true">
-              <svg width="26" height="26" viewBox="0 0 26 26" focusable="false"><path d="M4 13h17M14 6l7 7-7 7" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="square" stroke-linejoin="miter"/></svg>
+            <span class="check-circle" id="check-circle" aria-hidden="true">
+              <svg width="20" height="20" viewBox="0 0 20 20" focusable="false"><path d="M3.5 10h12M10.5 4.5 16 10l-5.5 5.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
             </span>
           </button>
         </div>
@@ -243,16 +239,15 @@
     <!-- Screen 2: results -->
     <section id="result" class="screen-results" aria-labelledby="result-title" hidden>
 
-      <!-- Control bar: the same values as screen 1, editable here too -->
-      <div class="control-bar" role="group" aria-label="Quick changes">
-        <div class="control-bar-inner">
-          <button type="button" class="back-button" id="edit-details">
-            <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true" focusable="false"><path d="M8.5 3 4.5 7l4 4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            Edit all details
-          </button>
+      <!-- Header row: the wordmark, Edit details, and the live controls -->
+      <div class="results-header">
+        <p class="wordmark">Counter</p>
+        <button type="button" class="edit-button" id="edit-details">
+          <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true" focusable="false"><path d="M10 6H2.5M5.5 2.5 2 6l3.5 3.5" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Edit details
+        </button>
 
-          <span class="bar-divider" aria-hidden="true"></span>
-
+        <div class="control-bar" role="group" aria-label="Quick changes">
           <div class="bar-stepper">
             <label for="bar-count" id="bar-count-label">Pages</label>
             <button type="button" data-step="-1" data-target="count" aria-label="One less page">−</button>
@@ -267,99 +262,93 @@
             <button type="button" data-step="1" data-target="rounds" aria-label="One more round of changes">+</button>
           </div>
 
-          <span class="bar-divider" aria-hidden="true"></span>
-
           <div class="bar-field" id="bar-offer-field">
             <label for="bar-offer">Offer</label>
-            <span class="bar-input"><span class="unit">$</span><input id="bar-offer" data-mirror="offer" type="text" inputmode="decimal" value="200"></span>
+            <span class="bar-input"><span class="currency">$</span><input id="bar-offer" data-mirror="offer" type="text" inputmode="decimal" value="200"></span>
           </div>
 
           <div class="bar-field">
             <label for="bar-rate">Target</label>
-            <span class="bar-input"><span class="unit">$</span><input id="bar-rate" data-mirror="rate" type="text" inputmode="decimal" value="25"><span class="unit">/hr</span></span>
+            <span class="bar-input"><span class="currency">$</span><input id="bar-rate" data-mirror="rate" type="text" inputmode="decimal" value="25"><span class="unit">/hr</span></span>
           </div>
         </div>
       </div>
 
-      <h2 id="result-title" class="visually-hidden"><span class="step">5</span> The result</h2>
+      <h2 id="result-title" class="visually-hidden">The result</h2>
 
-      <!-- The lime band: the whole answer. -->
-      <div class="band" id="band">
-        <div class="band-inner">
-          <div class="hero-row" id="result-summary">
+      <!-- The hero panel: the sunset gradient opens into the answer. -->
+      <div class="hero-panel" id="hero-panel">
+        <div class="hero-content" id="result-summary">
+          <div class="hero-top">
             <p class="hero-label" id="hero-label" tabindex="-1">This offer pays</p>
-            <div class="hero-main">
-              <p class="hero-number">
-                <span class="visually-hidden" id="hero-spoken">$17.39 per hour</span>
-                <span class="hero-digits" aria-hidden="true"><span class="hero-whole" id="hero-whole">$17</span><span class="hero-side"><span class="hero-cents" id="hero-cents">.39</span><span class="hero-unit" id="hero-unit">/hr</span></span></span>
-              </p>
-              <div class="hero-text">
-                <p class="hero-sentence" id="hero-sentence">for <strong>11.5 hours</strong> of real work. That's <strong>$7.61 an hour</strong> under your $25 target.</p>
-                <p class="warning" id="offer-warning" hidden></p>
-              </div>
+            <div class="hero-aside">
+              <p class="hero-job" id="hero-job">Restaurant menu · 2 pages · 2 rounds</p>
+              <p class="hero-sentence" id="hero-sentence">for 11.5 hours of real work. That's $7.61 an hour under your $25 target.</p>
+              <p class="warning" id="offer-warning" hidden></p>
             </div>
-
-            <!-- Pay per hour: one ruler, full width, right under the hero. -->
-            <section class="pay-chart" id="offer-chart" aria-labelledby="offer-chart-title">
-              <h3 id="offer-chart-title" class="visually-hidden">Pay per hour</h3>
-
-              <div class="ruler" id="ruler" aria-hidden="true">
-                <div class="ruler-line"></div>
-                <div class="ruler-ticks" id="ruler-ticks"></div>
-                <div class="gap-band" id="gap-band"></div>
-                <span class="ruler-label gap-label" id="gap-label"></span>
-                <span class="ruler-label over-label" id="over-label"></span>
-                <div class="target-mark" id="target-mark"></div>
-                <span class="ruler-label target-label" id="target-label"></span>
-                <div class="dot dot-after" id="dot-after"></div>
-                <span class="ruler-label after-label" id="after-label"></span>
-                <div class="dot dot-offer" id="dot-offer"></div>
-                <span class="ruler-label offer-label" id="offer-label"></span>
-              </div>
-
-              <ul class="visually-hidden" id="pay-list">
-                <li>Offer, before expenses: $17.39/hr</li>
-                <li>Offer, after $20.00 expenses: $15.65/hr</li>
-                <li>Your target rate: $25.00/hr</li>
-              </ul>
-
-              <p class="visually-hidden" id="offer-summary">Before expenses, the offer pays $7.61 an hour less than your target.</p>
-            </section>
-
-            <dl class="metrics" id="metrics">
-              <div><dt>Your estimate</dt><dd>$310</dd></div>
-              <div><dt>More than they offered</dt><dd>$110</dd></div>
-              <div><dt>Hours the offer pays for</dt><dd>7.2 of 11.5</dd></div>
-            </dl>
           </div>
-
-          <p class="empty-state" id="empty-state" tabindex="-1" hidden>Add some hours to see your estimate.</p>
-          <p class="empty-state" id="error-state" tabindex="-1" hidden>Fix the fields with errors to see your result.</p>
+          <p class="hero-number">
+            <span class="visually-hidden" id="hero-spoken">$17.39 per hour</span>
+            <span class="hero-digits" aria-hidden="true"><span class="hero-currency">$</span><span class="hero-amount" id="hero-amount">17.39</span><span class="hero-unit" id="hero-unit">/hr</span></span>
+          </p>
         </div>
+
+        <p class="empty-state" id="empty-state" tabindex="-1" hidden>Add some hours to see your estimate.</p>
+        <p class="empty-state" id="error-state" tabindex="-1" hidden>Fix the fields with errors to see your result.</p>
       </div>
 
       <div class="results-body">
-        <!-- Your hours, and where the money runs out -->
-        <section class="chart" id="hours-chart" aria-labelledby="hours-title">
-          <div class="chart-head">
-            <h3 id="hours-title">Your 11.5 hours, and where the money runs out</h3>
-            <p class="chart-flag" id="hours-flag" hidden></p>
-            <p class="chart-unit" id="block-unit">1 block = 30 min</p>
-          </div>
+        <!-- 4 stats, a hairline above each -->
+        <dl class="stats" id="metrics">
+          <div><dt>Your estimate</dt><dd>$310</dd></div>
+          <div><dt>More than they offered</dt><dd>$110</dd></div>
+          <div><dt>Hours the offer pays for</dt><dd>7.2 <span class="stat-unit">of 11.5 hrs</span></dd></div>
+          <div><dt>After expenses</dt><dd>$15.65<span class="stat-unit">/hr</span></dd></div>
+        </dl>
 
-          <div class="blocks" id="blocks" aria-hidden="true">
-            <div class="runs-out" id="runs-out" hidden><span class="runs-out-label" id="runs-out-label"></span></div>
-          </div>
+        <div class="charts-row">
+          <!-- Chart 1: Where your hours go -->
+          <section class="chart" id="hours-chart" aria-labelledby="hours-title">
+            <h3 id="hours-title">Where your 11.5 hours go</h3>
 
-          <ul class="visually-hidden" id="hours-list">
-            <li>Production: 6 hrs</li>
-            <li>Communication: 1.5 hrs</li>
-            <li>Revisions: 3 hrs</li>
-            <li>Delivery: 1 hr</li>
-          </ul>
+            <div class="bars" id="bars" aria-hidden="true">
+              <div class="bracket" id="bracket"><span class="bracket-label" id="bracket-label"></span></div>
+              <div class="runs-out" id="runs-out"><span class="runs-out-label" id="runs-out-label"></span></div>
+              <div class="bar-row" id="bar-row"></div>
+              <div class="bar-labels" id="bar-labels"></div>
+            </div>
 
-          <p class="chart-summary" id="hours-summary"><strong>4.3 hours</strong> go unpaid, and <strong>5.5 hours</strong> are work outside production.</p>
-        </section>
+            <ul class="visually-hidden" id="hours-list">
+              <li>Production: 6 hrs</li>
+              <li>Communication: 1.5 hrs</li>
+              <li>Revisions: 3 hrs</li>
+              <li>Delivery: 1 hr</li>
+            </ul>
+
+            <ul class="legend" id="hours-legend">
+              <li><span class="legend-swatch paid" id="legend-first-swatch" aria-hidden="true"></span><span id="legend-first">paid by the offer</span></li>
+              <li><span class="legend-swatch striped" aria-hidden="true"></span><span id="legend-second">unpaid</span></li>
+            </ul>
+
+            <p class="chart-summary" id="hours-summary">4.3 hours go unpaid, and 5.5 hours are work outside production.</p>
+          </section>
+
+          <!-- Chart 2: Your rate drops as hours grow -->
+          <section class="chart" id="offer-chart" aria-labelledby="rate-title">
+            <h3 id="rate-title">Your rate drops as hours grow</h3>
+            <p class="chart-sub" id="rate-sub">After your $20 in expenses, $200 spread over more hours pays less per hour.</p>
+
+            <div class="rate-plot" id="rate-plot" aria-hidden="true"></div>
+
+            <ul class="visually-hidden" id="pay-list">
+              <li>Offer, before expenses: $17.39/hr</li>
+              <li>Offer, after $20.00 expenses: $15.65/hr</li>
+              <li>Your target rate: $25.00/hr</li>
+            </ul>
+
+            <p class="chart-summary" id="offer-summary">After expenses, the offer pays $15.65 an hour for 11.5 hours. It pays your $25 target or more only up to 7.2 hrs.</p>
+          </section>
+        </div>
 
         <!-- Show the math, then your price and your reply -->
         <div class="results-more">
@@ -369,7 +358,7 @@
             <details class="math">
               <summary>
                 <span class="math-toggle">
-                  <svg class="chevron" width="12" height="12" viewBox="0 0 12 12" aria-hidden="true" focusable="false"><path d="M4 2.5 7.5 6 4 9.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  <svg class="chevron" width="12" height="12" viewBox="0 0 12 12" aria-hidden="true" focusable="false"><path d="M4 2.5 7.5 6 4 9.5" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
                   <span class="when-closed">Show the math</span><span class="when-open">Hide the math</span>
                 </span>
                 <span class="math-estimate" id="math-estimate">$310</span>
@@ -393,12 +382,12 @@
           <div class="results-pair">
             <!-- 6 Your price -->
             <fieldset class="section result-block">
-              <legend><span class="step">6</span> Your price</legend>
+              <legend><span class="step">06.</span> Your price</legend>
 
               <div class="field">
                 <label for="quote">Price to send</label>
                 <div class="unit-input">
-                  <span class="unit">$</span>
+                  <span class="currency">$</span>
                   <input id="quote" name="quote" type="text" inputmode="decimal" placeholder="310" aria-describedby="quote-hint">
                 </div>
                 <button type="button" class="link-button" id="use-estimate">Use my estimate</button>
@@ -410,7 +399,7 @@
 
             <!-- 7 Your reply -->
             <fieldset class="section result-block">
-              <legend><span class="step">7</span> Your reply</legend>
+              <legend><span class="step">07.</span> Your reply</legend>
 
               <div class="field">
                 <label for="reply">Your reply to the client</label>
@@ -420,10 +409,10 @@
               <div class="reply-actions">
                 <div class="notice" id="reply-notice" hidden>
                   <p>Your numbers changed after you edited this reply.</p>
-                  <button type="button" class="action-button outline" id="update-draft">Update draft</button>
+                  <button type="button" class="round-button outline" id="update-draft">Update draft</button>
                 </div>
 
-                <button type="button" class="action-button" id="copy-reply"><span class="lime-square" aria-hidden="true"></span>Copy reply</button>
+                <button type="button" class="round-button" id="copy-reply">Copy reply</button>
                 <span id="copy-status" role="status"></span>
               </div>
             </fieldset>
