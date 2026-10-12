@@ -147,7 +147,6 @@ h3 {
 /* Data reads like data: units, chart labels, ticks, and small notes in mono. */
 .mono-note,
 .unit,
-.topbar-note,
 .forgotten-note,
 .step,
 .work-group > legend output {
@@ -238,11 +237,6 @@ h3 {
   text-transform: lowercase;
 }
 
-.topbar-note {
-  margin-left: auto;
-  font-size: 12px;
-}
-
 /* Screen 2: the header is the first of two sticky rows. */
 .on-results .topbar {
   position: sticky;
@@ -252,7 +246,9 @@ h3 {
 }
 
 /* "Projects 3" and the save button, on the right of every header. */
+/* Pushed to the right end of the header, with the save button after it. */
 .projects-link {
+  margin-left: auto;
   display: inline-flex;
   align-items: center;
   gap: 6px;

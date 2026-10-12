@@ -64,7 +64,7 @@ Rules:
 ## Screen 1: inputs
 
 - `--bg` page. A soft blurred sunset glow off the top-right corner with two thin circle outlines. Nothing over the form fields.
-- Header: "counter" (Geist 500, 20px) left, "for creative students" mono right.
+- Header: "counter" (Geist 500, 20px) left; "Projects 3" and "Save as project" right. (The "for creative students" note was removed on October 11, 2026.)
 - Headline, then the intro right under it, then "Example numbers..." in mono.
 - Two columns: left (01 The job, 02 The work), right 480px and sticky (tally panel, 03 Your numbers, 04 Their offer, button).
 - **Job choice:** a segmented control on `--paper`, selected segment ink with light text. Real radio inputs.
