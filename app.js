@@ -601,8 +601,17 @@ function layoutRateChart(r) {
 
   for (let h = x0; h <= x1 + 1e-9; h += step) {
     svgElement(svg, "line", { class: "rate-grid", x1: px(h), x2: px(h), y1: pad.top, y2: height - pad.bottom });
-    svgElement(svg, "text", { class: "rate-tick", x: px(h), y: height - 6, "text-anchor": "middle" },
+    const tick = svgElement(svg, "text", { class: "rate-tick", x: px(h), y: height - 6, "text-anchor": "middle" },
       calc.formatNumber(h) + "h");
+    // The ticks at the ends line up with the edge instead of hanging past it.
+    const box = tick.getBBox();
+    if (box.x + box.width > width) {
+      tick.setAttribute("x", width);
+      tick.setAttribute("text-anchor", "end");
+    } else if (box.x < 0) {
+      tick.setAttribute("x", 0);
+      tick.setAttribute("text-anchor", "start");
+    }
   }
 
   // Y labels: the target always; $0, the top, and the bottom only where they
@@ -652,10 +661,18 @@ function layoutRateChart(r) {
     if (targetY > box.y - 3 && targetY < box.y + box.height + 3) score += 2;
     return score;
   }
-  // spots: [x, y, anchor] in order of preference.
+  // spots: [x, y, anchor] in order of preference. An anchor of "fit" centers the
+  // label on x but slides it sideways to stay inside the chart, so a label is
+  // never cut off at the edge: it's tried after the others, above and below.
   function placeText(label, spots) {
+    label.setAttribute("text-anchor", "start");
+    const labelWidth = label.getBBox().width;
     let best = null;
     spots.forEach(function (spot) {
+      if (spot[2] === "fit") {
+        const left = Math.max(0, Math.min(width - labelWidth, spot[0] - labelWidth / 2));
+        spot = [left, spot[1], "start"];
+      }
       label.setAttribute("x", spot[0]);
       label.setAttribute("y", spot[1]);
       label.setAttribute("text-anchor", spot[2]);
@@ -692,6 +709,8 @@ function layoutRateChart(r) {
     [dotX, dotY + 30, "middle"], [dotX, dotY - 22, "middle"],
     [dotX - 18, dotY - 34, "end"], [dotX + 18, dotY - 34, "start"],
     [dotX, dotY - 38, "middle"], [dotX, dotY + 44, "middle"],
+    [dotX, dotY - 22, "fit"], [dotX, dotY + 30, "fit"],
+    [dotX, dotY - 38, "fit"], [dotX, dotY + 44, "fit"],
   ]);
 
   if (cross !== null) {
@@ -702,6 +721,8 @@ function layoutRateChart(r) {
       [cross - 8, targetY + 16, "end"], [cross + 8, targetY + 16, "start"],
       [cross - 8, targetY - 24, "end"], [cross - 8, targetY + 32, "end"],
       [cross, targetY - 24, "middle"], [cross, targetY + 32, "middle"],
+      [cross, targetY - 8, "fit"], [cross, targetY + 16, "fit"],
+      [cross, targetY - 24, "fit"], [cross, targetY + 32, "fit"],
     ]);
   }
 
