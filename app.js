@@ -1138,11 +1138,18 @@ function showSelectedJobPill() {
   if (!isPhone()) return;
   const label = document.querySelector('input[name="job"]:checked').nextElementSibling;
   if (!label.offsetParent) return;
-  label.scrollIntoView({
-    block: "nearest",
-    inline: "nearest",
-    behavior: reduceMotion.matches ? "auto" : "smooth",
-  });
+  // Scrolls only the pill row, by setting its own scroll position. scrollIntoView
+  // would also move the browser's Tab starting point to the pill, so the first
+  // Tab after load would skip the skip link and the header.
+  const row = label.parentElement;
+  const rowBox = row.getBoundingClientRect();
+  const box = label.getBoundingClientRect();
+  let left = row.scrollLeft;
+  if (box.left < rowBox.left) left -= rowBox.left - box.left;
+  else if (box.right > rowBox.right) left += box.right - rowBox.right;
+  if (left !== row.scrollLeft) {
+    row.scrollTo({ left: left, behavior: reduceMotion.matches ? "auto" : "smooth" });
+  }
 }
 
 // The job whose example numbers are in the fields. Changing any of them
