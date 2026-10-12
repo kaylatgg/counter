@@ -67,6 +67,12 @@ Note: the logo lands on the same 11.5 hrs and $310 as the menu, and the poster o
     - **Errors on screen 1.** The button lost its line and looked broken (gray under the pointer). It now stays ink and says how many fields to fix. The two labels in 04 Their offer are top-aligned.
     - **Page width.** The corner glow made the page 1700px wide at 1440px. html and body now clip sideways overflow.
 23. **Rate chart hides when the offer is at or below expenses (October 12, 2026).** Below expenses, the after-expense rate is negative, so the curve rises as hours grow; at exactly the expenses it's a flat line at $0. Either way it's the opposite of its title "Your rate drops as hours grow." the opposite of its title "Your rate drops as hours grow." A chart that contradicts its own title costs trust. The hero and the hours chart already explain the loss. The chart's text labels also got a halo in the page color, because gridlines crossed them at 320px.
+24. **Accessibility fixes (October 12, 2026).** From an axe run, a keyboard walkthrough, and contrast checks on the gradient at 390 and 1440px.
+    - **Contrast on the gradient.** The hero's "/hr" measured 3.0:1 on phone and 4.26:1 on desktop, so it's now ink. The weeks note measured 2.24:1 inside the hero, so it moved just below the hero, on the page color.
+    - **One h1 per screen.** Screen 2 had no h1, so its hidden title "The result" is now the h1. The chart titles became h2 so the heading levels don't skip (axe flagged this after the change); they look the same.
+    - **Focus on first load stays at the top.** Moving it to the page title made the first Tab skip the skip link, Projects, and Save. Switching screens still moves focus, so screen readers announce the new screen.
+    - **44 by 44 tap areas on phone** for every number input. Padding grows the hit area and an equal negative margin gives the space back, so the inputs look the same. Screen 2's Pages and Rounds had no spare room between their buttons, so those inputs are 44px wide and their buttons sit slightly further apart.
+    - **Rate chart summary under 1 hour.** "Only up to 0.04 hrs" was exact but hard to read; it now says the offer stays below the target for any job longer than an hour.
 
 ## Known limits of version 1
 

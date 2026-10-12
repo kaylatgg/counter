@@ -540,10 +540,14 @@ function renderOfferChart(r) {
     ? "After your " + calc.formatPrice(r.expenses) + " in expenses, " + amount
     : upperFirst(amount)) + " spread over more hours pays less per hour.";
 
+  // Under 1 hour, "only up to 0.04 hrs" is exact but hard to read.
+  const target = calc.formatPrice(r.rate);
   byId("offer-summary").textContent = "After expenses, the offer pays " +
-    calc.formatMoney(offer.hourlyAfter) + " an hour for " + hoursInWords(r.hours.total) +
-    ". It pays your " + calc.formatPrice(r.rate) + " target or more " +
-    (offer.coversAllHours ? "" : "only ") + "up to " + calc.formatHours(offer.hoursCovered) + ".";
+    calc.formatMoney(offer.hourlyAfter) + " an hour for " + hoursInWords(r.hours.total) + ". " +
+    (offer.hoursCovered < 1
+      ? "It stays below your " + target + " target for any job longer than an hour."
+      : "It pays your " + target + " target or more " + (offer.coversAllHours ? "" : "only ") +
+        "up to " + calc.formatHours(offer.hoursCovered) + ".");
 
   layoutRateChart(r);
 }
@@ -1298,7 +1302,7 @@ function fitHeroNumber() {
 function placeControls() {
   const controls = document.querySelector(".control-bar");
   if (isPhone()) {
-    byId("hero-panel").insertAdjacentElement("afterend", controls);
+    document.querySelector(".hero-after").insertAdjacentElement("afterend", controls);
   } else {
     document.querySelector(".results-header").appendChild(controls);
   }
@@ -1398,6 +1402,15 @@ function currentScreen() {
   return Object.keys(SCREENS).filter(function (key) { return !byId(SCREENS[key]).hidden; })[0];
 }
 
+// Switching screens moves focus to the new screen's start, so screen readers
+// announce it. Not on first load: then focus stays at the top of the page, so
+// the first Tab reaches the skip link and the header.
+let firstLoad = true;
+
+function focusScreen(element) {
+  if (!firstLoad) element.focus();
+}
+
 // The browser's Back button goes from results to inputs, with every value kept.
 // Showing the results adds a history step; Back (or "Edit details") removes it.
 function openResults() {
@@ -1406,7 +1419,7 @@ function openResults() {
   const target = ["hero-label", "empty-state", "error-state"].map(byId).filter(function (element) {
     return !element.hidden && !element.closest("[hidden]");
   })[0];
-  if (target) target.focus();
+  if (target) focusScreen(target);
 }
 
 function openInputs() {
@@ -1415,7 +1428,7 @@ function openInputs() {
   showSelectedJobPill();
   // The tally measures its width, so it draws once screen 1 is showing.
   relayoutCharts();
-  byId("page-title").focus();
+  focusScreen(byId("page-title"));
 }
 
 // Routes: every screen has an address, so Back works and a reload lands in the
@@ -1758,7 +1771,7 @@ function renderBackButton() {
 function openProjects() {
   showScreen("projects");
   renderProjects();
-  byId("projects-title").focus();
+  focusScreen(byId("projects-title"));
 }
 
 // Estimate and offer per hour for a row, from the saved numbers.
@@ -2170,6 +2183,7 @@ draft = projectStore.loadDraft(storage()).draft;
 const startState = stateFromAddress(location.hash);
 history.replaceState(startState, "", addressFor(startState));
 route(startState);
+firstLoad = false;
 
 // Bars and dots animate only after the first render, never on load.
 requestAnimationFrame(function () {

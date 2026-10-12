@@ -372,7 +372,7 @@
         </div>
       </div>
 
-      <h2 id="result-title" class="visually-hidden">The result</h2>
+      <h1 id="result-title" class="visually-hidden">The result</h1>
 
       <!-- The hero panel: the sunset gradient opens into the answer. -->
       <div class="hero-panel" id="hero-panel">
@@ -383,7 +383,6 @@
               <p class="hero-job" id="hero-job">Menu · 2 pages · 2 rounds</p>
               <p class="hero-sentence" id="hero-sentence">for 11.5 hours of real work. That's $7.61 an hour under your $25 target.</p>
               <p class="warning" id="offer-warning" hidden></p>
-              <p class="mono-note hero-weeks" id="hero-weeks" hidden></p>
             </div>
           </div>
           <p class="hero-number">
@@ -394,6 +393,11 @@
 
         <p class="empty-state" id="empty-state" tabindex="-1" hidden>Add some hours to see your estimate.</p>
         <p class="empty-state" id="error-state" tabindex="-1" hidden>Fix the fields with errors to see your result.</p>
+      </div>
+
+      <!-- Over 160 hours: a note just below the hero, on the page color so it stays readable. -->
+      <div class="results-body hero-after">
+        <p class="mono-note hero-weeks" id="hero-weeks" hidden></p>
       </div>
 
       <div class="results-body">
@@ -408,7 +412,7 @@
         <div class="charts-row">
           <!-- Chart 1: Where your hours go -->
           <section class="chart" id="hours-chart" aria-labelledby="hours-title">
-            <h3 id="hours-title">Where your 11.5 hours go</h3>
+            <h2 id="hours-title">Where your 11.5 hours go</h2>
 
             <div class="bars" id="bars" aria-hidden="true">
               <div class="bracket" id="bracket"><span class="bracket-label" id="bracket-label"></span></div>
@@ -437,7 +441,7 @@
 
           <!-- Chart 2: Your rate drops as hours grow -->
           <section class="chart" id="offer-chart" aria-labelledby="rate-title">
-            <h3 id="rate-title">Your rate drops as hours grow</h3>
+            <h2 id="rate-title">Your rate drops as hours grow</h2>
             <p class="chart-sub" id="rate-sub">After your $20 in expenses, $200 spread over more hours pays less per hour.</p>
 
             <div class="rate-plot" id="rate-plot" aria-hidden="true"></div>
@@ -455,7 +459,7 @@
         <!-- Show the math, then your price and your reply -->
         <div class="results-more">
           <section class="receipt" id="receipt-section" aria-labelledby="receipt-title">
-            <h3 id="receipt-title" class="visually-hidden">The math</h3>
+            <h2 id="receipt-title" class="visually-hidden">The math</h2>
 
             <details class="math">
               <summary>

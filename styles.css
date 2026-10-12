@@ -1428,8 +1428,12 @@ legend {
   line-height: 1.4;
 }
 
+.results-body.hero-after {
+  padding-bottom: 0;
+}
+
 .hero-weeks {
-  margin-top: 8px;
+  margin-top: 16px;
   color: var(--ink-2);
 }
 
@@ -1476,7 +1480,7 @@ legend {
   font-size: 22px;
   letter-spacing: 0;
   line-height: 1;
-  color: var(--ink-2);
+  color: var(--ink);
 }
 
 .empty-state {
@@ -1545,7 +1549,7 @@ legend {
   margin-top: 52px;
 }
 
-.chart h3,
+.chart h2,
 .result-block > legend {
   font-size: 22px;
   font-weight: 300;
@@ -2374,6 +2378,38 @@ textarea {
     font-size: 28px;
   }
 
+  /* Tap areas of at least 44 by 44: padding grows the input's hit box and an
+     equal negative margin gives the space back, so nothing looks different. */
+  .stepper input {
+    min-width: calc(2.2ch + 4px);
+    padding-block: 4px;
+    margin: -4px -2px;
+  }
+
+  .work-row .unit-input input {
+    padding-top: 4px;
+    margin-top: -4px;
+  }
+
+  .field-row .unit-input input {
+    padding-inline: 8px;
+    margin-inline: -8px;
+  }
+
+  .bar-input input {
+    padding: 6px 16px 8px;
+    margin: -6px -16px;
+  }
+
+  /* The bar steppers have no spare room between their buttons, so the input
+     itself is 44 by 44; its digits stay the same size. */
+  .bar-stepper input {
+    box-sizing: border-box;
+    min-width: 44px;
+    min-height: 44px;
+    padding: 0;
+  }
+
   /* Work rows: the label on top, then the bar and the hours input on one line. */
   .work-row {
     grid-template-columns: minmax(0, 1fr) 90px;
@@ -2557,12 +2593,6 @@ textarea {
     font-size: 16px;
   }
 
-  .hero-weeks {
-    grid-row: 4;
-    grid-column: 1 / -1;
-    text-align: left;
-  }
-
   .hero-sentence,
   .warning {
     grid-row: 3;
@@ -2638,7 +2668,7 @@ textarea {
     margin-top: 44px;
   }
 
-  .chart h3,
+  .chart h2,
   .result-block > legend {
     font-size: 20px;
   }
