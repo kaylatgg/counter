@@ -2,7 +2,7 @@
 
 Source of truth for how Counter looks. Replaces every earlier version. CLAUDE.md still owns the flow, math, copy, validation, accessibility, and tests.
 
-Reference images: `docs/design-v5-screen1.png` and `docs/design-v5-screen2.png` (desktop), `docs/design-v5-phone.png` (phone). Match them. If an image and this file differ, this file wins. If something isn't covered, ask. Ignore all older reference images.
+Reference images: `docs/design-v5-screen1.png` and `docs/design-v5-screen2.png` (desktop), `docs/design-v5-phone.png` (phone), and the share and image references listed in their section. Match them. If an image and this file differ, this file wins. If something isn't covered, ask. Ignore all older reference images.
 
 ## The idea
 
@@ -176,6 +176,30 @@ Sizes:
 - Save field: drops in under the header, full width: name input, then Save and Cancel side by side.
 
 **Motion:** the same reveal. The circle in the bottom bar grows into the hero. Off under reduced motion.
+
+## Share link and Save image (screen 2)
+
+Approved by Kayla, October 12, 2026. References: `docs/design-share-desktop.png`, `docs/design-share-phone.png`, `docs/design-save-image.png`.
+
+**Share button**
+- Desktop: a text button with a share icon, between Projects and Save, styled like Projects. After copying, the label reads "✓ Link copied" for 2 seconds, with a fixed width so nothing shifts.
+  Reason: sharing is secondary to saving, so only Save is solid ink. Feedback shows where you clicked and covers nothing.
+- Phone: a 44px icon button on `--paper`, labeled "Share" for screen readers. It opens the phone's share sheet.
+  Reason: the header must fit Edit, Projects, Share, and Save on one line, and students share by text and DM.
+
+**Opening a shared link**
+- A mono note above the hero, `--ink-2`, with a small ink dot: "Shared result. Change anything to make it yours." For a partly broken link: "Some numbers in this link didn't work, so we used examples."
+  Reason: it explains where the numbers came from without looking like an error. The dot is ink, because red already means "your current hours".
+- If you have unsaved numbers, a panel in the "Start over" style asks: "Open the shared result? Your current numbers will be replaced." Buttons: "Open shared result" and "Keep mine".
+  Reason: a link should never wipe someone's work.
+
+**Save image** (next to "Copy reply")
+- An outline button, "Save image". It makes a 1080x1350 PNG for the client.
+  Reason: the reply and the image are both things you send to the client, so they sit together. 4:5 fills a phone screen in Messages, DMs, and email. PNG keeps text and stripes sharp.
+- The image speaks to the client, not the student: "Design" (not "Production"), "work you don't see" (not "usually forgotten"), "$200 covers 7.2 hrs" (not "runs out"). No target rate gaps or losses.
+  Reason: it explains the work without sounding like a complaint.
+- Layout, top to bottom: job summary (mono), "11 hours of work" (Geist 300), one line of intro, the hours chart with the bracket and covers line, labels alternating on two rows, the legend, then "My price" on a `--sunset` panel, and "Made with Counter" (mono, small).
+- The gradient rule ("only four places") is for the page. The saved image is its own canvas and uses the paid gradient and one sunset panel.
 
 ## Don'ts
 

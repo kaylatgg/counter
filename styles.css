@@ -293,6 +293,87 @@ h3 {
   font-size: 14px;
 }
 
+/* Share: a text button like Projects, between Projects and Save (screen 2).
+   Fixed width, so "Link copied" doesn't move anything. */
+.share-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  width: 112px;
+  min-height: 36px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font-size: 14px;
+}
+
+.share-check,
+.share-button.copied .share-icon {
+  display: none;
+}
+
+.share-button.copied .share-check {
+  display: block;
+}
+
+/* "Shared result. Change anything to make it yours." Mono, with a small ink dot. */
+.shared-note {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-family: var(--mono);
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+
+.shared-dot {
+  flex: none;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--ink);
+  transform: translateY(-1px);
+}
+
+.results-body.shared-row {
+  padding-bottom: 12px;
+}
+
+.inputs-top .shared-note {
+  margin-bottom: 16px;
+}
+
+.share-field {
+  flex: 1;
+  min-width: min(420px, 100%);
+}
+
+.share-field .unit-input {
+  display: flex;
+  margin-top: 6px;
+  border-bottom: 1px solid var(--ink);
+}
+
+.share-field input {
+  width: 100%;
+  padding: 0 0 4px;
+  border: 0;
+  background: transparent;
+  font-family: var(--mono);
+  font-size: 14px;
+}
+
+.share-field .mono-note {
+  margin-top: 6px;
+}
+
+#share-panel .panel-actions {
+  padding-bottom: 22px;
+}
+
 /* In a saved project the button just says "Saved", and can't be pressed. */
 .save-button:disabled {
   border-color: var(--line);
@@ -354,7 +435,8 @@ h3 {
   padding-bottom: 22px;
 }
 
-#start-over .panel-actions {
+#start-over .panel-actions,
+#share-question .panel-actions {
   padding-bottom: 0;
 }
 
@@ -2235,6 +2317,34 @@ textarea {
     padding: 0 18px;
   }
 
+  /* Share: a 44px icon button on paper. Its name stays "Share" for screen readers. */
+  .share-button {
+    justify-content: center;
+    width: 44px;
+    min-height: 44px;
+    border-radius: 50%;
+    background: var(--paper);
+  }
+
+  .share-icon,
+  .share-check {
+    width: 16px;
+    height: 16px;
+  }
+
+  .share-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  .results-body.shared-row {
+    padding-top: 8px;
+  }
+
   .save-long,
   .edit-long,
   .preview-long {
@@ -2889,7 +2999,8 @@ textarea {
     width: 100%;
   }
 
-  .panel-actions {
+  .panel-actions,
+  #share-panel .panel-actions {
     flex-wrap: wrap;
     padding-bottom: 0;
   }
@@ -2897,6 +3008,26 @@ textarea {
   .panel-actions .action-button {
     flex: 1;
     min-height: 44px;
+  }
+}
+
+/* The narrowest phones: Edit, Projects, Share, and Save still fit on one line
+   on screen 2, with a little less padding. Tap targets stay 44px tall. */
+@media (max-width: 359px) {
+  .on-results .topbar-inner {
+    column-gap: 4px;
+  }
+
+  .on-results .projects-link {
+    padding: 0 10px;
+  }
+
+  .on-results .save-button {
+    padding: 0 14px;
+  }
+
+  .on-results .edit-button {
+    padding: 0 12px;
   }
 }
 

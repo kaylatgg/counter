@@ -73,6 +73,13 @@ Note: the logo lands on the same 11.5 hrs and $310 as the menu, and the poster o
     - **Focus on first load stays at the top.** Moving it to the page title made the first Tab skip the skip link, Projects, and Save. Switching screens still moves focus, so screen readers announce the new screen.
     - **44 by 44 tap areas on phone** for every number input. Padding grows the hit area and an equal negative margin gives the space back, so the inputs look the same. Screen 2's Pages and Rounds had no spare room between their buttons, so those inputs are 44px wide and their buttons sit slightly further apart.
     - **Rate chart summary under 1 hour.** "Only up to 0.04 hrs" was exact but hard to read; it now says the offer stays below the target for any job longer than an hour.
+25. **Share link and Save image (October 12, 2026).** Students send offers and prices to clients, friends, and teachers, so a result needs to travel. Design in docs/DESIGN.md (approved by Kayla).
+    - **The link holds only the inputs** (with a version number), not the project name, price to send, or reply, because those are personal and the link may be forwarded. Everything lives in the address, so nothing is uploaded anywhere.
+    - **A link never wipes work.** It opens as the unsaved calculation and never touches saved projects. If the unsaved numbers differ from the example, it asks first. Bad values fall back to examples with a note, rather than failing, because a link cut off in a message should still open.
+    - **The address is cleaned up after opening,** so a reload or Back doesn't reopen the link over changes. It becomes `#result` rather than nothing, so a reload stays on screen 2, like every other screen 2 address.
+    - **The image is for the client,** so it shows the work (including "the work you don't see") and the price, not the student's target rate or losses. It's a PNG on a canvas, with no library, at 4:5 to fill a phone screen in messages.
+    - **The image's price** is the price to send, and when that's blank, what the blank follows (their offer when it's at or above the estimate). So the image always matches the reply.
+    - **On phones at 320px**, the header's paddings and gaps shrink a little so Edit, Projects, Share, and Save fit on one line, as the design asks.
 
 ## Known limits of version 1
 

@@ -10,6 +10,7 @@
   <link rel="stylesheet" href="styles.css">
   <script src="calc.js" defer></script>
   <script src="projects.js" defer></script>
+  <script src="share.js" defer></script>
   <script src="app.js" defer></script>
 </head>
 <body class="on-inputs">
@@ -34,6 +35,8 @@
       </div>
 
       <a href="#projects" class="projects-link" id="projects-link"><span class="projects-word">Projects</span> <span class="projects-count" id="projects-count">0</span></a>
+      <!-- Screen 2: copies a link to this result (desktop) or opens the share sheet (phone). -->
+      <button type="button" class="share-button" id="share-link" hidden><svg class="share-icon" width="14" height="14" viewBox="0 0 14 14" aria-hidden="true" focusable="false"><path d="M7 9V1.5M4 4.25 7 1.25l3 3M2.5 7v4.75a.75.75 0 0 0 .75.75h7.5a.75.75 0 0 0 .75-.75V7" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg><svg class="share-check" width="14" height="14" viewBox="0 0 14 14" aria-hidden="true" focusable="false"><path d="M2.5 7.5 5.5 10.5 11.5 3.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="share-label" id="share-label">Share</span></button>
       <button type="button" class="save-button" id="save-project">Save as project</button>
     </div>
   </header>
@@ -63,6 +66,29 @@
         <button type="button" class="action-button outline" id="start-over-save">Save as project</button>
         <button type="button" class="action-button" id="start-over-yes">Start over</button>
         <button type="button" class="action-button outline" id="start-over-cancel">Cancel</button>
+      </div>
+    </div>
+
+    <!-- Opening a shared link over unsaved numbers. -->
+    <div class="header-panel" id="share-question" hidden>
+      <p class="start-over-question">Open the shared result? Your current numbers will be replaced.</p>
+      <div class="panel-actions">
+        <button type="button" class="action-button" id="share-open">Open shared result</button>
+        <button type="button" class="action-button outline" id="share-keep">Keep mine</button>
+      </div>
+    </div>
+
+    <!-- When the link can't be copied: the link itself, selected, to copy by hand. -->
+    <div class="header-panel" id="share-panel" hidden>
+      <div class="field share-field">
+        <label for="share-url">Link to this result</label>
+        <div class="unit-input">
+          <input id="share-url" type="text" readonly aria-describedby="share-url-hint">
+        </div>
+        <p class="mono-note" id="share-url-hint">Couldn't copy. Select the link and copy it yourself.</p>
+      </div>
+      <div class="panel-actions">
+        <button type="button" class="action-button outline" id="share-close">Close</button>
       </div>
     </div>
 
@@ -107,6 +133,7 @@
     <!-- Screen 1: inputs -->
     <section class="screen-inputs" id="screen-inputs" aria-labelledby="page-title">
       <div class="inputs-top">
+        <p class="shared-note" id="shared-note-inputs" hidden><span class="shared-dot" aria-hidden="true"></span><span class="shared-text"></span></p>
         <h1 id="page-title" tabindex="-1">What does this job <span class="headline-break">really pay?</span></h1>
         <p class="lede">Count all the work, see what an offer really pays per hour, then set your price or change the work.</p>
         <p class="example-note">Example numbers. Change them to match your project.</p>
@@ -374,6 +401,11 @@
 
       <h1 id="result-title" class="visually-hidden">The result</h1>
 
+      <!-- After opening a shared link, until the first change. -->
+      <div class="results-body shared-row" id="shared-row" hidden>
+        <p class="shared-note" id="shared-note"><span class="shared-dot" aria-hidden="true"></span><span class="shared-text"></span></p>
+      </div>
+
       <!-- The hero panel: the sunset gradient opens into the answer. -->
       <div class="hero-panel" id="hero-panel">
         <div class="hero-content" id="result-summary">
@@ -521,6 +553,7 @@
                 </div>
 
                 <button type="button" class="round-button" id="copy-reply">Copy reply</button>
+                <button type="button" class="round-button outline" id="save-image">Save image</button>
                 <span id="copy-status" role="status"></span>
               </div>
             </fieldset>
