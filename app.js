@@ -2310,11 +2310,9 @@ function onArmEntries(entries) {
     armObserver.unobserve(block);
     const box = entry.boundingClientRect;
     const onScreen = box.top < window.innerHeight && box.bottom > 0;
-    // During the reveal, a block in view is armed only if it will play as the
-    // orb lands (35% visible); one just peeking in stays final.
-    const seen = Math.max(0, Math.min(box.bottom, window.innerHeight) - Math.max(box.top, 0));
-    const playsOnLanding = screenHidden() && box.height > 0 && seen / box.height >= PLAY_THRESHOLD;
-    if ((onScreen && !playsOnLanding) || box.bottom <= 0) {
+    // During the reveal, screen 2 can't be seen yet, so blocks in view are armed
+    // too: they play as the orb lands, or (just peeking in) at 35% as you scroll.
+    if ((onScreen && !screenHidden()) || box.bottom <= 0) {
       blockState[id] = "final";
       return;
     }
