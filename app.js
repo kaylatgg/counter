@@ -2271,6 +2271,23 @@ const ARMS = {
   "hours-chart": armHours,
   "offer-chart": armRate,
 };
+// What the observers watch for each block: the drawing itself for the charts
+// (the bars area, the plot), so headings and legends don't count.
+const WATCH = {
+  "hero-panel": "hero-panel",
+  metrics: "metrics",
+  "hours-chart": "bars",
+  "offer-chart": "rate-plot",
+};
+
+function watched(id) {
+  return byId(WATCH[id]);
+}
+
+function blockOf(element) {
+  return Object.keys(WATCH).filter(function (id) { return WATCH[id] === element.id; })[0];
+}
+
 // For each block: "armed", "played", or "final". None yet means not decided.
 let blockState = {};
 let armObserver = null;
@@ -2299,13 +2316,13 @@ function startArming() {
   if (!armObserver) {
     armObserver = new IntersectionObserver(onArmEntries, { rootMargin: "0px 0px 50% 0px", threshold: 0 });
   }
-  Object.keys(ARMS).forEach(function (id) { armObserver.observe(byId(id)); });
+  Object.keys(ARMS).forEach(function (id) { armObserver.observe(watched(id)); });
 }
 
 function onArmEntries(entries) {
   entries.forEach(function (entry) {
     const block = entry.target;
-    const id = block.id;
+    const id = blockOf(block);
     if (blockState[id] || !entry.isIntersecting) return;
     if (block.hidden || block.closest("[hidden]")) return;
     armObserver.unobserve(block);
@@ -2370,7 +2387,7 @@ function startPlays() {
   if (!playObserver) {
     playObserver = new IntersectionObserver(function (entries) {
       entries.forEach(function (entry) {
-        const id = entry.target.id;
+        const id = blockOf(entry.target);
         if (blockState[id] !== "armed" || !entry.isIntersecting || entry.intersectionRatio < PLAY_THRESHOLD) return;
         playObserver.unobserve(entry.target);
         queuePlay(id);
@@ -2378,7 +2395,7 @@ function startPlays() {
     }, { threshold: [PLAY_THRESHOLD] });
   }
   Object.keys(PLAYS).forEach(function (id) {
-    if (blockState[id] === "armed") playObserver.observe(byId(id));
+    if (blockState[id] === "armed") playObserver.observe(watched(id));
   });
 }
 
