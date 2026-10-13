@@ -1134,12 +1134,29 @@ function renderJob() {
 // view (tap, keyboard, a field tab, or a loaded project), without moving the page:
 // "nearest" only scrolls what's needed. Smooth, unless reduced motion is on.
 // Desktop shows every pill, so nothing happens there.
+// Desktop: a pill row that wrapped onto two lines gets square-ish corners.
+function markWrappedPills() {
+  const row = document.querySelector(".job-choice");
+  const pills = Array.prototype.filter.call(row.querySelectorAll("label"), function (label) {
+    return !label.hidden;
+  });
+  const wrapped = !isPhone() && pills.length > 0 &&
+    pills[pills.length - 1].offsetTop > pills[0].offsetTop + 1;
+  row.classList.toggle("wrapped", wrapped);
+}
+
 function showSelectedJobPill() {
+  markWrappedPills();
   if (!isPhone()) return;
-  const label = document.querySelector('input[name="job"]:checked').nextElementSibling;
+  // The field tabs scroll the same way, since four don't fit on a phone.
+  scrollRowTo(document.querySelector('input[name="field"]:checked').nextElementSibling);
+  scrollRowTo(document.querySelector('input[name="job"]:checked').nextElementSibling);
+}
+
+function scrollRowTo(label) {
   if (!label.offsetParent) return;
-  // Scrolls only the pill row, by setting its own scroll position. scrollIntoView
-  // would also move the browser's Tab starting point to the pill, so the first
+  // Scrolls only the row, by setting its own scroll position. scrollIntoView
+  // would also move the browser's Tab starting point to the label, so the first
   // Tab after load would skip the skip link and the header.
   const row = label.parentElement;
   const rowBox = row.getBoundingClientRect();
@@ -1281,6 +1298,7 @@ let lastResult = null;
 let lastValues = null;
 
 function relayoutCharts() {
+  markWrappedPills();
   layoutTally(lastHours);
   if (!lastResult || byId("result").hidden) return;
   fitHeroNumber();
@@ -2224,7 +2242,7 @@ const IMAGE_RIGHT = 1000;
 const IMAGE_COLORS = {
   bg: "#ECECEA", ink: "#161616", ink2: "#4D4D4A", line: "#CFCFCB",
 };
-const PRODUCTION_NAMES = { graphic: "Design", illustration: "Drawing", photography: "Shooting and editing" };
+const PRODUCTION_NAMES = { graphic: "Design", illustration: "Drawing", photography: "Shooting and editing", motion: "Animation" };
 const IMAGE_GROUP_NAMES = { communication: "Communication", revisions: "Revisions", delivery: "Delivery" };
 
 function imageFont(size, weight, mono) {

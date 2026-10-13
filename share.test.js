@@ -48,7 +48,7 @@ test("every field's jobs come back exactly, with an offer", function () {
 });
 
 test("with no offer, offer=none comes back as Not yet", function () {
-  ["graphic", "illustration", "photography"].forEach(function (field) {
+  ["graphic", "illustration", "photography", "motion"].forEach(function (field) {
     const job = calc.WORK_FIELDS[field].jobs[0];
     const made = linkFor(job, field, { offerStatus: "none" });
     assert.ok(made.hash.indexOf("offer=none") !== -1);

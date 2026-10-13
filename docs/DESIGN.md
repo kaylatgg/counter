@@ -102,7 +102,41 @@ Rules:
 
 ## Motion
 
-On "Check the offer": the button's gradient circle grows into the hero panel (about 400ms), the number counts up, the paid fill sweeps left to right, then the red dot appears. Once only. Off under reduced motion.
+Approved by Kayla, October 13, 2026. Reference: open `docs/motion-study.html` in a browser and scroll. It is a prototype; match its timing and order, not its code.
+
+The idea: motion acts out the finding. Each part plays once, then gets out of the way.
+Easing for everything: `cubic-bezier(.2,.7,.2,1)` (ease-out). Under reduced motion, everything shows in its final state at once.
+
+**The reveal** (on "Check the offer"): the button's gradient circle grows into the hero panel, about 400ms, as now.
+
+**Plays once, when it scrolls into view** (35% visible, once per result, never again until the next "Check the offer"):
+- **Hero:** the number counts up from 0, 700ms. Tabular digits, so the width never jumps.
+- **Stats:** each hairline draws left to right, 500ms. Each number counts up, 700ms, 80ms after the one before.
+- **Hours chart:**
+  1. Bars wipe in from the left as stripes, 400ms. All work starts unpaid.
+  2. The paid gradient fills from the left, 700ms, and stops where the money runs out.
+  3. The dashed runs-out line drops in with its label, 200ms.
+  4. The bracket draws over the forgotten groups, 300ms. Group labels rise 6px and fade in, 60ms apart.
+  Reason: the fill stopping short is the moment people understand the problem.
+- **Rate chart:**
+  1. Grid fades in, 200ms. The target line draws left to right, 300ms.
+  2. The curve draws left to right, 900ms, so you watch the rate fall.
+  3. The black dot pops (scale 0 to 1.4 to 1, 260ms) as the curve reaches it.
+  4. The red dot lands last, with one soft halo pulse, then its label.
+- Everything is visible at rest before it plays. Never leave content hidden waiting for a scroll.
+
+**Live changes morph, never replay:** when a control or input changes the result, numbers, bar fills, the runs-out line, and the curve tween from old to new in 250ms.
+Reason: the full show plays once. After that, motion only shows what changed.
+
+**Scrub the rate chart** (new):
+- Hover or drag on the chart: a vertical line, a dot on the curve, and a label "14h → $12.86/hr" follow the pointer, snapping to half hours.
+- Keyboard: the chart is focusable. Left and right arrows move half an hour. Escape hides it. Each change is announced politely to screen readers ("At 14 hours, the offer pays $12.86 an hour after expenses.").
+- Works under reduced motion.
+- Reason: it turns the chart into a "what if" tool, and it is real interaction with the data.
+
+**Small moments:**
+- "Check the offer" hover: the gradient circle grows 6% and the arrow nudges 3px forward, 240ms. Press: the button scales to 98%.
+- Pills and buttons: 160ms color and background transitions only.
 
 ## Details decided while building v5
 
@@ -122,6 +156,7 @@ Decided while building:
 - **Rate chart labels** take the spot with the fewest conflicts (plot edges, then other labels and dots, then the curve, then the target line). Y labels: the target always; $0, the top, and a negative bottom only when 16px or more from it. Grid steps: the smallest round step with at most 7 spaces.
 - **Below expenses**, the curve sits under $0 with a hairline at $0 and no crossing dot.
 - **Bar labels** that can't fit in one row alternate onto a second row.
+- **Job pills on desktop** (760px and up) that don't fit the column wrap onto a second line, aligned left with no stretching. The `--paper` background becomes a 24px rounded rectangle around both lines, with the same 4px padding and a 4px gap; the selected pill stays a full pill. Phones keep the scrolling row, and the field tabs scroll the same way there. Decided with Kayla, October 13, 2026.
 - **Screen 2's header row is sticky** with a `--bg` background, so the live controls stay in reach. Screen 1's header scrolls away so it never cuts the glow.
 - **Row bars on screen 1** share one scale: 25px per hour, narrower when any row would pass 150px.
 - **The reveal** fades screen 1 (200ms), grows the orb from the button's circle to the hero panel (400ms), then fades screen 2 in, counts the number up, sweeps the bars (600ms), and shows the red dot last.

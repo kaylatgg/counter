@@ -613,6 +613,26 @@ legend {
   background: var(--paper);
 }
 
+/* Desktop: when a field's jobs don't fit the column, the pills wrap onto a
+   second line, left-aligned, and the paper becomes a 24px rounded rectangle
+   around both lines (app.js adds .wrapped). Phone keeps the scrolling row. */
+@media (min-width: 760px) {
+  .job-choice {
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    row-gap: 4px;
+    max-width: 100%;
+  }
+
+  .job-choice label {
+    flex: none;
+  }
+
+  .job-choice.wrapped {
+    border-radius: 24px;
+  }
+}
+
 .segmented input {
   position: absolute;
   opacity: 0;
@@ -2466,8 +2486,27 @@ textarea {
     -webkit-overflow-scrolling: touch;
   }
 
-  .job-choice::-webkit-scrollbar {
+  .job-choice::-webkit-scrollbar,
+  .field-tabs::-webkit-scrollbar {
     display: none;
+  }
+
+  /* Four field tabs don't fit, so the row scrolls sideways like the job pills.
+     The hairline is a shadow, so the scrolling row doesn't clip the underline. */
+  .field-tabs {
+    width: calc(100% + 20px);
+    margin-right: -20px;
+    padding-right: 20px;
+    overflow-x: auto;
+    border-bottom: 0;
+    box-shadow: inset 0 -1px var(--line);
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .field-tabs label {
+    flex: none;
+    margin-bottom: 0;
   }
 
   .job-choice label {

@@ -81,6 +81,34 @@ const JOBS = {
     example: { count: 8, rounds: 1, setupHours: 2, itemHours: 1,
       communicationHours: 1, roundHours: 1.5, deliveryHours: 1 },
   },
+  logoanim: {
+    name: "Logo animation", phrase: "a logo animation", countLabel: "Seconds",
+    item: "second", items: "seconds",
+    setup: "Storyboard and style frames", perItem: "Animation, per second", delivery: "Render and export",
+    example: { count: 5, rounds: 2, setupHours: 2, itemHours: 1.5,
+      communicationHours: 1, roundHours: 1.5, deliveryHours: 1.5 },
+  },
+  socialvideo: {
+    name: "Social video", phrase: "a social video", countLabel: "Seconds",
+    item: "second", items: "seconds",
+    setup: "Script and storyboard", perItem: "Animation, per second", delivery: "Render, sizes, and captions",
+    example: { count: 15, rounds: 2, setupHours: 3, itemHours: 0.8,
+      communicationHours: 1.5, roundHours: 2, deliveryHours: 1.5 },
+  },
+  character: {
+    name: "Character animation", phrase: "a character animation", countLabel: "Seconds",
+    item: "second", items: "seconds",
+    setup: "Character design and rig", perItem: "Animation, per second", delivery: "Render and export",
+    example: { count: 10, rounds: 2, setupHours: 6, itemHours: 2,
+      communicationHours: 1, roundHours: 2, deliveryHours: 1 },
+  },
+  explainer: {
+    name: "Explainer video", phrase: "an explainer video", countLabel: "Seconds",
+    item: "second", items: "seconds",
+    setup: "Script, storyboard, and voice timing", perItem: "Animation, per second", delivery: "Sound sync and export",
+    example: { count: 30, rounds: 2, setupHours: 5, itemHours: 1,
+      communicationHours: 2, roundHours: 3, deliveryHours: 2 },
+  },
   // Every field ends with Custom: the same blank job in each.
   custom: {
     name: "Custom project", tab: "Custom", phrase: "a custom project", countLabel: "Pieces",
@@ -108,6 +136,11 @@ const WORK_FIELDS = {
     name: "Photography",
     jobs: ["session", "event", "product", "custom"],
     expensesHint: "Money you spend on this job, like gear rental, mileage, or props.",
+  },
+  motion: {
+    name: "Motion",
+    jobs: ["logoanim", "socialvideo", "character", "explainer", "custom"],
+    expensesHint: "Money you spend on this job, like music licenses, stock footage, fonts, plugins, or voiceover.",
   },
 };
 

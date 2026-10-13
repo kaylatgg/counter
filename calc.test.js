@@ -565,11 +565,13 @@ const JOB_TOTALS = {
   menu: 11.5, logo: 13, social: 8.5, poster: 9.5,
   portrait: 9, editorial: 12.5,
   session: 10, event: 14.5, product: 13.5,
+  logoanim: 15, socialvideo: 22, character: 32, explainer: 45,
   custom: 0,
 };
 
-test("three fields; every job is in one, and each field ends with Custom", function () {
-  assert.deepStrictEqual(Object.keys(calc.WORK_FIELDS), ["graphic", "illustration", "photography"]);
+test("four fields; every job is in one, and each field ends with Custom", function () {
+  assert.deepStrictEqual(Object.keys(calc.WORK_FIELDS), ["graphic", "illustration", "photography", "motion"]);
+  assert.deepStrictEqual(calc.WORK_FIELDS.motion.jobs, ["logoanim", "socialvideo", "character", "explainer", "custom"]);
   assert.deepStrictEqual(calc.WORK_FIELDS.graphic.jobs, ["menu", "logo", "social", "poster", "custom"]);
   assert.deepStrictEqual(calc.WORK_FIELDS.illustration.jobs, ["portrait", "editorial", "custom"]);
   assert.deepStrictEqual(calc.WORK_FIELDS.photography.jobs, ["session", "event", "product", "custom"]);
@@ -614,6 +616,27 @@ test("custom: starts at 0 hours, so it shows the \"add hours\" state", function 
   assert.strictEqual(runJob("custom").hasHours, false);
 });
 
+test("motion jobs count seconds: 15, 22, 32, and 45 hrs", function () {
+  [["logoanim", 15, 395], ["socialvideo", 22, 570], ["character", 32, 820], ["explainer", 45, 1145]]
+    .forEach(function (row) {
+      const r = runJob(row[0]);
+      closeTo(r.hours.total, row[1]);
+      assert.strictEqual(r.estimate, row[2], row[0]);
+      assert.strictEqual(calc.JOBS[row[0]].countLabel, "Seconds");
+      assert.strictEqual(calc.JOBS[row[0]].perItem, "Animation, per second");
+    });
+  assert.strictEqual(calc.fieldForJob("explainer"), "motion");
+  assert.strictEqual(calc.fieldForJob("custom", "motion"), "motion");
+  assert.strictEqual(calc.WORK_FIELDS.motion.expensesHint,
+    "Money you spend on this job, like music licenses, stock footage, fonts, plugins, or voiceover.");
+  assert.strictEqual(calc.validateInputs(Object.assign(jobExample("logoanim"), { count: "2.5" }), "logoanim").errors.count,
+    "Use a whole number for seconds.");
+  assert.strictEqual(calc.replyText("logoanim", 5, 2, 395, null),
+    "Hi! Thanks for reaching out. For a logo animation with 5 seconds and 2 rounds of changes, " +
+    "my price is $395. Let me know if you have any questions!");
+  assert.ok(calc.replyText("socialvideo", 1, 1, 100, null).indexOf("a social video with 1 second and 1 round") !== -1);
+});
+
 test("a job's field; Custom keeps the one picked, and older saves get Graphic design", function () {
   assert.strictEqual(calc.fieldForJob("event"), "photography");
   assert.strictEqual(calc.fieldForJob("portrait", "graphic"), "illustration");
@@ -641,7 +664,8 @@ test("every job has its reply phrase", function () {
   const phrases = Object.keys(calc.JOBS).map(function (key) { return calc.JOBS[key].phrase; });
   assert.deepStrictEqual(phrases, ["a menu", "a logo", "a set of social posts", "a poster or flyer",
     "a portrait commission", "an editorial illustration", "a portrait session", "an event shoot",
-    "a product shoot", "a custom project"]);
+    "a product shoot", "a logo animation", "a social video", "a character animation",
+    "an explainer video", "a custom project"]);
 });
 
 test("messages name the job's item and setup row", function () {
