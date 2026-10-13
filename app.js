@@ -1608,7 +1608,6 @@ function openResults(quiet) {
   // Each block plays once as it scrolls in (see "Plays once"). During the
   // reveal, plays start when the orb lands.
   armPlays();
-  startArming();
   if (!document.body.classList.contains("revealing")) startPlays();
   const target = ["hero-label", "empty-state", "error-state"].map(byId).filter(function (element) {
     return !element.hidden && !element.closest("[hidden]");
@@ -2247,17 +2246,19 @@ function animate(element, frames, options) {
   return element.animate(frames, Object.assign({ easing: EASE, fill: "backwards" }, options));
 }
 
-// Plays once when it scrolls into view, once per result: the hero, the stats,
-// the hours chart, and the rate chart. Arm early, play on time:
-// - The arm observer looks 50% of a screen below the fold. A block it meets
-//   there, still off screen, switches to its starting state ("armed").
-// - The play observer plays an armed block at 35% visible.
-// - A block that's already on screen (or scrolled past) when the arm observer
-//   first meets it keeps its final state and never plays. A visible block is
-//   never reset. During the reveal, screen 2 is invisible, so blocks in view
-//   can still be armed and play as the orb lands.
-// Starting states are classes added by script, so without scripts (or under
-// reduced motion) everything stays in its final state.
+// Plays once each time screen 2 is shown: the hero, the stats, the hours chart,
+// and the rate chart (DESIGN.md, Motion).
+// - Arm before screen 2 appears: whenever screen 2 is shown (Check the offer,
+//   a shared link, a saved project, Back), every block switches to its starting
+//   state in the same step that shows the screen, so its first frame is already
+//   the start. Nothing is ever seen finished and then reset.
+// - Each block plays when 35% of it is visible (for the charts, 35% of the
+//   drawing itself), one after another through the queue below. A block that's
+//   35% visible when screen 2 appears plays right away (after the reveal).
+// - A block the person scrolls past (it leaves the top of the screen before it
+//   plays) jumps to its final state. So does any armed block on a live change.
+// Starting states are set by script, so without scripts (or under reduced
+// motion) everything stays in its final state.
 const PLAY_THRESHOLD = 0.35;
 const PLAYS = {
   "hero-panel": playHero,
@@ -2271,7 +2272,7 @@ const ARMS = {
   "hours-chart": armHours,
   "offer-chart": armRate,
 };
-// What the observers watch for each block: the drawing itself for the charts
+// What the observer watches for each block: the drawing itself for the charts
 // (the bars area, the plot), so headings and legends don't count.
 const WATCH = {
   "hero-panel": "hero-panel",
@@ -2288,55 +2289,25 @@ function blockOf(element) {
   return Object.keys(WATCH).filter(function (id) { return WATCH[id] === element.id; })[0];
 }
 
-// For each block: "armed", "played", or "final". None yet means not decided.
+// For each block: "armed", "queued", "played", or "final".
 let blockState = {};
-let armObserver = null;
 let playObserver = null;
-let playing = false;
 let playTimers = [];
 
-// During the reveal, between screen 1 fading out and screen 2 fading in.
-function screenHidden() {
-  return document.body.classList.contains("reveal-hidden");
-}
-
-// A new result: forget what played, and look again.
+// Screen 2 is being shown: forget what played, and arm every block that's on
+// the page. Runs in the same step that shows the screen, before it's painted.
 function armPlays() {
   finishPlays();
   blockState = {};
-  playing = false;
   lastPlay = { id: null, at: -Infinity };
   scrubHours = null;
-  if (armObserver) armObserver.disconnect();
   if (playObserver) playObserver.disconnect();
-}
-
-function startArming() {
   if (!canMove() || !window.IntersectionObserver) return;
-  if (!armObserver) {
-    armObserver = new IntersectionObserver(onArmEntries, { rootMargin: "0px 0px 50% 0px", threshold: 0 });
-  }
-  Object.keys(ARMS).forEach(function (id) { armObserver.observe(watched(id)); });
-}
-
-function onArmEntries(entries) {
-  entries.forEach(function (entry) {
-    const block = entry.target;
-    const id = blockOf(block);
-    if (blockState[id] || !entry.isIntersecting) return;
+  Object.keys(ARMS).forEach(function (id) {
+    const block = byId(id);
     if (block.hidden || block.closest("[hidden]")) return;
-    armObserver.unobserve(block);
-    const box = entry.boundingClientRect;
-    const onScreen = box.top < window.innerHeight && box.bottom > 0;
-    // During the reveal, screen 2 can't be seen yet, so blocks in view are armed
-    // too: they play as the orb lands, or (just peeking in) at 35% as you scroll.
-    if ((onScreen && !screenHidden()) || box.bottom <= 0) {
-      blockState[id] = "final";
-      return;
-    }
     blockState[id] = "armed";
     ARMS[id]();
-    if (playing) playObserver.observe(block);
   });
 }
 
@@ -2368,6 +2339,7 @@ function pumpPlays() {
     const id = playQueue.shift();
     if (blockState[id] !== "queued") { pumpPlays(); return; }
     blockState[id] = "played";
+    if (playObserver) playObserver.unobserve(watched(id));
     lastPlay = { id: id, at: performance.now() };
     PLAYS[id]();
     pumpPlays();
@@ -2383,29 +2355,64 @@ function clearPlayQueue() {
 // Plays start at t=0: when screen 2 is fully visible (after the reveal, or right away).
 function startPlays() {
   if (!canMove() || !window.IntersectionObserver) return;
-  playing = true;
   if (!playObserver) {
     playObserver = new IntersectionObserver(function (entries) {
       entries.forEach(function (entry) {
         const id = blockOf(entry.target);
-        if (blockState[id] !== "armed" || !entry.isIntersecting || entry.intersectionRatio < PLAY_THRESHOLD) return;
-        playObserver.unobserve(entry.target);
-        queuePlay(id);
+        const state = blockState[id];
+        if (state !== "armed" && state !== "queued") return;
+        // Scrolled past before it played: straight to its final state.
+        if (!entry.isIntersecting && entry.boundingClientRect.bottom <= 0) {
+          playObserver.unobserve(entry.target);
+          finalizeBlock(id);
+          return;
+        }
+        if (state === "armed" && entry.isIntersecting && entry.intersectionRatio >= PLAY_THRESHOLD) queuePlay(id);
       });
-    }, { threshold: [PLAY_THRESHOLD] });
+    }, { threshold: [0, PLAY_THRESHOLD] });
   }
   Object.keys(PLAYS).forEach(function (id) {
     if (blockState[id] === "armed") playObserver.observe(watched(id));
   });
 }
 
-// An armed block that won't play after all (a live change) goes to its final state.
+// A jump from below the screen to above it crosses no threshold, so the
+// observer never hears about it. A light scroll check catches those.
+let pastFrame = null;
+
+function finalizeScrolledPast() {
+  pastFrame = null;
+  Object.keys(blockState).forEach(function (id) {
+    const state = blockState[id];
+    if ((state === "armed" || state === "queued") && watched(id).getBoundingClientRect().bottom <= 0) {
+      if (playObserver) playObserver.unobserve(watched(id));
+      finalizeBlock(id);
+    }
+  });
+}
+
+window.addEventListener("scroll", function () {
+  if (pastFrame === null) pastFrame = requestAnimationFrame(finalizeScrolledPast);
+}, { passive: true });
+
+// One block straight to its final state, without playing.
+function finalizeBlock(id) {
+  blockState[id] = "final";
+  playQueue = playQueue.filter(function (queued) { return queued !== id; });
+  if (id === "hero-panel") {
+    if (lastResult && !byId("result-summary").hidden) paintHeroNumber(lastResult, heroValue(lastResult));
+  } else {
+    byId(id).classList.remove("armed");
+    if (id === "metrics") renderStatNumbers();
+  }
+}
+
+// Armed blocks that won't play after all (a live change) go to their final state.
 function disarm() {
   clearPlayQueue();
   Object.keys(blockState).forEach(function (id) {
-    if (blockState[id] === "armed" || blockState[id] === "queued") blockState[id] = "final";
+    if (blockState[id] === "armed" || blockState[id] === "queued") finalizeBlock(id);
   });
-  ["metrics", "hours-chart", "offer-chart"].forEach(function (id) { byId(id).classList.remove("armed"); });
 }
 
 function later(ms, fn) {
