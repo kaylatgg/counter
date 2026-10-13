@@ -2278,9 +2278,9 @@ let playObserver = null;
 let playing = false;
 let playTimers = [];
 
+// During the reveal, between screen 1 fading out and screen 2 fading in.
 function screenHidden() {
-  const body = document.body;
-  return body.classList.contains("revealing") && !body.classList.contains("reveal-in");
+  return document.body.classList.contains("reveal-hidden");
 }
 
 // A new result: forget what played, and look again.
@@ -2288,6 +2288,7 @@ function armPlays() {
   finishPlays();
   blockState = {};
   playing = false;
+  lastPlay = { id: null, at: -Infinity };
   scrubHours = null;
   if (armObserver) armObserver.disconnect();
   if (playObserver) playObserver.disconnect();
@@ -2322,7 +2323,47 @@ function onArmEntries(entries) {
   });
 }
 
-// Plays start when screen 2 can be seen: right away, or as the reveal's orb lands.
+// Blocks play one after another, in page order, at least 200ms apart. The rate
+// chart waits for the hours chart's fill to finish (wipe 400ms + fill 700ms).
+const PLAY_ORDER = ["hero-panel", "metrics", "hours-chart", "offer-chart"];
+const PLAY_GAP_MS = 200;
+const HOURS_FILL_DONE_MS = 1100;
+let playQueue = [];
+let queueTimer = null;
+let lastPlay = { id: null, at: -Infinity };
+
+function gapAfter(previous, id) {
+  return previous === "hours-chart" && id === "offer-chart" ? HOURS_FILL_DONE_MS : PLAY_GAP_MS;
+}
+
+function queuePlay(id) {
+  blockState[id] = "queued";
+  playQueue.push(id);
+  playQueue.sort(function (a, b) { return PLAY_ORDER.indexOf(a) - PLAY_ORDER.indexOf(b); });
+  pumpPlays();
+}
+
+function pumpPlays() {
+  if (queueTimer !== null || !playQueue.length) return;
+  const wait = Math.max(0, lastPlay.at + gapAfter(lastPlay.id, playQueue[0]) - performance.now());
+  queueTimer = setTimeout(function () {
+    queueTimer = null;
+    const id = playQueue.shift();
+    if (blockState[id] !== "queued") { pumpPlays(); return; }
+    blockState[id] = "played";
+    lastPlay = { id: id, at: performance.now() };
+    PLAYS[id]();
+    pumpPlays();
+  }, wait);
+}
+
+function clearPlayQueue() {
+  clearTimeout(queueTimer);
+  queueTimer = null;
+  playQueue = [];
+}
+
+// Plays start at t=0: when screen 2 is fully visible (after the reveal, or right away).
 function startPlays() {
   if (!canMove() || !window.IntersectionObserver) return;
   playing = true;
@@ -2331,9 +2372,8 @@ function startPlays() {
       entries.forEach(function (entry) {
         const id = entry.target.id;
         if (blockState[id] !== "armed" || !entry.isIntersecting || entry.intersectionRatio < PLAY_THRESHOLD) return;
-        blockState[id] = "played";
         playObserver.unobserve(entry.target);
-        PLAYS[id]();
+        queuePlay(id);
       });
     }, { threshold: [PLAY_THRESHOLD] });
   }
@@ -2344,8 +2384,9 @@ function startPlays() {
 
 // An armed block that won't play after all (a live change) goes to its final state.
 function disarm() {
+  clearPlayQueue();
   Object.keys(blockState).forEach(function (id) {
-    if (blockState[id] === "armed") blockState[id] = "final";
+    if (blockState[id] === "armed" || blockState[id] === "queued") blockState[id] = "final";
   });
   ["metrics", "hours-chart", "offer-chart"].forEach(function (id) { byId(id).classList.remove("armed"); });
 }
@@ -2381,12 +2422,12 @@ function armStats() {
   });
 }
 
-// Bars striped with no fill; the line, bracket, and labels wait.
+// No bars yet (the stripes wipe in), and the line, bracket, and labels wait.
 function armHours() {
   byId("hours-chart").classList.add("armed");
 }
 
-// The grid only: no target, no curve, no dots.
+// Nothing yet: the grid, target, curve, and dots each take their turn.
 function armRate() {
   byId("offer-chart").classList.add("armed");
 }
@@ -2412,150 +2453,203 @@ function playStats() {
   });
 }
 
-// The hours chart acts out the finding: every hour starts unpaid (stripes wipe
-// in), the paid fill runs from the left and stops where the money runs out, the
-// runs-out line drops in, then the bracket and labels.
+// The hours chart acts out the finding, one step after another (DESIGN.md):
+// stripes wipe in (400ms), the paid fill runs from the left and stops where the
+// money runs out (700ms), the runs-out line drops in (200ms), the bracket draws
+// (300ms), then the group labels rise in, 60ms apart. Only clip-path, opacity,
+// and transform move.
+const HOURS_WIPE_MS = 400;
+const HOURS_FILL_MS = 700;
+const HOURS_LINE_MS = 200;
+const HOURS_BRACKET_MS = 300;
+const HOURS_LABEL_MS = 300;
+const HOURS_LABEL_GAP_MS = 60;
+
 function playHours() {
   const chart = byId("hours-chart");
   const row = byId("bar-row");
-  chart.classList.add("hours-playing");
-  // From the armed state (stripes, no fill) to playing, in the same frame.
+  const lineAt = HOURS_WIPE_MS + HOURS_FILL_MS;
+  const bracketAt = lineAt + HOURS_LINE_MS;
+  const labelsAt = bracketAt + HOURS_BRACKET_MS;
 
+  // The paid fill: one front moving left to right across the groups (with the
+  // shared ease), drawn as a clip on each paid part. Sampled into keyframes so
+  // the browser runs it, not a script on every frame.
   const paid = Array.prototype.slice.call(row.querySelectorAll(".bar-paid")).map(function (span) {
-    const left = span.parentElement.offsetLeft - row.offsetLeft;
-    return { span: span, left: left, width: span.offsetWidth };
+    return { span: span, left: span.parentElement.offsetLeft - row.offsetLeft, width: span.offsetWidth };
   });
   const fillTo = paid.reduce(function (most, part) { return Math.max(most, part.left + part.width); }, 0);
-  function fillFront(front) {
-    paid.forEach(function (part) {
-      const hidden = Math.max(0, Math.min(part.width, part.left + part.width - front));
-      part.span.style.clipPath = "inset(0 " + hidden + "px 0 0)";
-    });
-  }
-  fillFront(0);
+  const STEPS = 24;
+
+  // From armed to playing in one frame: every animation starts in the armed look.
+  chart.classList.add("hours-playing");
   chart.classList.remove("armed");
-
-  const line = byId("runs-out");
-  const bracket = byId("bracket");
-  const labels = Array.prototype.slice.call(document.querySelectorAll("#bar-labels .bar-label, #group-legend li"));
-
-  // The line, bracket, and labels wait their turn, hidden only while they wait.
-  animate(line, [{ opacity: 0, transform: "translateY(-8px)" }, { opacity: 1, transform: "none" }],
-    { duration: 200, delay: 750 });
-  animate(bracket, [{ clipPath: "inset(0 100% 0 0)" }, { clipPath: "inset(0 0 0 0)" }], { duration: 300, delay: 910 });
-  animate(byId("bracket-label"), [{ opacity: 0 }, { opacity: 1 }], { duration: 300, delay: 1030 });
+  animate(row, [{ clipPath: "inset(0 100% 0 0)" }, { clipPath: "inset(0 0 0 0)" }], { duration: HOURS_WIPE_MS });
+  paid.forEach(function (part) {
+    const frames = [];
+    for (let i = 0; i <= STEPS; i++) {
+      const front = fillTo * ease(i / STEPS);
+      const hidden = Math.max(0, Math.min(part.width, part.left + part.width - front));
+      frames.push({ offset: i / STEPS, clipPath: "inset(0 " + hidden + "px 0 0)" });
+    }
+    animate(part.span, frames, { duration: HOURS_FILL_MS, delay: HOURS_WIPE_MS, easing: "linear" });
+  });
+  animate(byId("runs-out"), [{ opacity: 0, transform: "translateY(-8px)" }, { opacity: 1, transform: "none" }],
+    { duration: HOURS_LINE_MS, delay: lineAt });
+  animate(byId("bracket"), [{ clipPath: "inset(0 100% 0 0)" }, { clipPath: "inset(0 0 0 0)" }],
+    { duration: HOURS_BRACKET_MS, delay: bracketAt });
+  animate(byId("bracket-label"), [{ opacity: 0 }, { opacity: 1 }], { duration: HOURS_BRACKET_MS, delay: bracketAt });
+  const labels = Array.prototype.slice.call(document.querySelectorAll("#bar-labels .bar-label, #group-legend li"))
+    .filter(function (label) { return label.offsetParent; });
   labels.forEach(function (label, i) {
     animate(label, [{ opacity: 0, transform: "translateY(6px)" }, { opacity: 1, transform: "none" }],
-      { duration: 300, delay: 910 + i * 60 });
+      { duration: HOURS_LABEL_MS, delay: labelsAt + i * HOURS_LABEL_GAP_MS });
   });
-
-  // Every hour is already striped (armed). The paid fill runs from the left,
-  // 700ms, and stops where the money runs out.
-  later(50, function () {
-    tween(700, function (t) { fillFront(fillTo * t); }, endHoursPlay);
-  });
+  // The stripes under the paid parts are only needed until the fill is done.
+  later(lineAt, endHoursPlay);
 }
 
 function endHoursPlay() {
   byId("hours-chart").classList.remove("hours-playing");
-  byId("bar-row").querySelectorAll(".bar-paid").forEach(function (span) { span.style.clipPath = ""; });
 }
 
-// The rate chart: grid, then the target line, then the curve draws so you watch
-// the rate fall; the black dot pops as the curve reaches it, the red dot lands last.
+// The rate chart: the grid fades in (200ms), the target line draws (300ms), the
+// curve draws left to right (900ms) so you watch the rate fall, the black dot
+// pops as the curve reaches it, and the red dot lands last with one halo pulse.
+const RATE_GRID_MS = 200;
+const RATE_TARGET_MS = 300;
+const RATE_CURVE_MS = 900;
+
 function playRate() {
   const svg = byId("rate-plot").querySelector("svg");
   byId("offer-chart").classList.remove("armed");
   if (!svg) return;
-  // The grid is already showing (armed); the rest starts hidden and takes its turn.
+  const targetAt = RATE_GRID_MS;
+  const curveAt = targetAt + RATE_TARGET_MS;
+  const dotAt = curveAt + RATE_CURVE_MS;
+
+  svg.querySelectorAll(".rate-grid, .rate-tick, .rate-zero").forEach(function (part) {
+    animate(part, [{ opacity: 0 }, { opacity: 1 }], { duration: RATE_GRID_MS });
+  });
   const target = svg.querySelector(".rate-target");
   const targetLength = Math.abs(target.x2.baseVal.value - target.x1.baseVal.value);
   animate(target, [{ strokeDasharray: targetLength + " " + targetLength, strokeDashoffset: targetLength },
-    { strokeDasharray: targetLength + " " + targetLength, strokeDashoffset: 0 }], { duration: 300 });
-  animate(svg.querySelector(".rate-target-label"), [{ opacity: 0 }, { opacity: 1 }], { duration: 300, delay: 200 });
+    { strokeDasharray: targetLength + " " + targetLength, strokeDashoffset: 0 }], { duration: RATE_TARGET_MS, delay: targetAt });
+  animate(svg.querySelector(".rate-target-label"), [{ opacity: 0 }, { opacity: 1 }], { duration: RATE_TARGET_MS, delay: targetAt });
 
   const curve = svg.querySelector(".rate-curve");
   const length = curve.getTotalLength();
   animate(curve, [{ strokeDasharray: length + " " + length, strokeDashoffset: length },
-    { strokeDasharray: length + " " + length, strokeDashoffset: 0 }], { duration: 900, delay: 250 });
+    { strokeDasharray: length + " " + length, strokeDashoffset: 0 }], { duration: RATE_CURVE_MS, delay: curveAt });
 
   const cross = svg.querySelector(".rate-cross");
   if (cross && rateView) {
     const share = Math.max(0, Math.min(1, (cross.cx.baseVal.value - rateView.pad.left) /
       (rateView.width - rateView.pad.left - rateView.pad.right)));
-    const at = 250 + 900 * Math.pow(share, 0.7);
+    const at = curveAt + RATE_CURVE_MS * Math.pow(share, 0.7);
     animate(cross, [{ transform: "scale(0)" }, { transform: "scale(1.4)" }, { transform: "scale(1)" }],
       { duration: 260, delay: at, easing: "ease-out" });
     animate(svg.querySelector(".rate-cross-label"), [{ opacity: 0 }, { opacity: 1 }], { duration: 250, delay: at });
   }
 
   animate(svg.querySelector(".rate-dot"), [{ transform: "scale(0)" }, { transform: "scale(1)" }],
-    { duration: 260, delay: 1200 });
+    { duration: 260, delay: dotAt });
   animate(svg.querySelector(".rate-halo"),
     [{ transform: "scale(0.4)", opacity: 0 }, { transform: "scale(0.4)", opacity: 0.5, offset: 0.05 },
       { transform: "scale(1.6)", opacity: 0, offset: 0.6 }, { transform: "scale(1)", opacity: 0.25 }],
-    { duration: 900, delay: 1320, easing: "ease-out" });
-  animate(svg.querySelector(".rate-now-label"), [{ opacity: 0 }, { opacity: 1 }], { duration: 250, delay: 1320 });
+    { duration: 900, delay: dotAt + 120, easing: "ease-out" });
+  animate(svg.querySelector(".rate-now-label"), [{ opacity: 0 }, { opacity: 1 }], { duration: 250, delay: dotAt + 260 });
 }
 
-// The reveal plays once per press of "Check the offer": screen 1 fades out, the
-// button's gradient circle grows into the hero panel (400ms), the number counts up,
-// the paid fill sweeps left to right, then the red dot appears. Under reduced
-// motion, the final state shows right away. Later changes use the normal transitions.
+// The reveal plays once per press of "Check the offer". Under reduced motion,
+// the final state shows right away.
 const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 const REVEAL_FADE_MS = 200;
 const REVEAL_GROW_MS = 400;
-const REVEAL_REST_MS = 1500;
 
 function rectFrame(rect) {
   return { left: rect.left + "px", top: rect.top + "px", width: rect.width + "px", height: rect.height + "px" };
 }
 
-// Timers of a reveal in progress, so leaving the screen can stop it.
-let revealTimers = [];
+// The reveal runs in steps, each starting when the one before has finished, so
+// nothing jumps: screen 1 fades out; while nothing is showing, the screens swap
+// and the page scrolls to the top; the orb grows into the hero panel; screen 2
+// fades in. Then t=0: the blocks in view play one after another.
+const SCREEN1_PARTS = ".screen-inputs, .site-footer, .topbar, .glow";
+const SCREEN2_PARTS = ".screen-results, .site-footer, .topbar";
+let revealRun = 0;
+let revealAnimations = [];
 
 function cancelReveal() {
-  revealTimers.forEach(clearTimeout);
-  revealTimers = [];
+  revealRun++;
+  revealAnimations.forEach(function (animation) { animation.cancel(); });
+  revealAnimations = [];
   document.querySelectorAll(".reveal-orb").forEach(function (orb) { orb.remove(); });
-  document.body.classList.remove("revealing", "reveal-out", "reveal-in");
+  document.body.classList.remove("revealing", "reveal-hidden");
+}
+
+function revealAnimate(element, frames, options) {
+  const animation = element.animate(frames, Object.assign({ easing: EASE, fill: "forwards" }, options));
+  revealAnimations.push(animation);
+  return animation;
+}
+
+function fadeAll(selector, from, to, ms) {
+  return Promise.all(Array.prototype.map.call(document.querySelectorAll(selector), function (element) {
+    return revealAnimate(element, [{ opacity: from }, { opacity: to }], { duration: ms }).finished;
+  }));
 }
 
 function revealResults(quiet) {
   const body = document.body;
   cancelReveal();
-  if (reduceMotion.matches || !Element.prototype.animate) {
+  // Reduced motion: no reveal, no plays. The result shows in its final state.
+  if (!canMove()) {
     openResults(quiet);
     return;
   }
+  const run = revealRun;
+  const live = function () { return run === revealRun; };
 
   // A copy of the gradient circle, fixed where the button's circle is.
   const from = byId("check-circle").getBoundingClientRect();
   const orb = document.createElement("div");
   orb.className = "reveal-orb";
   orb.setAttribute("aria-hidden", "true");
-  // Round from the first frame, like the button's circle, not only once the grow starts.
+  // Round from the first frame, like the button's circle.
   Object.assign(orb.style, rectFrame(from), { borderRadius: "50%" });
   body.appendChild(orb);
-  body.classList.add("revealing", "reveal-out");
+  body.classList.add("revealing");
 
-  revealTimers.push(setTimeout(function () {
-    body.classList.remove("reveal-out");
+  // 1. Screen 1 fades out, 200ms. Nothing scrolls while it can be seen.
+  fadeAll(SCREEN1_PARTS, 1, 0, REVEAL_FADE_MS).then(function () {
+    if (!live()) return;
+    // 2. Hidden now: swap the screens (this scrolls to the top) and arm the blocks.
+    body.classList.add("reveal-hidden");
+    revealAnimations.forEach(function (animation) { animation.cancel(); });
+    revealAnimations = [];
     openResults(quiet);
     const to = byId("hero-panel").getBoundingClientRect();
     const start = Object.assign(rectFrame(from), { borderRadius: from.width / 2 + "px" });
     const end = Object.assign(rectFrame(to), { borderRadius: "28px" });
-    orb.animate([start, end], { duration: REVEAL_GROW_MS, easing: "cubic-bezier(0.3, 0.7, 0.2, 1)", fill: "forwards" });
-
-    revealTimers.push(setTimeout(function () {
-      body.classList.add("reveal-in");
-      startPlays();
-      orb.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 200, fill: "forwards" })
-        .onfinish = function () { orb.remove(); };
-      // Clean up even if the fade never reports finishing (for example a background tab).
-      revealTimers.push(setTimeout(cancelReveal, REVEAL_REST_MS));
-    }, REVEAL_GROW_MS));
-  }, REVEAL_FADE_MS));
+    // 3. The orb grows into the hero panel, 400ms.
+    return revealAnimate(orb, [start, end], { duration: REVEAL_GROW_MS }).finished;
+  }).then(function () {
+    if (!live()) return;
+    // 4. Screen 2 fades in over the orb, 200ms.
+    revealAnimate(orb, [{ opacity: 1 }, { opacity: 0 }], { duration: REVEAL_FADE_MS });
+    return fadeAll(SCREEN2_PARTS, 0, 1, REVEAL_FADE_MS);
+  }).then(function () {
+    if (!live()) return;
+    // 5. t=0: screen 2 is fully visible.
+    body.classList.remove("revealing", "reveal-hidden");
+    revealAnimations.forEach(function (animation) { animation.cancel(); });
+    revealAnimations = [];
+    orb.remove();
+    startPlays();
+  }).catch(function () {
+    // A cancelled animation ends the reveal; cancelReveal has cleaned up.
+  });
 }
 
 // Back to screen 1. Uses the browser's Back when screen 2 was opened from screen 1,

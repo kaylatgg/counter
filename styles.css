@@ -2239,7 +2239,8 @@ textarea {
   transform: scaleX(0);
 }
 
-#hours-chart.armed .bar-paid {
+/* Hours chart: no bars yet; the stripes wipe in when it plays. */
+#hours-chart.armed .bar-row {
   clip-path: inset(0 100% 0 0);
 }
 
@@ -2250,6 +2251,10 @@ textarea {
   opacity: 0;
 }
 
+/* Rate chart: nothing yet; the grid fades in when it plays. */
+#offer-chart.armed .rate-grid,
+#offer-chart.armed .rate-tick,
+#offer-chart.armed .rate-zero,
 #offer-chart.armed .rate-target,
 #offer-chart.armed .rate-target-label,
 #offer-chart.armed .rate-curve,
@@ -2260,14 +2265,12 @@ textarea {
   opacity: 0;
 }
 
-/* The hours chart armed or playing: every hour is stripes, under the paid fill. */
-.armed .bar-group,
+/* The hours chart playing: every hour is stripes, under the paid fill. */
 .hours-playing .bar-group {
   position: relative;
   isolation: isolate;
 }
 
-.armed .bar-group::before,
 .hours-playing .bar-group::before {
   content: "";
   position: absolute;
@@ -3298,20 +3301,11 @@ textarea {
   }
 }
 
-/* The reveal: plays once when "Check the offer" is pressed (app.js adds and
-   removes these classes). Never under reduced motion. */
+/* The reveal: plays once when "Check the offer" is pressed. app.js runs the
+   fades as Web Animations, each step after the last one finishes. Never under
+   reduced motion. */
 
-/* 1. Screen 1 fades out (200ms). */
-body.reveal-out .screen-inputs,
-body.reveal-out .site-footer,
-body.reveal-out .topbar,
-body.reveal-out .glow {
-  opacity: 0;
-  transition: opacity 200ms ease-out;
-}
-
-/* 2. The button's circle grows into the hero panel (app.js moves the orb).
-   Screen 2 waits underneath, then fades in as the orb lands. */
+/* The button's circle grows into the hero panel (app.js moves the orb). */
 .reveal-orb {
   position: fixed;
   z-index: 30;
@@ -3320,18 +3314,15 @@ body.reveal-out .glow {
   pointer-events: none;
 }
 
-body.revealing .screen-results,
-body.revealing.on-results .site-footer {
+/* Between screen 1 fading out and screen 2 fading in, nothing shows but the orb. */
+body.reveal-hidden .screen-results,
+body.reveal-hidden .site-footer,
+body.reveal-hidden .topbar,
+body.reveal-hidden .glow {
   opacity: 0;
 }
 
-body.revealing.reveal-in .screen-results,
-body.revealing.reveal-in .site-footer {
-  opacity: 1;
-  transition: opacity 200ms ease-out;
-}
-
-/* 3. Then each block plays as it scrolls into view (app.js, "Plays once"). */
+/* Then the blocks in view play one after another (app.js, "Plays once"). */
 
 @media (prefers-reduced-motion: reduce) {
   *,
