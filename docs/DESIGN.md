@@ -123,7 +123,9 @@ Easing for everything: `cubic-bezier(.2,.7,.2,1)` (ease-out). Under reduced moti
   2. The curve draws left to right, 900ms, so you watch the rate fall.
   3. The black dot pops (scale 0 to 1.4 to 1, 260ms) as the curve reaches it.
   4. The red dot lands last, with one soft halo pulse, then its label.
-- Everything is visible at rest before it plays. Never leave content hidden waiting for a scroll.
+- Arm early, play on time: a chart switches to its starting state (stripes only, no curve) while it is still below the screen, using an observer with a large bottom rootMargin (about 50% of the screen), so no one ever sees the finished chart and then sees it reset. It plays at 35% visible.
+- A chart that is already on screen when the result opens, or that the person scrolls past before it was armed, shows its final state and does not play.
+- If scripts fail, everything is visible in its final state.
 
 **Live changes morph, never replay:** when a control or input changes the result, numbers, bar fills, the runs-out line, and the curve tween from old to new in 250ms.
 Reason: the full show plays once. After that, motion only shows what changed.

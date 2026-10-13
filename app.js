@@ -1605,10 +1605,11 @@ function focusScreen(element) {
 function openResults(quiet) {
   showScreen("results");
   relayoutCharts();
-  // Each block plays once as it scrolls in. During the reveal, that starts when
-  // the orb lands; on page load, nothing plays.
+  // Each block plays once as it scrolls in (see "Plays once"). During the
+  // reveal, plays start when the orb lands.
   armPlays();
-  if (!firstLoad && !document.body.classList.contains("revealing")) startPlays();
+  startArming();
+  if (!document.body.classList.contains("revealing")) startPlays();
   const target = ["hero-label", "empty-state", "error-state"].map(byId).filter(function (element) {
     return !element.hidden && !element.closest("[hidden]");
   })[0];
@@ -2246,9 +2247,17 @@ function animate(element, frames, options) {
   return element.animate(frames, Object.assign({ easing: EASE, fill: "backwards" }, options));
 }
 
-// Plays once when it scrolls into view (35% visible), once per result: the hero,
-// the stats, the hours chart, and the rate chart. Everything is already in its
-// final state before it plays.
+// Plays once when it scrolls into view, once per result: the hero, the stats,
+// the hours chart, and the rate chart. Arm early, play on time:
+// - The arm observer looks 50% of a screen below the fold. A block it meets
+//   there, still off screen, switches to its starting state ("armed").
+// - The play observer plays an armed block at 35% visible.
+// - A block that's already on screen (or scrolled past) when the arm observer
+//   first meets it keeps its final state and never plays. A visible block is
+//   never reset. During the reveal, screen 2 is invisible, so blocks in view
+//   can still be armed and play as the orb lands.
+// Starting states are classes added by script, so without scripts (or under
+// reduced motion) everything stays in its final state.
 const PLAY_THRESHOLD = 0.35;
 const PLAYS = {
   "hero-panel": playHero,
@@ -2256,34 +2265,91 @@ const PLAYS = {
   "hours-chart": playHours,
   "offer-chart": playRate,
 };
-let played = {};
-let playTimers = [];
+const ARMS = {
+  "hero-panel": armHero,
+  metrics: armStats,
+  "hours-chart": armHours,
+  "offer-chart": armRate,
+};
+// For each block: "armed", "played", or "final". None yet means not decided.
+let blockState = {};
+let armObserver = null;
 let playObserver = null;
+let playing = false;
+let playTimers = [];
 
+function screenHidden() {
+  const body = document.body;
+  return body.classList.contains("revealing") && !body.classList.contains("reveal-in");
+}
+
+// A new result: forget what played, and look again.
 function armPlays() {
   finishPlays();
-  played = {};
+  blockState = {};
+  playing = false;
   scrubHours = null;
+  if (armObserver) armObserver.disconnect();
   if (playObserver) playObserver.disconnect();
 }
 
+function startArming() {
+  if (!canMove() || !window.IntersectionObserver) return;
+  if (!armObserver) {
+    armObserver = new IntersectionObserver(onArmEntries, { rootMargin: "0px 0px 50% 0px", threshold: 0 });
+  }
+  Object.keys(ARMS).forEach(function (id) { armObserver.observe(byId(id)); });
+}
+
+function onArmEntries(entries) {
+  entries.forEach(function (entry) {
+    const block = entry.target;
+    const id = block.id;
+    if (blockState[id] || !entry.isIntersecting) return;
+    if (block.hidden || block.closest("[hidden]")) return;
+    armObserver.unobserve(block);
+    const box = entry.boundingClientRect;
+    const onScreen = box.top < window.innerHeight && box.bottom > 0;
+    // During the reveal, a block in view is armed only if it will play as the
+    // orb lands (35% visible); one just peeking in stays final.
+    const seen = Math.max(0, Math.min(box.bottom, window.innerHeight) - Math.max(box.top, 0));
+    const playsOnLanding = screenHidden() && box.height > 0 && seen / box.height >= PLAY_THRESHOLD;
+    if ((onScreen && !playsOnLanding) || box.bottom <= 0) {
+      blockState[id] = "final";
+      return;
+    }
+    blockState[id] = "armed";
+    ARMS[id]();
+    if (playing) playObserver.observe(block);
+  });
+}
+
+// Plays start when screen 2 can be seen: right away, or as the reveal's orb lands.
 function startPlays() {
   if (!canMove() || !window.IntersectionObserver) return;
+  playing = true;
   if (!playObserver) {
     playObserver = new IntersectionObserver(function (entries) {
       entries.forEach(function (entry) {
         const id = entry.target.id;
-        if (!entry.isIntersecting || entry.intersectionRatio < PLAY_THRESHOLD || played[id]) return;
-        if (entry.target.hidden || entry.target.closest("[hidden]")) return;
-        played[id] = true;
+        if (blockState[id] !== "armed" || !entry.isIntersecting || entry.intersectionRatio < PLAY_THRESHOLD) return;
+        blockState[id] = "played";
         playObserver.unobserve(entry.target);
         PLAYS[id]();
       });
     }, { threshold: [PLAY_THRESHOLD] });
   }
   Object.keys(PLAYS).forEach(function (id) {
-    if (!played[id]) playObserver.observe(byId(id));
+    if (blockState[id] === "armed") playObserver.observe(byId(id));
   });
+}
+
+// An armed block that won't play after all (a live change) goes to its final state.
+function disarm() {
+  Object.keys(blockState).forEach(function (id) {
+    if (blockState[id] === "armed") blockState[id] = "final";
+  });
+  ["metrics", "hours-chart", "offer-chart"].forEach(function (id) { byId(id).classList.remove("armed"); });
 }
 
 function later(ms, fn) {
@@ -2300,7 +2366,31 @@ function finishPlays() {
   byId("result").getAnimations({ subtree: true }).forEach(function (animation) { animation.finish(); });
   endHoursPlay();
   byId("metrics").classList.remove("play");
+  disarm();
   renderStatNumbers();
+}
+
+// Starting states, set while the block is still below the screen.
+function armHero() {
+  if (lastResult && !byId("result-summary").hidden) paintHeroNumber(lastResult, 0);
+}
+
+function armStats() {
+  byId("metrics").classList.add("armed");
+  document.querySelectorAll("#metrics .stat-number").forEach(function (number, i) {
+    const item = shownStats[i];
+    if (item && typeof item.number === "number") number.textContent = item.format(0);
+  });
+}
+
+// Bars striped with no fill; the line, bracket, and labels wait.
+function armHours() {
+  byId("hours-chart").classList.add("armed");
+}
+
+// The grid only: no target, no curve, no dots.
+function armRate() {
+  byId("offer-chart").classList.add("armed");
 }
 
 function playHero() {
@@ -2310,9 +2400,8 @@ function playHero() {
 // Hairlines draw left to right (CSS), numbers count up 700ms, 80ms apart.
 function playStats() {
   const metrics = byId("metrics");
-  metrics.classList.remove("play");
-  void metrics.offsetWidth;
   metrics.classList.add("play");
+  metrics.classList.remove("armed");
   later(500, function () { metrics.classList.remove("play"); });
   metrics.querySelectorAll(".stat-number").forEach(function (number, i) {
     const item = shownStats[i];
@@ -2332,6 +2421,7 @@ function playHours() {
   const chart = byId("hours-chart");
   const row = byId("bar-row");
   chart.classList.add("hours-playing");
+  // From the armed state (stripes, no fill) to playing, in the same frame.
 
   const paid = Array.prototype.slice.call(row.querySelectorAll(".bar-paid")).map(function (span) {
     const left = span.parentElement.offsetLeft - row.offsetLeft;
@@ -2345,25 +2435,25 @@ function playHours() {
     });
   }
   fillFront(0);
+  chart.classList.remove("armed");
 
   const line = byId("runs-out");
   const bracket = byId("bracket");
   const labels = Array.prototype.slice.call(document.querySelectorAll("#bar-labels .bar-label, #group-legend li"));
 
-  // 1. Stripes wipe in, 400ms.
-  animate(row, [{ clipPath: "inset(0 100% 0 0)" }, { clipPath: "inset(0 0 0 0)" }], { duration: 400 });
-  // The rest waits its turn, hidden only while it waits.
+  // The line, bracket, and labels wait their turn, hidden only while they wait.
   animate(line, [{ opacity: 0, transform: "translateY(-8px)" }, { opacity: 1, transform: "none" }],
-    { duration: 200, delay: 1150 });
-  animate(bracket, [{ clipPath: "inset(0 100% 0 0)" }, { clipPath: "inset(0 0 0 0)" }], { duration: 300, delay: 1310 });
-  animate(byId("bracket-label"), [{ opacity: 0 }, { opacity: 1 }], { duration: 300, delay: 1430 });
+    { duration: 200, delay: 750 });
+  animate(bracket, [{ clipPath: "inset(0 100% 0 0)" }, { clipPath: "inset(0 0 0 0)" }], { duration: 300, delay: 910 });
+  animate(byId("bracket-label"), [{ opacity: 0 }, { opacity: 1 }], { duration: 300, delay: 1030 });
   labels.forEach(function (label, i) {
     animate(label, [{ opacity: 0, transform: "translateY(6px)" }, { opacity: 1, transform: "none" }],
-      { duration: 300, delay: 1310 + i * 60 });
+      { duration: 300, delay: 910 + i * 60 });
   });
 
-  // 2. The paid fill runs from the left, 700ms, and stops where the money runs out.
-  later(450, function () {
+  // Every hour is already striped (armed). The paid fill runs from the left,
+  // 700ms, and stops where the money runs out.
+  later(50, function () {
     tween(700, function (t) { fillFront(fillTo * t); }, endHoursPlay);
   });
 }
@@ -2377,38 +2467,37 @@ function endHoursPlay() {
 // the rate fall; the black dot pops as the curve reaches it, the red dot lands last.
 function playRate() {
   const svg = byId("rate-plot").querySelector("svg");
+  byId("offer-chart").classList.remove("armed");
   if (!svg) return;
-  svg.querySelectorAll(".rate-grid, .rate-tick, .rate-zero").forEach(function (part) {
-    animate(part, [{ opacity: 0 }, { opacity: 1 }], { duration: 200 });
-  });
+  // The grid is already showing (armed); the rest starts hidden and takes its turn.
   const target = svg.querySelector(".rate-target");
   const targetLength = Math.abs(target.x2.baseVal.value - target.x1.baseVal.value);
   animate(target, [{ strokeDasharray: targetLength + " " + targetLength, strokeDashoffset: targetLength },
-    { strokeDasharray: targetLength + " " + targetLength, strokeDashoffset: 0 }], { duration: 300, delay: 150 });
-  animate(svg.querySelector(".rate-target-label"), [{ opacity: 0 }, { opacity: 1 }], { duration: 300, delay: 350 });
+    { strokeDasharray: targetLength + " " + targetLength, strokeDashoffset: 0 }], { duration: 300 });
+  animate(svg.querySelector(".rate-target-label"), [{ opacity: 0 }, { opacity: 1 }], { duration: 300, delay: 200 });
 
   const curve = svg.querySelector(".rate-curve");
   const length = curve.getTotalLength();
   animate(curve, [{ strokeDasharray: length + " " + length, strokeDashoffset: length },
-    { strokeDasharray: length + " " + length, strokeDashoffset: 0 }], { duration: 900, delay: 400 });
+    { strokeDasharray: length + " " + length, strokeDashoffset: 0 }], { duration: 900, delay: 250 });
 
   const cross = svg.querySelector(".rate-cross");
   if (cross && rateView) {
     const share = Math.max(0, Math.min(1, (cross.cx.baseVal.value - rateView.pad.left) /
       (rateView.width - rateView.pad.left - rateView.pad.right)));
-    const at = 400 + 900 * Math.pow(share, 0.7);
+    const at = 250 + 900 * Math.pow(share, 0.7);
     animate(cross, [{ transform: "scale(0)" }, { transform: "scale(1.4)" }, { transform: "scale(1)" }],
       { duration: 260, delay: at, easing: "ease-out" });
     animate(svg.querySelector(".rate-cross-label"), [{ opacity: 0 }, { opacity: 1 }], { duration: 250, delay: at });
   }
 
   animate(svg.querySelector(".rate-dot"), [{ transform: "scale(0)" }, { transform: "scale(1)" }],
-    { duration: 260, delay: 1350 });
+    { duration: 260, delay: 1200 });
   animate(svg.querySelector(".rate-halo"),
     [{ transform: "scale(0.4)", opacity: 0 }, { transform: "scale(0.4)", opacity: 0.5, offset: 0.05 },
       { transform: "scale(1.6)", opacity: 0, offset: 0.6 }, { transform: "scale(1)", opacity: 0.25 }],
-    { duration: 900, delay: 1470, easing: "ease-out" });
-  animate(svg.querySelector(".rate-now-label"), [{ opacity: 0 }, { opacity: 1 }], { duration: 250, delay: 1470 });
+    { duration: 900, delay: 1320, easing: "ease-out" });
+  animate(svg.querySelector(".rate-now-label"), [{ opacity: 0 }, { opacity: 1 }], { duration: 250, delay: 1320 });
 }
 
 // The reveal plays once per press of "Check the offer": screen 1 fades out, the

@@ -2232,12 +2232,42 @@ textarea {
   transition: left 250ms var(--ease), width 250ms var(--ease);
 }
 
-/* The hours chart playing: every hour starts as stripes, under the paid fill. */
+/* Armed: a block's starting state, set by script while it's still below the
+   screen, so it never shows finished and then resets. Without scripts these
+   classes never appear and everything is final. */
+.stats.armed > div::before {
+  transform: scaleX(0);
+}
+
+#hours-chart.armed .bar-paid {
+  clip-path: inset(0 100% 0 0);
+}
+
+#hours-chart.armed .runs-out,
+#hours-chart.armed .bracket,
+#hours-chart.armed .bar-label,
+#hours-chart.armed .group-legend li {
+  opacity: 0;
+}
+
+#offer-chart.armed .rate-target,
+#offer-chart.armed .rate-target-label,
+#offer-chart.armed .rate-curve,
+#offer-chart.armed .rate-cross,
+#offer-chart.armed .rate-cross-label,
+#offer-chart.armed .rate-now,
+#offer-chart.armed .rate-now-label {
+  opacity: 0;
+}
+
+/* The hours chart armed or playing: every hour is stripes, under the paid fill. */
+.armed .bar-group,
 .hours-playing .bar-group {
   position: relative;
   isolation: isolate;
 }
 
+.armed .bar-group::before,
 .hours-playing .bar-group::before {
   content: "";
   position: absolute;
