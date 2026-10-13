@@ -3,6 +3,7 @@
    gradient that always means "the answer." Every color is a token. */
 
 :root {
+  --ease: cubic-bezier(.2, .7, .2, 1);  /* every motion (DESIGN.md, Motion) */
   --bg: #ECECEA;      /* page */
   --paper: #F7F7F5;   /* pills, tally panel */
   --ink: #161616;     /* 15:1 */
@@ -1605,9 +1606,30 @@ legend {
   margin-top: 8px;
 }
 
+/* The hairline is drawn, so it can draw left to right when the stats play. */
 .stats > div {
+  position: relative;
   padding-top: 28px;
-  border-top: 1px solid var(--line);
+}
+
+.stats > div::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: var(--line);
+  transform-origin: left;
+}
+
+@keyframes line-draw {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+
+.stats.play > div::before {
+  animation: line-draw 500ms var(--ease) both;
 }
 
 .stats dt {
@@ -2130,7 +2152,32 @@ textarea {
 .round-button,
 .edit-button,
 .check-button {
-  transition: background-color 120ms ease-out, color 120ms ease-out;
+  transition: background-color 160ms var(--ease), color 160ms var(--ease);
+}
+
+/* "Check the offer": on hover the circle grows 6% and the arrow nudges 3px
+   forward (240ms); pressing sinks the button to 98%. */
+.check-button {
+  transition: transform 160ms var(--ease), background-color 160ms var(--ease), color 160ms var(--ease);
+}
+
+.check-circle,
+.check-circle svg {
+  transition: transform 240ms var(--ease);
+}
+
+.check-button:active {
+  transform: scale(0.98);
+}
+
+@media (hover: hover) {
+  .check-button:hover .check-circle {
+    transform: scale(1.06);
+  }
+
+  .check-button:hover .check-circle svg {
+    transform: translateX(3px);
+  }
 }
 
 @media (hover: hover) {
@@ -2146,8 +2193,7 @@ textarea {
   .bar-stepper button[data-step="1"]:hover::before,
   .action-button:not(.outline):hover,
   .save-button:not(:disabled):hover,
-  .round-button:not(.outline):hover,
-  .check-button:not(.has-errors):hover {
+  .round-button:not(.outline):hover {
     background: var(--ink-2);
   }
 
@@ -2170,20 +2216,59 @@ textarea {
   }
 }
 
-/* Motion: only after the first render, 180ms ease-out. Off for reduced motion (below). */
+/* Live changes morph in 250ms, only after the first render. Off for reduced motion (below). */
 .charts-ready .bar-group,
 .charts-ready .bar-paid,
 .charts-ready .bar-unpaid,
 .charts-ready .row-bar,
 .charts-ready .tally-segment {
-  transition: width 180ms ease-out;
+  transition: width 250ms var(--ease);
 }
 
 .charts-ready .runs-out,
 .charts-ready .bracket,
 .charts-ready .bar-label,
 .charts-ready .tally-label {
-  transition: left 180ms ease-out, width 180ms ease-out;
+  transition: left 250ms var(--ease), width 250ms var(--ease);
+}
+
+/* The hours chart playing: every hour starts as stripes, under the paid fill. */
+.hours-playing .bar-group {
+  position: relative;
+  isolation: isolate;
+}
+
+.hours-playing .bar-group::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: var(--stripe);
+  box-shadow: inset 0 0 0 1px var(--ink);
+}
+
+/* Rate chart dots scale from their centers. */
+.rate-cross,
+.rate-dot,
+.rate-halo {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+/* Scrubbing: a vertical line, a dot on the curve, and its label. */
+.rate-plot {
+  touch-action: pan-y;
+}
+
+.rate-scrub-line {
+  stroke: var(--ink);
+  stroke-width: 1;
+}
+
+.rate-scrub-dot {
+  fill: var(--paper);
+  stroke: var(--ink);
+  stroke-width: 1.5;
 }
 
 /* Desktop: 960px and up. */
@@ -3216,27 +3301,7 @@ body.revealing.reveal-in .site-footer {
   transition: opacity 200ms ease-out;
 }
 
-/* 3. The paid fill sweeps left to right, then the red dot appears. */
-@keyframes sweep {
-  from { clip-path: inset(0 100% 0 0); }
-  to { clip-path: inset(0 0 0 0); }
-}
-
-@keyframes dot-in {
-  from { opacity: 0; transform: scale(0.4); }
-  to { opacity: 1; transform: none; }
-}
-
-body.reveal-in .bar-row {
-  animation: sweep 600ms cubic-bezier(0.3, 0.7, 0.2, 1) 150ms both;
-}
-
-body.reveal-in .rate-now,
-body.reveal-in .rate-now-label {
-  transform-box: fill-box;
-  transform-origin: center;
-  animation: dot-in 300ms ease-out 800ms both;
-}
+/* 3. Then each block plays as it scrolls into view (app.js, "Plays once"). */
 
 @media (prefers-reduced-motion: reduce) {
   *,

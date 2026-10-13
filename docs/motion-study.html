@@ -1,0 +1,439 @@
+<title>Counter Motion Study</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500&family=Geist+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one column, the result screen top to bottom, each block with a small mono motion spec beside it. Counter's Sunset tokens, light only by design. */
+:root {
+  --bg: #ECECEA; --paper: #F7F7F5; --ink: #161616; --ink-2: #4D4D4A; --muted: #6B6B67; --line: #CFCFCB;
+  --hot: #E8432E;
+  --sunset: radial-gradient(55% 95% at 88% 100%, #E8432E 0%, rgba(232,67,46,0) 70%), radial-gradient(50% 80% at 70% 80%, #FF8A3D 0%, rgba(255,138,61,0) 70%), radial-gradient(40% 60% at 55% 55%, #F7B98F 0%, rgba(247,185,143,0) 75%), linear-gradient(160deg, #C9D6EA 0%, #D9CDE6 40%, #EBC7B5 100%);
+  --font: "Geist", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "Geist Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --ease: cubic-bezier(.2,.7,.2,1);
+  color-scheme: light;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg); }
+body { background: var(--bg); color: var(--ink); font-family: var(--font); font-size: 16px; margin: 0; }
+.wrap { max-width: 1120px; margin: 0 auto; padding-inline: 24px; padding-block: 32px 96px; }
+.top { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; }
+.word { font-weight: 500; font-size: 20px; letter-spacing: -.03em; }
+.mono { font-family: var(--mono); font-size: 12px; color: var(--muted); }
+h1 { font-weight: 300; font-size: clamp(36px, 6vw, 64px); letter-spacing: -.045em; line-height: 1; margin: 40px 0 12px; text-wrap: balance; }
+.lede { color: var(--ink-2); max-width: 36em; line-height: 1.5; margin: 0; }
+.controls { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-top: 24px; }
+.pill { font: inherit; font-size: 14px; height: 44px; padding: 0 18px; border-radius: 99px; border: 0; background: var(--paper); color: var(--ink); cursor: pointer; }
+.pill.ink { background: var(--ink); color: var(--bg); }
+.pill:focus-visible, .chart:focus-visible, .step:focus-visible, .cta:focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; }
+.offer { display: inline-flex; align-items: center; gap: 10px; background: var(--paper); border-radius: 99px; padding: 0 6px 0 16px; height: 44px; }
+.offer b { font-weight: 400; font-size: 18px; min-width: 3.6em; text-align: center; font-variant-numeric: tabular-nums; }
+.step { width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--ink); background: transparent; font: inherit; cursor: pointer; display: grid; place-items: center; }
+.step.solid { background: var(--ink); color: var(--bg); }
+
+section { margin-top: 56px; display: grid; grid-template-columns: minmax(0,1fr) 240px; gap: 32px; align-items: start; }
+.spec { border-top: 1px solid var(--line); padding-top: 12px; }
+.spec p { font-family: var(--mono); font-size: 11.5px; color: var(--ink-2); line-height: 1.6; margin: 0 0 10px; }
+.spec strong { font-family: var(--font); font-weight: 500; font-size: 13px; color: var(--ink); display: block; margin-bottom: 6px; }
+h2 { font-weight: 300; font-size: 24px; letter-spacing: -.02em; margin: 0 0 6px; }
+.sub { color: var(--ink-2); font-size: 14px; margin: 0 0 18px; }
+
+.hero { border-radius: 28px; background: var(--sunset); padding: 28px 32px; min-height: 220px; display: flex; flex-direction: column; justify-content: space-between; gap: 24px; }
+.hero .lab { font-size: 15px; color: var(--ink-2); }
+.big { font-weight: 300; font-size: clamp(72px, 13vw, 150px); letter-spacing: -.06em; line-height: .85; font-variant-numeric: tabular-nums; }
+.big .d { font-size: .3em; vertical-align: top; letter-spacing: 0; }
+.big .u { font-family: var(--mono); font-size: 18px; letter-spacing: 0; color: var(--ink); margin-left: 6px; }
+.hero p { margin: 0; color: var(--ink); max-width: 26em; line-height: 1.45; }
+
+.stats { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 0 24px; }
+.stat { padding-top: 14px; position: relative; }
+.stat::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 1px; background: var(--line); transform-origin: left; }
+.stat.armed::before { transform: scaleX(0); }
+.stat.play::before { transform: scaleX(1); transition: transform 500ms var(--ease); }
+.stat .l { font-size: 13px; color: var(--ink-2); }
+.stat .v { font-weight: 300; font-size: clamp(28px, 4vw, 44px); letter-spacing: -.03em; margin-top: 8px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.stat .v small { font-family: var(--mono); font-size: 12px; color: var(--muted); letter-spacing: 0; margin-left: 4px; }
+
+.chart { display: block; width: 100%; height: auto; overflow: visible; border-radius: 8px; }
+.chart text { font-family: var(--mono); font-size: 11px; fill: var(--ink); }
+.chart .q { fill: var(--muted); }
+.chart .num { font-family: var(--font); font-weight: 300; font-size: 24px; }
+.chart .nm { font-family: var(--font); font-size: 13px; }
+.halo { paint-order: stroke; stroke: var(--bg); stroke-width: 4px; stroke-linejoin: round; }
+.legend { display: flex; gap: 24px; font-size: 13px; color: var(--ink-2); margin-top: 14px; flex-wrap: wrap; }
+.legend i { display: inline-block; width: 22px; height: 10px; margin-right: 8px; vertical-align: -1px; }
+.summary { font-size: 14px; color: var(--ink-2); margin: 10px 0 0; }
+.summary b { font-weight: 500; color: var(--ink); }
+
+.cta { font: inherit; display: flex; align-items: center; gap: 16px; width: min(100%, 420px); height: 80px; border-radius: 99px; background: var(--ink); color: #F2F2EF; border: 0; padding: 0 10px 0 28px; cursor: pointer; transition: transform 160ms var(--ease); }
+.cta > span:first-child { flex: 1; text-align: left; font-size: 19px; }
+.cta .circ { width: 60px; height: 60px; border-radius: 50%; background: var(--sunset); display: grid; place-items: center; transition: transform 240ms var(--ease); }
+.cta .circ svg { transition: transform 240ms var(--ease); }
+.cta:hover .circ { transform: scale(1.06); }
+.cta:hover .circ svg { transform: translateX(3px); }
+.cta:active { transform: scale(.98); }
+
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+@media (max-width: 760px) {
+  section { grid-template-columns: 1fr; gap: 16px; }
+  .stats { grid-template-columns: repeat(2, minmax(0,1fr)); gap: 16px 20px; }
+  .hero { padding: 22px 20px; min-height: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before { transition: none !important; animation: none !important; }
+}
+</style>
+
+<div class="wrap">
+  <div class="top"><span class="word">counter</span><span class="mono">Motion study · result screen · example numbers</span></div>
+  <h1>The money fills the work, then runs out.</h1>
+  <p class="lede">Each chart plays once when it scrolls into view, and every move tells part of the story. After that, changes morph in place instead of replaying. Try a different offer, then scroll.</p>
+  <div class="controls">
+    <button class="pill ink" id="replay" type="button">Replay all</button>
+    <div class="offer" role="group" aria-label="Their offer">
+      <span class="mono" style="color:var(--ink-2)">Offer</span>
+      <button class="step" id="minus" type="button" aria-label="Lower the offer by $50">−</button>
+      <b id="offerOut">$200</b>
+      <button class="step solid" id="plus" type="button" aria-label="Raise the offer by $50">+</button>
+    </div>
+  </div>
+
+  <section>
+    <div>
+      <div class="hero" id="hero">
+        <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap"><span class="lab">This offer pays</span><span class="mono" style="color:var(--ink-2)">Menu · 2 pages · 2 rounds</span></div>
+        <div class="big" id="heroNum" aria-hidden="true"><span class="d">$</span><span id="heroVal">17.39</span><span class="u">/hr</span></div>
+        <p id="heroText">for 11.5 hours of real work. That's $7.61 an hour under your $25 target.</p>
+      </div>
+    </div>
+    <div class="spec"><strong>Hero</strong><p>Number counts up from 0, 700ms, ease-out. Digits stay tabular so the width never jumps.</p><p>On a change: tweens from the old value, 250ms.</p></div>
+  </section>
+
+  <section>
+    <div class="stats" id="stats">
+      <div class="stat"><div class="l">Your estimate</div><div class="v" id="s1">$310</div></div>
+      <div class="stat"><div class="l" id="s2l">More than they offered</div><div class="v" id="s2">$110</div></div>
+      <div class="stat"><div class="l">Hours the offer pays for</div><div class="v"><span id="s3">7.2</span><small>of 11.5</small></div></div>
+      <div class="stat"><div class="l">After expenses</div><div class="v"><span id="s4">$15.65</span><small>/hr</small></div></div>
+    </div>
+    <div class="spec"><strong>Stats</strong><p>Hairlines draw left to right, 500ms. Numbers count up, 700ms, each 80ms after the last.</p></div>
+  </section>
+
+  <section>
+    <div>
+      <h2>Where your 11.5 hours go</h2>
+      <p class="sub">Every hour starts unpaid. Then the offer fills them, left to right, until the money runs out.</p>
+      <svg class="chart" id="hours" viewBox="0 0 680 270" role="img" aria-labelledby="hoursSum">
+        <defs>
+          <linearGradient id="paidG" gradientUnits="userSpaceOnUse" x1="0" x2="680" y1="0" y2="0">
+            <stop offset="0" stop-color="#C9D6EA"/><stop offset=".3" stop-color="#EBC7B5"/><stop offset=".7" stop-color="#FF8A3D"/><stop offset="1" stop-color="#E8432E"/>
+          </linearGradient>
+          <pattern id="stripe" width="4" height="4" patternUnits="userSpaceOnUse"><rect width="1" height="4" fill="#161616"/></pattern>
+          <clipPath id="paidClip"><rect id="paidRect" x="0" y="0" width="0" height="230"/></clipPath>
+          <clipPath id="barsClip"><rect id="barsRect" x="0" y="0" width="680" height="230"/></clipPath>
+        </defs>
+        <g id="bracket"><path id="bracketPath" fill="none" stroke="#161616" stroke-width="1"/><text id="bracketText" class="halo"></text></g>
+        <g clip-path="url(#barsClip)">
+          <g id="stripes"></g>
+          <g clip-path="url(#paidClip)"><g id="paid"></g></g>
+        </g>
+        <g id="runs"><line id="runsLine" stroke="#161616" stroke-width="1" stroke-dasharray="3 3"/><text id="runsText" class="halo" text-anchor="end"></text></g>
+        <g id="glabels"></g>
+      </svg>
+      <div class="legend"><span><i style="background:linear-gradient(90deg,#C9D6EA,#EBC7B5 30%,#FF8A3D 70%,#E8432E)"></i>paid by the offer</span><span><i style="background:repeating-linear-gradient(90deg,#161616 0 1px,transparent 1px 4px);box-shadow:inset 0 0 0 1px #161616"></i>unpaid</span></div>
+      <p class="summary" id="hoursSum"></p>
+    </div>
+    <div class="spec"><strong>Hours chart</strong>
+      <p>1. Bars wipe in as stripes, 400ms. All work starts unpaid.</p>
+      <p>2. The gradient fills from the left, 700ms, and stops where the money runs out.</p>
+      <p>3. The dashed line drops in with its label, 200ms.</p>
+      <p>4. The bracket draws over the forgotten work, 300ms. Labels rise 6px and fade in, 60ms apart.</p>
+      <p>Why: the motion acts out the finding. The fill stopping short is the moment people get it.</p>
+    </div>
+  </section>
+
+  <section>
+    <div>
+      <h2>Your rate drops as hours grow</h2>
+      <p class="sub" id="rateSub">After your $20 in expenses, $200 spread over more hours pays less per hour.</p>
+      <svg class="chart" id="rate" viewBox="0 0 680 290" role="img" aria-labelledby="rateSum" tabindex="0">
+        <g id="grid"></g>
+        <line id="target" stroke="#161616" stroke-width="1"/>
+        <text id="targetText" class="halo" text-anchor="end"></text>
+        <path id="curve" fill="none" stroke="#161616" stroke-width="1.75" pathLength="1"/>
+        <g id="cross"><circle id="crossDot" r="4" fill="#161616"/><text id="crossText" class="halo" text-anchor="end"></text></g>
+        <g id="now"><circle id="nowHalo" r="14" fill="#E8432E" opacity=".22"/><circle id="nowDot" r="7" fill="#E8432E"/><text id="nowText" class="halo"></text></g>
+        <g id="scrub" opacity="0"><line id="scrubLine" stroke="#161616" stroke-width="1"/><circle id="scrubDot" r="5" fill="#F7F7F5" stroke="#161616" stroke-width="1.5"/><text id="scrubText" class="halo"></text></g>
+        <rect id="hit" fill="transparent"/>
+      </svg>
+      <p class="summary" id="rateSum"></p>
+      <p class="sr" id="scrubLive" aria-live="polite"></p>
+    </div>
+    <div class="spec"><strong>Rate chart</strong>
+      <p>1. Grid fades in, 200ms. The target line draws, 300ms.</p>
+      <p>2. The curve draws left to right, 900ms. You watch the rate fall.</p>
+      <p>3. The black dot pops as the curve crosses the target. The red dot lands last with one soft pulse.</p>
+      <p>New: hover, drag, or use arrow keys to scrub the hours. "What if it takes 14 hours?" answered live.</p>
+    </div>
+  </section>
+
+  <section>
+    <div><button class="cta" type="button" id="cta"><span>Check the offer</span><span class="circ"><svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true"><path d="M4 11h14M12 5l6 6-6 6" fill="none" stroke="#161616" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button></div>
+    <div class="spec"><strong>Small moments</strong><p>Hover: the sunset circle grows 6% and the arrow nudges 3px forward, 240ms. Press: the button sinks to 98%.</p><p>Reduce motion: everything shows in its final state. Scrubbing still works.</p></div>
+  </section>
+</div>
+
+<script>
+(() => {
+  const RM = window.matchMedia("(prefers-reduced-motion: reduce)");
+  const RATE = 25, EXP = 20;
+  const GROUPS = [["Production", 6], ["Communication", 1.5], ["Revisions", 3], ["Delivery", 1]];
+  const TOTAL = GROUPS.reduce((s, g) => s + g[1], 0);
+  const EST = Math.ceil((TOTAL * RATE + EXP) / 5) * 5;
+  let offer = 200, shown = 200;
+  const $ = id => document.getElementById(id);
+  const NS = "http://www.w3.org/2000/svg";
+  const el = (tag, attrs, parent) => { const n = document.createElementNS(NS, tag); for (const k in attrs) n.setAttribute(k, attrs[k]); if (parent) parent.appendChild(n); return n; };
+  const money = v => (v < 0 ? "-$" : "$") + Math.abs(v).toFixed(2);
+  const dollars = v => "$" + Math.round(v).toLocaleString("en-US");
+  const hrs = v => String(Math.round(v * 100) / 100);
+  const easeOut = t => 1 - Math.pow(1 - t, 3);
+  const tween = (ms, fn, done) => {
+    if (RM.matches || ms === 0) { fn(1); if (done) done(); return; }
+    const t0 = performance.now();
+    const f = now => { const t = Math.min(1, (now - t0) / ms); fn(easeOut(t)); if (t < 1) requestAnimationFrame(f); else if (done) done(); };
+    requestAnimationFrame(f);
+  };
+  const wait = ms => new Promise(r => setTimeout(r, RM.matches ? 0 : ms));
+
+  /* ---------- Hours chart geometry ---------- */
+  const HW = 680, GAP = 4, BY = 64, BH = 88;
+  const usable = HW - GAP * (GROUPS.length - 1);
+  const xs = []; let acc = 0;
+  GROUPS.forEach(g => { const w = g[1] / TOTAL * usable; xs.push([acc, w]); acc += w + GAP; });
+  const hourX = h => { let left = h; for (let i = 0; i < GROUPS.length; i++) { const gh = GROUPS[i][1]; if (left <= gh) return xs[i][0] + left / gh * xs[i][1]; left -= gh; } return HW; };
+  const stripes = $("stripes"), paid = $("paid"), gl = $("glabels");
+  GROUPS.forEach((g, i) => {
+    const [x, w] = xs[i];
+    el("rect", { x, y: BY, width: w, height: BH, fill: "url(#stripe)", stroke: "#161616", "stroke-width": 1 }, stripes);
+    el("rect", { x, y: BY, width: w, height: BH, fill: "url(#paidG)" }, paid);
+    const last = i === GROUPS.length - 1, low = i % 2 === 1 && !last;
+    const tx = last ? x + w : x, anchor = last ? "end" : "start", dy = low ? 46 : 0;
+    const grp = el("g", { class: "gl" }, gl);
+    if (low) el("line", { x1: x + 0.5, x2: x + 0.5, y1: BY + BH + 6, y2: BY + BH + 12 + dy, stroke: "#CFCFCB" }, grp);
+    const n = el("text", { x: low ? x + 8 : tx, y: BY + BH + 34 + dy, "text-anchor": anchor, class: "num" }, grp);
+    n.textContent = hrs(g[1]);
+    const u = el("tspan", { class: "q", dx: 4, style: "font-family:var(--mono);font-size:11px" }, n); u.textContent = g[1] === 1 ? "hr" : "hrs";
+    const nm = el("text", { x: low ? x + 8 : tx, y: BY + BH + 54 + dy, "text-anchor": anchor, class: "nm" }, grp); nm.textContent = g[0];
+  });
+  const bx0 = xs[1][0], bx1 = HW;
+  $("bracketPath").setAttribute("d", `M${bx0} 26V18H${bx1}V26`);
+  $("bracketPath").setAttribute("pathLength", 1);
+  Object.assign($("bracketText"), {}).setAttribute("x", bx0); $("bracketText").setAttribute("y", 10);
+  $("bracketText").textContent = hrs(TOTAL - GROUPS[0][1]) + " hrs usually forgotten";
+
+  function drawHours(o, animatePaid) {
+    const covered = Math.max(0, Math.min(TOTAL, (o - EXP) / RATE));
+    const px = covered <= 0 ? 0 : hourX(covered);
+    if (!animatePaid) $("paidRect").setAttribute("width", Math.max(0, px));
+    const runs = $("runs");
+    if (covered > 0 && covered < TOTAL) {
+      runs.style.display = "";
+      $("runsLine").setAttribute("x1", px); $("runsLine").setAttribute("x2", px);
+      $("runsLine").setAttribute("y1", 40); $("runsLine").setAttribute("y2", BY + BH);
+      const t = $("runsText"); t.setAttribute("y", 50);
+      const label = `${dollars(o)} runs out at ${hrs(Math.round(covered * 10) / 10)} hrs`;
+      t.textContent = label;
+      if (px > 230) { t.setAttribute("x", px - 8); t.setAttribute("text-anchor", "end"); } else { t.setAttribute("x", px + 8); t.setAttribute("text-anchor", "start"); }
+    } else runs.style.display = "none";
+    const unpaid = TOTAL - covered;
+    $("hoursSum").innerHTML = covered <= 0
+      ? `${dollars(o)} doesn't cover your expenses, so all <b>${hrs(TOTAL)} hours</b> go unpaid.`
+      : unpaid <= 0 ? `${dollars(o)} covers all <b>${hrs(TOTAL)} hours</b>.`
+      : `<b>${hrs(Math.round(unpaid * 10) / 10)} hours</b> go unpaid, and <b>${hrs(TOTAL - GROUPS[0][1])} hours</b> are work outside production.`;
+    return px;
+  }
+
+  /* ---------- Rate chart geometry ---------- */
+  const R = { x0: 52, x1: 660, y0: 24, y1: 236, h0: 4, h1: 16 };
+  const rx = h => R.x0 + (h - R.h0) / (R.h1 - R.h0) * (R.x1 - R.x0);
+  let yMax = 50, yMin = 0;
+  const ry = v => R.y0 + (1 - (v - yMin) / (yMax - yMin)) * (R.y1 - R.y0);
+  const net = (o, h) => (o - EXP) / h;
+  const grid = $("grid");
+  function drawGrid() {
+    grid.innerHTML = "";
+    [4, 6, 8, 10, 12, 14, 16].forEach(h => {
+      el("line", { x1: rx(h), x2: rx(h), y1: R.y0 - 6, y2: R.y1, stroke: "#161616", "stroke-opacity": .28, "stroke-dasharray": "3 4" }, grid);
+      const t = el("text", { x: rx(h), y: R.y1 + 22, "text-anchor": h === 4 ? "start" : h === 16 ? "end" : "middle", class: "q" }, grid); t.textContent = h + "h";
+    });
+    [yMin, RATE, yMax].filter((v, i, a) => a.indexOf(v) === i).forEach(v => {
+      const t = el("text", { x: R.x0 - 10, y: ry(v) + 4, "text-anchor": "end", class: "q" }, grid); t.textContent = (v < 0 ? "-$" : "$") + Math.abs(v);
+    });
+    el("line", { x1: R.x0, x2: R.x1, y1: ry(0), y2: ry(0), stroke: "#CFCFCB" }, grid);
+  }
+  function drawRate(o) {
+    const top = Math.max(RATE * 1.2, net(o, R.h0) * 1.05);
+    yMax = Math.ceil(top / 25) * 25; yMin = 0;
+    drawGrid();
+    $("target").setAttribute("x1", R.x0); $("target").setAttribute("x2", R.x1);
+    $("target").setAttribute("y1", ry(RATE)); $("target").setAttribute("y2", ry(RATE));
+    const tt = $("targetText"); tt.setAttribute("x", R.x1); tt.setAttribute("y", ry(RATE) - 8); tt.textContent = `your target $${RATE}/hr`;
+    let d = "";
+    for (let h = R.h0; h <= R.h1 + 1e-9; h += 0.1) d += (d ? "L" : "M") + rx(h).toFixed(1) + " " + ry(Math.max(yMin, net(o, h))).toFixed(1);
+    $("curve").setAttribute("d", d);
+    const ch = (o - EXP) / RATE;
+    const cross = $("cross");
+    if (ch >= R.h0 && ch <= R.h1) {
+      cross.style.display = "";
+      $("crossDot").setAttribute("cx", rx(ch)); $("crossDot").setAttribute("cy", ry(RATE));
+      const ct = $("crossText"); ct.setAttribute("x", rx(ch) - 10); ct.setAttribute("y", ry(RATE) + 20);
+      ct.setAttribute("text-anchor", rx(ch) - 10 > 200 ? "end" : "start"); if (rx(ch) - 10 <= 200) ct.setAttribute("x", rx(ch) + 10);
+      ct.textContent = `at ${hrs(Math.round(ch * 10) / 10)}h you hit $${RATE}`;
+    } else cross.style.display = "none";
+    const v = net(o, TOTAL);
+    ["nowHalo", "nowDot"].forEach(id => { $(id).setAttribute("cx", rx(TOTAL)); $(id).setAttribute("cy", ry(Math.max(yMin, v))); });
+    const nt = $("nowText"); nt.setAttribute("x", rx(TOTAL)); nt.setAttribute("y", ry(Math.max(yMin, v)) + 30); nt.setAttribute("text-anchor", "middle");
+    nt.textContent = `${hrs(TOTAL)}h → ${money(v)}/hr after expenses`;
+    $("rateSub").textContent = `After your $${EXP} in expenses, ${dollars(o)} spread over more hours pays less per hour.`;
+    $("rateSum").textContent = ch >= TOTAL
+      ? `After expenses, the offer pays ${money(v)} an hour for ${hrs(TOTAL)} hours. It meets your $${RATE} target up to ${hrs(Math.round(ch * 10) / 10)} hrs.`
+      : `After expenses, the offer pays ${money(v)} an hour for ${hrs(TOTAL)} hours. It pays your $${RATE} target or more only up to ${hrs(Math.round(ch * 10) / 10)} hrs.`;
+    const hit = $("hit"); hit.setAttribute("x", R.x0); hit.setAttribute("y", 0); hit.setAttribute("width", R.x1 - R.x0); hit.setAttribute("height", R.y1 + 30);
+  }
+
+  /* ---------- Numbers ---------- */
+  function drawNumbers(o) {
+    const pay = o / TOTAL;
+    $("heroVal").textContent = pay.toFixed(2);
+    const diff = pay - RATE;
+    $("heroText").textContent = `for ${hrs(TOTAL)} hours of real work. That's ${money(Math.abs(diff))} an hour ${diff < 0 ? "under" : "over"} your $${RATE} target.`;
+    $("s1").textContent = dollars(EST);
+    const gap = EST - o;
+    $("s2l").textContent = gap > 0 ? "More than they offered" : gap < 0 ? "Above your estimate" : "Same as their offer";
+    $("s2").textContent = gap < 0 ? "+" + dollars(-gap) : dollars(gap);
+    $("s3").textContent = hrs(Math.round(Math.max(0, Math.min(TOTAL, (o - EXP) / RATE)) * 10) / 10);
+    $("s4").textContent = money(net(o, TOTAL));
+    $("offerOut").textContent = dollars(o);
+  }
+  function render(o) { drawNumbers(o); drawHours(o, false); drawRate(o); }
+
+  /* ---------- Entrance sequences ---------- */
+  const countUp = (node, to, fmt, ms) => tween(ms, t => { node.textContent = fmt(to * t); });
+  const anim = (node, frames, opts) => RM.matches ? null : node.animate(frames, Object.assign({ easing: "cubic-bezier(.2,.7,.2,1)", fill: "backwards" }, opts));
+
+  function playHero() {
+    const v = offer / TOTAL;
+    countUp($("heroVal"), v, x => x.toFixed(2), 700);
+  }
+  function playStats() {
+    document.querySelectorAll(".stat").forEach(s => { s.classList.add("armed"); s.classList.remove("play"); });
+    requestAnimationFrame(() => requestAnimationFrame(() => document.querySelectorAll(".stat").forEach(s => s.classList.add("play"))));
+    const covered = Math.max(0, Math.min(TOTAL, (offer - EXP) / RATE));
+    const gap = EST - offer;
+    const jobs = [
+      [$("s1"), EST, dollars],
+      [$("s2"), Math.abs(gap), x => (gap < 0 ? "+" : "") + dollars(x)],
+      [$("s3"), Math.round(covered * 10) / 10, x => hrs(Math.round(x * 10) / 10)],
+      [$("s4"), net(offer, TOTAL), money],
+    ];
+    jobs.forEach(([n, to, f], i) => setTimeout(() => countUp(n, to, f, 700), RM.matches ? 0 : i * 80));
+  }
+  async function playHours() {
+    const px = drawHours(offer, true);
+    const bars = $("barsRect"), paidR = $("paidRect");
+    paidR.setAttribute("width", 0);
+    $("runs").style.opacity = 0; $("bracket").style.opacity = 0;
+    document.querySelectorAll("#glabels .gl").forEach(g => g.style.opacity = 0);
+    tween(400, t => bars.setAttribute("width", HW * t));
+    await wait(450);
+    await new Promise(r => tween(700, t => paidR.setAttribute("width", Math.max(0, px * t)), r));
+    $("runs").style.opacity = 1;
+    anim($("runs"), [{ transform: "translateY(-8px)", opacity: 0 }, { transform: "none", opacity: 1 }], { duration: 220 });
+    await wait(160);
+    $("bracket").style.opacity = 1;
+    anim($("bracketPath"), [{ strokeDasharray: "1 1", strokeDashoffset: 1 }, { strokeDasharray: "1 1", strokeDashoffset: 0 }], { duration: 300 });
+    anim($("bracketText"), [{ opacity: 0 }, { opacity: 1 }], { duration: 300, delay: 120 });
+    document.querySelectorAll("#glabels .gl").forEach((g, i) => {
+      g.style.opacity = 1;
+      anim(g, [{ transform: "translateY(6px)", opacity: 0 }, { transform: "none", opacity: 1 }], { duration: 300, delay: i * 60 });
+    });
+  }
+  async function playRate() {
+    drawRate(offer);
+    const parts = ["target", "targetText", "cross", "now"];
+    parts.forEach(id => $(id).style.opacity = 0);
+    anim($("grid"), [{ opacity: 0 }, { opacity: 1 }], { duration: 200 });
+    await wait(150);
+    $("target").style.opacity = 1;
+    anim($("target"), [{ strokeDasharray: "700 700", strokeDashoffset: 700 }, { strokeDasharray: "700 700", strokeDashoffset: 0 }], { duration: 300 });
+    $("targetText").style.opacity = 1; anim($("targetText"), [{ opacity: 0 }, { opacity: 1 }], { duration: 300, delay: 200 });
+    await wait(250);
+    const curve = $("curve");
+    curve.style.strokeDasharray = "1 1";
+    const ch = (offer - EXP) / RATE, frac = Math.max(0, Math.min(1, (ch - R.h0) / (R.h1 - R.h0)));
+    tween(900, t => { curve.style.strokeDashoffset = 1 - t; }, () => { curve.style.strokeDasharray = ""; curve.style.strokeDashoffset = ""; });
+    if ($("cross").style.display !== "none") setTimeout(() => {
+      $("cross").style.opacity = 1;
+      anim($("crossDot"), [{ transform: "scale(0)" }, { transform: "scale(1.4)" }, { transform: "scale(1)" }], { duration: 260, easing: "ease-out" });
+      anim($("crossText"), [{ opacity: 0 }, { opacity: 1 }], { duration: 250 });
+    }, RM.matches ? 0 : 900 * Math.pow(frac, 0.7));
+    await wait(950);
+    $("now").style.opacity = 1;
+    anim($("nowDot"), [{ transform: "scale(0)" }, { transform: "scale(1)" }], { duration: 260 });
+    anim($("nowHalo"), [{ transform: "scale(.4)", opacity: .5 }, { transform: "scale(1.6)", opacity: 0 }, { transform: "scale(1)", opacity: .22 }], { duration: 900, delay: 120, easing: "ease-out" });
+    anim($("nowText"), [{ opacity: 0 }, { opacity: 1 }], { duration: 250, delay: 120 });
+  }
+  ["crossDot", "nowDot", "nowHalo"].forEach(id => { $(id).style.transformBox = "fill-box"; $(id).style.transformOrigin = "center"; });
+
+  /* ---------- Play once when in view ---------- */
+  const plays = new Map([[$("hero"), playHero], [$("stats"), playStats], [$("hours"), playHours], [$("rate"), playRate]]);
+  const played = new Set();
+  const io = "IntersectionObserver" in window ? new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting && !played.has(e.target)) { played.add(e.target); plays.get(e.target)(); } });
+  }, { threshold: 0.35 }) : null;
+  render(offer);
+  if (io) plays.forEach((_, n) => io.observe(n));
+  $("replay").addEventListener("click", () => {
+    played.clear(); render(offer);
+    if (io) { plays.forEach((_, n) => { io.unobserve(n); io.observe(n); }); }
+    window.scrollTo({ top: 0, behavior: RM.matches ? "auto" : "smooth" });
+  });
+
+  /* ---------- Live changes morph, never replay ---------- */
+  function setOffer(next) {
+    next = Math.max(0, Math.min(1500, next));
+    const from = shown; offer = next;
+    tween(250, t => { shown = from + (next - from) * t; render(shown); }, () => { shown = next; render(next); });
+  }
+  $("minus").addEventListener("click", () => setOffer(offer - 50));
+  $("plus").addEventListener("click", () => setOffer(offer + 50));
+
+  /* ---------- Scrub the rate chart ---------- */
+  const svg = $("rate"), scrub = $("scrub");
+  let scrubH = TOTAL;
+  function showScrub(h) {
+    scrubH = Math.max(R.h0, Math.min(R.h1, Math.round(h * 2) / 2));
+    const v = net(offer, scrubH), x = rx(scrubH), y = ry(Math.max(yMin, v));
+    $("scrubLine").setAttribute("x1", x); $("scrubLine").setAttribute("x2", x); $("scrubLine").setAttribute("y1", R.y0 - 6); $("scrubLine").setAttribute("y2", R.y1);
+    $("scrubDot").setAttribute("cx", x); $("scrubDot").setAttribute("cy", y);
+    const t = $("scrubText"); t.textContent = `${hrs(scrubH)}h → ${money(v)}/hr`;
+    t.setAttribute("y", Math.max(R.y0 + 8, y - 14));
+    if (x > R.x1 - 140) { t.setAttribute("x", x - 10); t.setAttribute("text-anchor", "end"); } else { t.setAttribute("x", x + 10); t.setAttribute("text-anchor", "start"); }
+    scrub.setAttribute("opacity", 1);
+    $("scrubLive").textContent = `At ${hrs(scrubH)} hours, the offer pays ${money(v)} an hour after expenses.`;
+  }
+  const toH = evt => { const p = svg.createSVGPoint(); p.x = evt.clientX; p.y = evt.clientY; const q = p.matrixTransform(svg.getScreenCTM().inverse()); return R.h0 + (q.x - R.x0) / (R.x1 - R.x0) * (R.h1 - R.h0); };
+  svg.addEventListener("pointermove", e => showScrub(toH(e)));
+  svg.addEventListener("pointerdown", e => showScrub(toH(e)));
+  svg.addEventListener("pointerleave", () => scrub.setAttribute("opacity", 0));
+  svg.addEventListener("keydown", e => {
+    if (e.key === "ArrowRight" || e.key === "ArrowUp") { showScrub(scrubH + 0.5); e.preventDefault(); }
+    if (e.key === "ArrowLeft" || e.key === "ArrowDown") { showScrub(scrubH - 0.5); e.preventDefault(); }
+    if (e.key === "Escape") scrub.setAttribute("opacity", 0);
+  });
+  svg.addEventListener("focus", () => showScrub(scrubH));
+  svg.addEventListener("blur", () => scrub.setAttribute("opacity", 0));
+})();
+</script>

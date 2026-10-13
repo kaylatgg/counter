@@ -130,8 +130,27 @@ function setRichText(element, parts) {
   });
 }
 
-// Stats: 4 columns. Each is { label, value, unit, note }.
-function renderStats(items) {
+// "$310" while counting up to $310, "$54.37" while counting to $109.50.
+function priceFormat(final) {
+  const hasCents = Math.abs(final - Math.round(final)) >= 0.005;
+  return hasCents ? calc.formatMoney : function (v) { return calc.formatWholeMoney(Math.round(v)); };
+}
+
+// The stats on screen, so plays and live changes can count their numbers.
+let shownStats = [];
+
+function renderStatNumbers() {
+  document.querySelectorAll("#metrics .stat-number").forEach(function (number, i) {
+    if (shownStats[i]) number.textContent = shownStats[i].value;
+  });
+}
+
+// Stats: 4 columns. Each is { label, value, unit, note, number, format }.
+// number and format let it count: format(number) gives value.
+// morph: numbers tween from the old ones (same label, same place), 250ms.
+function renderStats(items, morph) {
+  const previous = shownStats;
+  shownStats = items;
   const list = byId("metrics");
   list.textContent = "";
   items.forEach(function (item) {
@@ -159,6 +178,14 @@ function renderStats(items) {
     list.appendChild(group);
   });
   fitStats();
+  if (!morph) return;
+  list.querySelectorAll(".stat-number").forEach(function (number, i) {
+    const item = items[i];
+    const old = previous[i];
+    if (!old || old.label !== item.label || typeof old.number !== "number" || old.number === item.number) return;
+    tween(MORPH_MS, function (t) { number.textContent = item.format(mix(old.number, item.number, t)); },
+      function () { number.textContent = item.value; });
+  });
 }
 
 // Big values ("$1,983,770") shrink to fit their column, down to 22px.
@@ -195,7 +222,8 @@ function jobSummary(values) {
     countOf(values.rounds, "round", "rounds");
 }
 
-function renderHero(r, values) {
+// morph: a live change on screen 2, so the stats tween from their old values.
+function renderHero(r, values, morph) {
   stopCountUp();
   const sentence = byId("hero-sentence");
   const warning = byId("offer-warning");
@@ -242,21 +270,27 @@ function renderHero(r, values) {
     // estimate gets a plus sign, since it's money on top of your price.
     let comparison;
     if (r.offer.gap > 0) {
-      comparison = { label: "More than they offered", value: calc.formatPrice(r.offer.gap) };
+      comparison = { label: "More than they offered", value: calc.formatPrice(r.offer.gap),
+        number: r.offer.gap, format: priceFormat(r.offer.gap) };
     } else if (r.offer.gap < 0) {
-      comparison = { label: "Above your estimate", value: "+" + calc.formatPrice(-r.offer.gap) };
+      const over = priceFormat(-r.offer.gap);
+      comparison = { label: "Above your estimate", value: "+" + calc.formatPrice(-r.offer.gap),
+        number: -r.offer.gap, format: function (v) { return "+" + over(v); } };
     } else {
-      comparison = { label: "Same as their offer", value: "$0" };
+      comparison = { label: "Same as their offer", value: "$0", number: 0, format: priceFormat(0) };
     }
     // "7.2 of 11.5 hrs". Below expenses the offer pays for none of it.
     const covered = r.offer.belowExpenses ? 0 : Math.min(r.offer.hoursCovered, r.hours.total);
     renderStats([
-      { label: "Your estimate", value: calc.formatWholeMoney(r.estimate) },
+      { label: "Your estimate", value: calc.formatWholeMoney(r.estimate), number: r.estimate,
+        format: priceFormat(r.estimate) },
       comparison,
-      { label: "Hours the offer pays for", value: calc.formatNumber(covered),
+      { label: "Hours the offer pays for", value: calc.formatNumber(covered), number: covered,
+        format: calc.formatNumber,
         unit: "of " + calc.formatHours(r.hours.total), unitLine: true },
-      { label: "After expenses", value: calc.formatMoney(r.offer.hourlyAfter), unit: "/hr" },
-    ]);
+      { label: "After expenses", value: calc.formatMoney(r.offer.hourlyAfter), unit: "/hr",
+        number: r.offer.hourlyAfter, format: calc.formatMoney },
+    ], morph);
   } else {
     const estimate = calc.formatWholeMoney(r.estimate);
     byId("hero-label").textContent = "Your estimate";
@@ -274,14 +308,17 @@ function renderHero(r, values) {
 
     const forgotten = r.outsideProduction;
     renderStats([
-      { label: "Total hours", value: calc.formatNumber(r.hours.total),
+      { label: "Total hours", value: calc.formatNumber(r.hours.total), number: r.hours.total,
+        format: calc.formatNumber,
         unit: isOne(r.hours.total) ? "hr" : "hrs" },
-      { label: "Your time at " + calc.formatPrice(r.rate) + "/hr", value: calc.formatMoney(r.timeCost) },
-      { label: "Expenses", value: calc.formatMoney(r.expenses) },
-      { label: "Usually forgotten", value: calc.formatNumber(forgotten),
+      { label: "Your time at " + calc.formatPrice(r.rate) + "/hr", value: calc.formatMoney(r.timeCost),
+        number: r.timeCost, format: calc.formatMoney },
+      { label: "Expenses", value: calc.formatMoney(r.expenses), number: r.expenses, format: calc.formatMoney },
+      { label: "Usually forgotten", value: calc.formatNumber(forgotten), number: forgotten,
+        format: calc.formatNumber,
         unit: isOne(forgotten) ? "hr" : "hrs",
         note: "worth " + calc.formatMoney(forgotten * r.rate) + " at your rate" },
-    ]);
+    ], morph);
   }
 }
 
@@ -549,7 +586,7 @@ function renderOfferChart(r) {
       : "It pays your " + target + " target or more " + (offer.coversAllHours ? "" : "only ") +
         "up to " + calc.formatHours(offer.hoursCovered) + ".");
 
-  layoutRateChart(r);
+  layoutRateChart(r, true);
 }
 
 // The smallest round step that gives at most 7 grid spaces: 0.5, 1, 2, 5, 10...
@@ -572,7 +609,8 @@ function svgElement(parent, name, attributes, text) {
 // After expenses, the offer divided by hours, from about a third of the current
 // hours to 1.4 times. It meets the target at the same point the hours chart's
 // money runs out.
-function layoutRateChart(r) {
+// morph: a live change, so the curve and dots tween from where they were (250ms).
+function layoutRateChart(r, morph) {
   const plot = byId("rate-plot");
   const width = plot.clientWidth;
   if (!width) return;
@@ -599,7 +637,8 @@ function layoutRateChart(r) {
   function py(amount) { return pad.top + ((top - amount) / (top - bottom)) * (height - pad.top - pad.bottom); }
 
   plot.textContent = "";
-  const svg = svgElement(plot, "svg", { width: width, height: height, viewBox: "0 0 " + width + " " + height });
+  const svg = svgElement(plot, "svg", { width: width, height: height, viewBox: "0 0 " + width + " " + height,
+    "aria-hidden": "true", focusable: "false" });
 
   for (let h = x0; h <= x1 + 1e-9; h += step) {
     svgElement(svg, "line", { class: "rate-grid", x1: px(h), x2: px(h), y1: pad.top, y2: height - pad.bottom });
@@ -643,7 +682,7 @@ function layoutRateChart(r) {
     samples.push({ x: px(h), y: py(value(h)) });
     points.push((i ? "L" : "M") + px(h).toFixed(1) + " " + py(value(h)).toFixed(1));
   }
-  svgElement(svg, "path", { class: "rate-curve", d: points.join(" ") });
+  const curve = svgElement(svg, "path", { class: "rate-curve", d: points.join(" ") });
 
   // Each label takes the spot with the fewest conflicts: leaving the plot is
   // worst, then touching another label or a dot, then the curve, then the target line.
@@ -653,7 +692,7 @@ function layoutRateChart(r) {
     if (box.x < 0 || box.x + box.width > width || box.y < 0 || box.y + box.height > height - pad.bottom) score += 100;
     taken.forEach(function (other) {
       if (box.x < other.x + other.width + 4 && other.x < box.x + box.width + 4 &&
-          box.y < other.y + other.height + 4 && other.y < box.y + box.height + 4) score += 10;
+          box.y < other.y + other.height + 4 && other.y < box.y + box.height + 4) score += 20;
     });
     const hitsCurve = samples.some(function (point) {
       return point.x > box.x - 3 && point.x < box.x + box.width + 3 &&
@@ -703,6 +742,16 @@ function layoutRateChart(r) {
     taken.push({ x: cross - 4, y: targetY - 4, width: 8, height: 8 });
   }
 
+  // The target's label first: it has the fewest places it can go.
+  const targetLabel = svgElement(svg, "text", { class: "rate-label rate-target-label" },
+    "your target " + calc.formatPrice(r.rate) + "/hr");
+  placeText(targetLabel, [
+    [width - pad.right, targetY - 8, "end"], [pad.left + 4, targetY - 8, "start"],
+    [width - pad.right, targetY + 16, "end"], [pad.left + 4, targetY + 16, "start"],
+    [width - pad.right, targetY - 24, "end"], [pad.left + 4, targetY - 24, "start"],
+    [width - pad.right, targetY + 32, "end"], [pad.left + 4, targetY + 32, "start"],
+  ]);
+
   const nowLabel = svgElement(svg, "text", { class: "rate-label rate-now-label" },
     calc.formatNumber(total) + "h → " + calc.formatMoney(value(total)) + "/hr after expenses");
   placeText(nowLabel, [
@@ -716,7 +765,7 @@ function layoutRateChart(r) {
   ]);
 
   if (cross !== null) {
-    const crossLabel = svgElement(svg, "text", { class: "rate-label" },
+    const crossLabel = svgElement(svg, "text", { class: "rate-label rate-cross-label" },
       "at " + calc.formatNumber(offer.hoursCovered) + "h you hit " + calc.formatPrice(r.rate));
     placeText(crossLabel, [
       [cross - 8, targetY - 8, "end"], [cross + 8, targetY - 8, "start"],
@@ -728,12 +777,95 @@ function layoutRateChart(r) {
     ]);
   }
 
-  const targetLabel = svgElement(svg, "text", { class: "rate-label" },
-    "your target " + calc.formatPrice(r.rate) + "/hr");
-  placeText(targetLabel, [
-    [width - pad.right, targetY - 8, "end"], [pad.left + 4, targetY - 8, "start"],
-    [width - pad.right, targetY + 16, "end"], [pad.left + 4, targetY + 16, "start"],
-  ]);
+
+  // Live change: the curve and dots move from their old places to the new ones.
+  const geometry = { samples: samples, dot: { x: dotX, y: dotY }, cross: cross };
+  if (morph && rateGeometry && canMove()) {
+    const from = rateGeometry;
+    const dotParts = dot.querySelectorAll("circle");
+    const crossDot = svg.querySelector(".rate-cross");
+    tween(MORPH_MS, function (t) {
+      curve.setAttribute("d", samples.map(function (point, i) {
+        const old = from.samples[i] || point;
+        return (i ? "L" : "M") + mix(old.x, point.x, t).toFixed(1) + " " + mix(old.y, point.y, t).toFixed(1);
+      }).join(" "));
+      dotParts.forEach(function (circle) {
+        circle.setAttribute("cx", mix(from.dot.x, dotX, t));
+        circle.setAttribute("cy", mix(from.dot.y, dotY, t));
+      });
+      if (crossDot && from.cross !== null) crossDot.setAttribute("cx", mix(from.cross, cross, t));
+    });
+  }
+  rateGeometry = geometry;
+
+  // What scrubbing needs: the hours range and where things go.
+  rateView = { r: r, svg: svg, x0: x0, x1: x1, px: px, py: py, value: value, width: width, pad: pad,
+    height: height };
+  plot.setAttribute("aria-valuemin", x0);
+  plot.setAttribute("aria-valuemax", x1);
+  if (scrubHours === null || scrubHours < x0 || scrubHours > x1) scrubHours = Math.round(total * 2) / 2;
+  if (scrubShown) drawScrub();
+  else setScrubValue();
+}
+
+// Scrubbing the rate chart: a line, a dot on the curve, and "14h → $12.86/hr",
+// snapping to half hours. Pointer: hover or drag. Keyboard: the chart is a
+// slider; left and right move half an hour, Escape hides the line.
+let rateView = null;
+let rateGeometry = null;
+let scrubHours = null;
+let scrubShown = false;
+
+function setScrubValue() {
+  const plot = byId("rate-plot");
+  if (!rateView || scrubHours === null) return;
+  const pay = rateView.value(scrubHours);
+  plot.setAttribute("aria-valuenow", scrubHours);
+  plot.setAttribute("aria-valuetext", "At " + hoursInWords(scrubHours) + ", the offer pays " +
+    calc.formatMoney(pay) + " an hour after expenses.");
+}
+
+function drawScrub() {
+  const view = rateView;
+  if (!view) return;
+  const old = view.svg.querySelector(".rate-scrub");
+  if (old) old.remove();
+  setScrubValue();
+  if (!scrubShown) return;
+  const x = view.px(scrubHours);
+  const pay = view.value(scrubHours);
+  const y = view.py(pay);
+  const group = svgElement(view.svg, "g", { class: "rate-scrub" });
+  svgElement(group, "line", { class: "rate-scrub-line", x1: x, x2: x, y1: view.pad.top, y2: view.height - view.pad.bottom });
+  svgElement(group, "circle", { class: "rate-scrub-dot", cx: x, cy: y, r: 5 });
+  const label = svgElement(group, "text", { class: "rate-label rate-scrub-label", y: Math.max(view.pad.top + 10, y - 14) },
+    calc.formatNumber(scrubHours) + "h → " + calc.formatMoney(pay) + "/hr");
+  // Right of the line, or left of it near the right edge.
+  label.setAttribute("x", x + 10);
+  label.setAttribute("text-anchor", "start");
+  if (x + 10 + label.getBBox().width > view.width) {
+    label.setAttribute("x", x - 10);
+    label.setAttribute("text-anchor", "end");
+  }
+}
+
+function scrubTo(hours) {
+  if (!rateView) return;
+  scrubHours = Math.max(rateView.x0, Math.min(rateView.x1, Math.round(hours * 2) / 2));
+  scrubShown = true;
+  drawScrub();
+}
+
+function hideScrub() {
+  scrubShown = false;
+  drawScrub();
+}
+
+function hoursAtPointer(event) {
+  const view = rateView;
+  const box = byId("rate-plot").getBoundingClientRect();
+  const x = event.clientX - box.left;
+  return view.x0 + ((x - view.pad.left) / (view.width - view.pad.left - view.pad.right)) * (view.x1 - view.x0);
 }
 
 // "1 page", "2 concepts"
@@ -1283,9 +1415,20 @@ function updatePage(commit) {
   }
 
   showResultState("result");
+  // A live change on screen 2 (not the first render, not the reveal): anything
+  // still playing jumps to its end, then the numbers and curve tween to the new result.
+  const formKey = JSON.stringify(readForm()) + currentField() + currentJob();
+  const morph = currentScreen() === "results" && !document.body.classList.contains("revealing") &&
+    Boolean(lastResult) && formKey !== lastFormKey;
+  lastFormKey = formKey;
+  const heroBefore = morph ? { kind: heroKind(lastResult), value: heroValue(lastResult) } : null;
+  if (morph) finishPlays();
   lastResult = r;
   lastValues = checked.values;
-  renderHero(r, checked.values);
+  renderHero(r, checked.values, morph);
+  if (heroBefore && heroBefore.kind === heroKind(r) && heroBefore.value !== heroValue(r) && canMove()) {
+    countUpHero(r, heroBefore.value, MORPH_MS);
+  }
   renderHoursChart(r);
   renderOfferChart(r);
   renderReceipt(r, checked.values);
@@ -1296,6 +1439,7 @@ function updatePage(commit) {
 // Charts measure the page, so they redraw when the size or font changes.
 let lastResult = null;
 let lastValues = null;
+let lastFormKey = null;
 
 function relayoutCharts() {
   markWrappedPills();
@@ -1376,7 +1520,7 @@ function showOfferField() {
 
 // Reveal: the hero number counts up from $0 (500ms, ease-out). Screen readers
 // already have the final value in the hidden label, so only the visible digits move.
-const COUNT_UP_MS = 500;
+const COUNT_UP_MS = 700;
 let countFrame = null;
 let countTimer = null;
 
@@ -1393,14 +1537,28 @@ function paintHeroNumber(r, value) {
   byId("hero-amount").textContent = money.slice(1);
 }
 
-function countUpHero(r) {
+// The number the hero shows: the estimate, the loss, or the offer per hour.
+function heroValue(r) {
+  return !r.offer ? r.estimate : (r.offer.belowExpenses ? r.offer.shortfall : r.offer.hourlyBefore);
+}
+
+// Which kind of number that is. A live change only tweens within the same kind.
+function heroKind(r) {
+  return !r.offer ? "estimate" : (r.offer.belowExpenses ? "loss" : "rate");
+}
+
+// Counts the hero up to its value: from 0 when it plays (700ms), or from the
+// old value on a live change (250ms).
+function countUpHero(r, from, ms) {
   stopCountUp();
-  const target = !r.offer ? r.estimate : (r.offer.belowExpenses ? r.offer.shortfall : r.offer.hourlyBefore);
+  const target = heroValue(r);
+  const start = from || 0;
+  const duration = ms || COUNT_UP_MS;
   const started = performance.now();
-  paintHeroNumber(r, 0);
+  paintHeroNumber(r, start);
   function frame(now) {
-    const t = Math.min(1, (now - started) / COUNT_UP_MS);
-    paintHeroNumber(r, target * (1 - Math.pow(1 - t, 3)));
+    const t = Math.min(1, (now - started) / duration);
+    paintHeroNumber(r, mix(start, target, ease(t)));
     countFrame = t < 1 ? requestAnimationFrame(frame) : null;
     if (t === 1) stopCountUp();
   }
@@ -1409,7 +1567,7 @@ function countUpHero(r) {
   countTimer = setTimeout(function () {
     stopCountUp();
     paintHeroNumber(r, target);
-  }, COUNT_UP_MS + 100);
+  }, duration + 100);
 }
 
 // Screens: the calculator (screen 1 and screen 2) and the projects list.
@@ -1447,6 +1605,10 @@ function focusScreen(element) {
 function openResults(quiet) {
   showScreen("results");
   relayoutCharts();
+  // Each block plays once as it scrolls in. During the reveal, that starts when
+  // the orb lands; on page load, nothing plays.
+  armPlays();
+  if (!firstLoad && !document.body.classList.contains("revealing")) startPlays();
   const target = ["hero-label", "empty-state", "error-state"].map(byId).filter(function (element) {
     return !element.hidden && !element.closest("[hidden]");
   })[0];
@@ -2018,6 +2180,237 @@ function showWorkError(visible) {
   else field.removeAttribute("aria-describedby");
 }
 
+// Motion helpers. One ease for everything (DESIGN.md): cubic-bezier(.2,.7,.2,1).
+const MORPH_MS = 250;
+
+function canMove() {
+  return !reduceMotion.matches && Boolean(Element.prototype.animate);
+}
+
+function mix(from, to, t) {
+  return from + (to - from) * t;
+}
+
+// cubic-bezier(.2,.7,.2,1), solved for x by a few Newton steps.
+function ease(x) {
+  if (x <= 0 || x >= 1) return x;
+  const ax = 0.2, bx = 0.2, ay = 0.7, by = 1;
+  function curve(t, p1, p2) { return 3 * (1 - t) * (1 - t) * t * p1 + 3 * (1 - t) * t * t * p2 + t * t * t; }
+  function slope(t, p1, p2) { return 3 * (1 - t) * (1 - t) * p1 + 6 * (1 - t) * t * (p2 - p1) + 3 * t * t * (1 - p2); }
+  let t = x;
+  for (let i = 0; i < 6; i++) {
+    const d = slope(t, ax, bx);
+    if (Math.abs(d) < 1e-6) break;
+    t -= (curve(t, ax, bx) - x) / d;
+  }
+  return curve(Math.max(0, Math.min(1, t)), ay, by);
+}
+const EASE = "cubic-bezier(.2,.7,.2,1)";
+
+// Tweens a value from 0 to 1. Under reduced motion it lands at once.
+// Returns a function that jumps to the end.
+let runningTweens = [];
+
+function tween(ms, step, done) {
+  if (!canMove()) {
+    step(1);
+    if (done) done();
+    return function () {};
+  }
+  const started = performance.now();
+  let frame = null;
+  let over = false;
+  function finish() {
+    if (over) return;
+    over = true;
+    cancelAnimationFrame(frame);
+    step(1);
+    runningTweens = runningTweens.filter(function (f) { return f !== finish; });
+    if (done) done();
+  }
+  function tick(now) {
+    const t = Math.min(1, (now - started) / ms);
+    if (t >= 1) { finish(); return; }
+    step(ease(t));
+    frame = requestAnimationFrame(tick);
+  }
+  frame = requestAnimationFrame(tick);
+  runningTweens.push(finish);
+  return finish;
+}
+
+// Web Animations with the shared ease. fill "backwards" hides a delayed part
+// until its turn, and the final look is always the element's own styles.
+function animate(element, frames, options) {
+  if (!element || !canMove()) return null;
+  return element.animate(frames, Object.assign({ easing: EASE, fill: "backwards" }, options));
+}
+
+// Plays once when it scrolls into view (35% visible), once per result: the hero,
+// the stats, the hours chart, and the rate chart. Everything is already in its
+// final state before it plays.
+const PLAY_THRESHOLD = 0.35;
+const PLAYS = {
+  "hero-panel": playHero,
+  metrics: playStats,
+  "hours-chart": playHours,
+  "offer-chart": playRate,
+};
+let played = {};
+let playTimers = [];
+let playObserver = null;
+
+function armPlays() {
+  finishPlays();
+  played = {};
+  scrubHours = null;
+  if (playObserver) playObserver.disconnect();
+}
+
+function startPlays() {
+  if (!canMove() || !window.IntersectionObserver) return;
+  if (!playObserver) {
+    playObserver = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        const id = entry.target.id;
+        if (!entry.isIntersecting || entry.intersectionRatio < PLAY_THRESHOLD || played[id]) return;
+        if (entry.target.hidden || entry.target.closest("[hidden]")) return;
+        played[id] = true;
+        playObserver.unobserve(entry.target);
+        PLAYS[id]();
+      });
+    }, { threshold: [PLAY_THRESHOLD] });
+  }
+  Object.keys(PLAYS).forEach(function (id) {
+    if (!played[id]) playObserver.observe(byId(id));
+  });
+}
+
+function later(ms, fn) {
+  playTimers.push(setTimeout(fn, ms));
+}
+
+// Anything still playing jumps to its end: a live change, or leaving the screen.
+function finishPlays() {
+  playTimers.forEach(clearTimeout);
+  playTimers = [];
+  runningTweens.slice().forEach(function (finish) { finish(); });
+  stopCountUp();
+  if (lastResult && byId("hero-amount")) paintHeroNumber(lastResult, heroValue(lastResult));
+  byId("result").getAnimations({ subtree: true }).forEach(function (animation) { animation.finish(); });
+  endHoursPlay();
+  byId("metrics").classList.remove("play");
+  renderStatNumbers();
+}
+
+function playHero() {
+  if (lastResult && !byId("result-summary").hidden) countUpHero(lastResult);
+}
+
+// Hairlines draw left to right (CSS), numbers count up 700ms, 80ms apart.
+function playStats() {
+  const metrics = byId("metrics");
+  metrics.classList.remove("play");
+  void metrics.offsetWidth;
+  metrics.classList.add("play");
+  later(500, function () { metrics.classList.remove("play"); });
+  metrics.querySelectorAll(".stat-number").forEach(function (number, i) {
+    const item = shownStats[i];
+    if (!item || typeof item.number !== "number") return;
+    number.textContent = item.format(0);
+    later(i * 80, function () {
+      tween(COUNT_UP_MS, function (t) { number.textContent = item.format(item.number * t); },
+        function () { number.textContent = item.value; });
+    });
+  });
+}
+
+// The hours chart acts out the finding: every hour starts unpaid (stripes wipe
+// in), the paid fill runs from the left and stops where the money runs out, the
+// runs-out line drops in, then the bracket and labels.
+function playHours() {
+  const chart = byId("hours-chart");
+  const row = byId("bar-row");
+  chart.classList.add("hours-playing");
+
+  const paid = Array.prototype.slice.call(row.querySelectorAll(".bar-paid")).map(function (span) {
+    const left = span.parentElement.offsetLeft - row.offsetLeft;
+    return { span: span, left: left, width: span.offsetWidth };
+  });
+  const fillTo = paid.reduce(function (most, part) { return Math.max(most, part.left + part.width); }, 0);
+  function fillFront(front) {
+    paid.forEach(function (part) {
+      const hidden = Math.max(0, Math.min(part.width, part.left + part.width - front));
+      part.span.style.clipPath = "inset(0 " + hidden + "px 0 0)";
+    });
+  }
+  fillFront(0);
+
+  const line = byId("runs-out");
+  const bracket = byId("bracket");
+  const labels = Array.prototype.slice.call(document.querySelectorAll("#bar-labels .bar-label, #group-legend li"));
+
+  // 1. Stripes wipe in, 400ms.
+  animate(row, [{ clipPath: "inset(0 100% 0 0)" }, { clipPath: "inset(0 0 0 0)" }], { duration: 400 });
+  // The rest waits its turn, hidden only while it waits.
+  animate(line, [{ opacity: 0, transform: "translateY(-8px)" }, { opacity: 1, transform: "none" }],
+    { duration: 200, delay: 1150 });
+  animate(bracket, [{ clipPath: "inset(0 100% 0 0)" }, { clipPath: "inset(0 0 0 0)" }], { duration: 300, delay: 1310 });
+  animate(byId("bracket-label"), [{ opacity: 0 }, { opacity: 1 }], { duration: 300, delay: 1430 });
+  labels.forEach(function (label, i) {
+    animate(label, [{ opacity: 0, transform: "translateY(6px)" }, { opacity: 1, transform: "none" }],
+      { duration: 300, delay: 1310 + i * 60 });
+  });
+
+  // 2. The paid fill runs from the left, 700ms, and stops where the money runs out.
+  later(450, function () {
+    tween(700, function (t) { fillFront(fillTo * t); }, endHoursPlay);
+  });
+}
+
+function endHoursPlay() {
+  byId("hours-chart").classList.remove("hours-playing");
+  byId("bar-row").querySelectorAll(".bar-paid").forEach(function (span) { span.style.clipPath = ""; });
+}
+
+// The rate chart: grid, then the target line, then the curve draws so you watch
+// the rate fall; the black dot pops as the curve reaches it, the red dot lands last.
+function playRate() {
+  const svg = byId("rate-plot").querySelector("svg");
+  if (!svg) return;
+  svg.querySelectorAll(".rate-grid, .rate-tick, .rate-zero").forEach(function (part) {
+    animate(part, [{ opacity: 0 }, { opacity: 1 }], { duration: 200 });
+  });
+  const target = svg.querySelector(".rate-target");
+  const targetLength = Math.abs(target.x2.baseVal.value - target.x1.baseVal.value);
+  animate(target, [{ strokeDasharray: targetLength + " " + targetLength, strokeDashoffset: targetLength },
+    { strokeDasharray: targetLength + " " + targetLength, strokeDashoffset: 0 }], { duration: 300, delay: 150 });
+  animate(svg.querySelector(".rate-target-label"), [{ opacity: 0 }, { opacity: 1 }], { duration: 300, delay: 350 });
+
+  const curve = svg.querySelector(".rate-curve");
+  const length = curve.getTotalLength();
+  animate(curve, [{ strokeDasharray: length + " " + length, strokeDashoffset: length },
+    { strokeDasharray: length + " " + length, strokeDashoffset: 0 }], { duration: 900, delay: 400 });
+
+  const cross = svg.querySelector(".rate-cross");
+  if (cross && rateView) {
+    const share = Math.max(0, Math.min(1, (cross.cx.baseVal.value - rateView.pad.left) /
+      (rateView.width - rateView.pad.left - rateView.pad.right)));
+    const at = 400 + 900 * Math.pow(share, 0.7);
+    animate(cross, [{ transform: "scale(0)" }, { transform: "scale(1.4)" }, { transform: "scale(1)" }],
+      { duration: 260, delay: at, easing: "ease-out" });
+    animate(svg.querySelector(".rate-cross-label"), [{ opacity: 0 }, { opacity: 1 }], { duration: 250, delay: at });
+  }
+
+  animate(svg.querySelector(".rate-dot"), [{ transform: "scale(0)" }, { transform: "scale(1)" }],
+    { duration: 260, delay: 1350 });
+  animate(svg.querySelector(".rate-halo"),
+    [{ transform: "scale(0.4)", opacity: 0 }, { transform: "scale(0.4)", opacity: 0.5, offset: 0.05 },
+      { transform: "scale(1.6)", opacity: 0, offset: 0.6 }, { transform: "scale(1)", opacity: 0.25 }],
+    { duration: 900, delay: 1470, easing: "ease-out" });
+  animate(svg.querySelector(".rate-now-label"), [{ opacity: 0 }, { opacity: 1 }], { duration: 250, delay: 1470 });
+}
+
 // The reveal plays once per press of "Check the offer": screen 1 fades out, the
 // button's gradient circle grows into the hero panel (400ms), the number counts up,
 // the paid fill sweeps left to right, then the red dot appears. Under reduced
@@ -2069,7 +2462,7 @@ function revealResults(quiet) {
 
     revealTimers.push(setTimeout(function () {
       body.classList.add("reveal-in");
-      if (lastResult && !byId("result-summary").hidden) countUpHero(lastResult);
+      startPlays();
       orb.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 200, fill: "forwards" })
         .onfinish = function () { orb.remove(); };
       // Clean up even if the fade never reports finishing (for example a background tab).
@@ -2711,6 +3104,32 @@ byId("update-draft").addEventListener("click", updateDraft);
 byId("use-estimate").addEventListener("click", useEstimate);
 byId("copy-reply").addEventListener("click", copyReply);
 byId("save-image").addEventListener("click", saveImage);
+
+// Scrubbing the rate chart.
+const ratePlot = byId("rate-plot");
+ratePlot.addEventListener("pointermove", function (event) { if (rateView) scrubTo(hoursAtPointer(event)); });
+ratePlot.addEventListener("pointerdown", function (event) { if (rateView) scrubTo(hoursAtPointer(event)); });
+ratePlot.addEventListener("pointerleave", function () {
+  if (document.activeElement !== ratePlot) hideScrub();
+});
+ratePlot.addEventListener("focus", function () { if (rateView) scrubTo(scrubHours); });
+ratePlot.addEventListener("blur", hideScrub);
+ratePlot.addEventListener("keydown", function (event) {
+  if (!rateView) return;
+  const moves = { ArrowRight: 0.5, ArrowUp: 0.5, ArrowLeft: -0.5, ArrowDown: -0.5 };
+  if (moves[event.key]) {
+    scrubTo(scrubHours + moves[event.key]);
+  } else if (event.key === "Home") {
+    scrubTo(rateView.x0);
+  } else if (event.key === "End") {
+    scrubTo(rateView.x1);
+  } else if (event.key === "Escape") {
+    hideScrub();
+  } else {
+    return;
+  }
+  event.preventDefault();
+});
 byId("image-save").addEventListener("click", deliverImage);
 byId("image-close").addEventListener("click", function () { byId("image-dialog").close(); });
 // Escape and Close both end here: focus goes back to "Save image".

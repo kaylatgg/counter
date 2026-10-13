@@ -486,7 +486,8 @@
             <h2 id="rate-title">Your rate drops as hours grow</h2>
             <p class="chart-sub" id="rate-sub">After your $20 in expenses, $200 spread over more hours pays less per hour.</p>
 
-            <div class="rate-plot" id="rate-plot" aria-hidden="true"></div>
+            <!-- A slider: arrows (or hover, or drag) move half an hour along the curve. -->
+            <div class="rate-plot" id="rate-plot" tabindex="0" role="slider" aria-label="Hours, to see what the offer pays" aria-orientation="horizontal"></div>
 
             <ul class="visually-hidden" id="pay-list">
               <li>Offer, before expenses: $17.39/hr</li>
