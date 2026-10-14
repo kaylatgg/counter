@@ -211,6 +211,7 @@ Sizes:
 
 **Projects page and save field**
 - Projects list: one column, each project is a full-width row (name, job, date), at least 56px tall.
+- Row actions (desktop and phone): Edit, Rename, Duplicate, Delete, as plain text buttons, Delete last. The name opens the project on screen 2; Edit opens it on screen 1. Each has a full accessible name ("Edit Menu, Oct 11"). Added October 13, 2026.
 - Save field: drops in under the header, full width: name input, then Save and Cancel side by side.
 
 **Motion:** the same reveal. The circle in the bottom bar grows into the hero. Off under reduced motion.

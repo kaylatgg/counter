@@ -2062,6 +2062,7 @@ function renderProjects() {
       rowButton(actions, "confirm-delete", "Delete", null, "action-button");
       rowButton(actions, "cancel-delete", "Cancel", null, "action-button outline");
     } else {
+      rowButton(actions, "edit", "Edit", "Edit " + project.name);
       rowButton(actions, "rename", "Rename", "Rename " + project.name);
       rowButton(actions, "duplicate", "Duplicate", "Duplicate " + project.name);
       rowButton(actions, "delete", "Delete", "Delete " + project.name);
@@ -2101,6 +2102,9 @@ function onRowClick(event) {
   if (action === "open") {
     // A saved project opens on its result.
     go({ screen: "results", project: id });
+  } else if (action === "edit") {
+    // Edit opens the same project on its inputs.
+    go({ screen: "inputs", project: id });
   } else if (action === "rename") {
     setRowMode({ id: id, mode: "rename" });
     const input = rowElement(id, ".row-rename");
