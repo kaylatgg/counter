@@ -61,6 +61,17 @@ Rules:
 | Small labels | Geist 400, 13px, `--muted` |
 | Mono notes, units, ticks | Geist Mono 11 to 13px |
 
+## Layout grid
+
+Decided with Kayla, October 13, 2026.
+
+- Every row's content sits between two lines: 64px in from each side of the window on desktop (760px and up), up to 1312px wide in all, centered; 20px in from each side on phones. At 1440px the lines are at 64 and 1376; at 1920px, 304 and 1616.
+- Everything starts and ends on them: the header (wordmark and buttons), the screen 2 control row, the hero panel, the stats, the charts, Show the math, Your price and Your reply, the footer, screen 1's headline, form, tally card, and button, and the Projects page.
+- Pills and panels (Edit details, the hero panel, the tally card, the phone control panel, the phone bottom bar) put their outer edge on the line; text inside keeps its padding.
+- Screen 1's two columns stay: the left column starts on the left line, the right column ends on the right line.
+- The footer's rule spans the row on every screen, and the reply box fills its column.
+  Reason: rows started at four different edges (24, 48, 64, and 72px), so nothing lined up.
+
 ## Screen 1: inputs
 
 - `--bg` page. A soft blurred sunset glow off the top-right corner with two thin circle outlines. Nothing over the form fields.
@@ -78,7 +89,7 @@ Rules:
 ## Screen 2: result
 
 - Header row: "counter", "Edit details" pill, then the live controls on the right (item stepper, rounds stepper, offer, target).
-- **Hero panel:** `--sunset`, 24px margin, 28px radius, about 380px tall. Top left: "This offer pays". Top right: mono job summary and the sentence ("for 11.5 hours of real work. That's $7.61 an hour under your $25 target.") in ink. Bottom left: the hero number.
+- **Hero panel:** `--sunset`, its outer edge on the grid lines (no bleed past the text), 28px radius, about 380px tall. Top left: "This offer pays". Top right: mono job summary and the sentence ("for 11.5 hours of real work. That's $7.61 an hour under your $25 target.") in ink. Bottom left: the hero number.
 - **Stats row:** 4 columns with a hairline above each: Your estimate, More than they offered, Hours the offer pays for (7.2 of 11.5 hrs), After expenses.
 - **Chart 1, "Where your 11.5 hours go"** (left, about 680px):
   - One bar per group, 96px tall, 4px gaps, widths by hours.
@@ -195,13 +206,13 @@ Sizes:
   Reason: the cut-off pill shows there is more to swipe.
 - Steppers side by side. Work rows: label on top, then the bar and the hours input on one line.
 - Rate and expenses side by side. Amount offered at half width under Yes / Not yet.
-- **Bottom bar replaces the tally panel and the button.** Fixed, 12px from the sides, `calc(14px + env(safe-area-inset-bottom))` from the bottom, 28px radius, ink. Left: "Check the offer" (17px) and the live mono "11.5 hrs · $200", with a thin live hours bar under it (solid then stripes, light on ink). Right: 52px `--sunset` circle with the ink arrow. With no offer: "Get my estimate" and "11.5 hrs at $25/hr".
+- **Bottom bar replaces the tally panel and the button.** Fixed, on the grid lines (20px from the sides), `calc(14px + env(safe-area-inset-bottom))` from the bottom, 28px radius, ink. Left: "Check the offer" (17px) and the live mono "11.5 hrs · $200", with a thin live hours bar under it (solid then stripes, light on ink). Right: 52px `--sunset` circle with the ink arrow. With no offer: "Get my estimate" and "11.5 hrs at $25/hr".
   Reason: the total and the button are what you check while typing, so they stay under your thumb.
 - Add bottom padding to the page so the bar never covers the last field.
 
 **Screen 2: result**
-- Hero: 12px side margin, 28px radius. "This offer pays" and the mono job summary on top, the number, then the sentence under it in ink.
-- Live controls in a `--paper` panel (20px radius) right under the hero, not sticky: the item stepper, the rounds stepper, then Offer and Target on one row.
+- Hero: on the grid lines (20px from the sides), 28px radius. "This offer pays" and the mono job summary on top, the number, then the sentence under it in ink.
+- Live controls in a `--paper` panel (20px radius, outer edge on the grid lines) right under the hero, not sticky: the item stepper, the rounds stepper, then Offer and Target on one row.
   Reason: the desktop bar doesn't fit a phone. Right under the answer is where people try "what if".
 - Stats in a 2x2 grid.
 - Hours chart full width, 64px tall. Group names move into a 2-column legend under the bar. The runs-out label sits left of the dashed line, or right of it if there's no room.

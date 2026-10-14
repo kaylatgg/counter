@@ -31,6 +31,18 @@
   --mono: "Geist Mono", ui-monospace, "SF Mono", Menlo, monospace;
   /* Longest comfortable line: about 75 characters. */
   --measure: 34em;
+
+  /* One layout grid: every row's content sits between two lines, --edge in
+     from each side of the window, up to --frame wide, centered. */
+  --edge: 64px;
+  --frame: 1312px;
+  --gutter: max(var(--edge), calc((100% - var(--frame)) / 2));
+}
+
+@media (max-width: 759px) {
+  :root {
+    --edge: 20px;
+  }
 }
 
 /* Base */
@@ -223,10 +235,12 @@ h3 {
 
 /* Header (screen 1) */
 
+/* Full-width rows put their content on the grid lines with padding.
+   (Percent padding is measured from the window, so --gutter works here.) */
 .topbar {
   position: relative;
   z-index: 1;
-  padding: 0 24px;
+  padding: 0 var(--gutter);
 }
 
 .topbar-inner {
@@ -234,8 +248,6 @@ h3 {
   align-items: center;
   gap: 32px;
   height: 64px;
-  max-width: 1312px;
-  margin: 0 auto;
 }
 
 .wordmark {
@@ -443,10 +455,8 @@ h3 {
 .site-footer {
   position: relative;
   z-index: 1;
-  max-width: 1312px;
-  margin: 0 auto;
-  padding-left: 24px;
-  padding-right: 24px;
+  padding-left: var(--gutter);
+  padding-right: var(--gutter);
 }
 
 .screen-projects,
@@ -1075,7 +1085,6 @@ legend {
 }
 
 .site-footer p {
-  max-width: var(--measure);
   margin-top: 72px;
   padding-top: 24px;
   border-top: 1px solid var(--line);
@@ -1083,12 +1092,7 @@ legend {
   color: var(--muted);
 }
 
-.on-results .site-footer {
-  max-width: 1440px;
-}
-
 .on-results .site-footer p {
-  max-width: none;
   margin-top: 0;
 }
 
@@ -1313,7 +1317,7 @@ legend {
   align-items: center;
   gap: 8px 28px;
   min-height: 64px;
-  padding: 8px 24px;
+  padding: 8px var(--gutter);
   background: var(--bg);
 }
 
@@ -1462,7 +1466,7 @@ legend {
 .hero-panel {
   position: relative;
   min-height: 380px;
-  margin: 0 max(24px, calc((100% - 1392px) / 2));
+  margin: 0 var(--gutter);
   padding: 44px 48px 40px;
   border-radius: 28px;
   background: var(--sunset);
@@ -1581,11 +1585,9 @@ legend {
   font-size: 20px;
 }
 
-/* Below the panel: content lines up with the panel's inside edge. */
+/* Below the panel: content lines up with the panel's outside edge. */
 .results-body {
-  max-width: 1440px;
-  margin: 0 auto;
-  padding: 0 24px 72px;
+  padding: 0 var(--gutter) 72px;
 }
 
 /* Stats: 4 columns, a hairline above each. */
@@ -2093,6 +2095,10 @@ textarea {
   resize: vertical;
 }
 
+.result-block textarea {
+  max-width: none;
+}
+
 .reply-actions {
   display: flex;
   flex-wrap: wrap;
@@ -2297,29 +2303,6 @@ textarea {
 /* Desktop: 960px and up. */
 
 @media (min-width: 960px) {
-  .topbar,
-  .screen-projects,
-  .screen-inputs,
-  .site-footer {
-    padding-left: 64px;
-    padding-right: 64px;
-  }
-
-  .on-results .site-footer {
-    padding-left: 72px;
-    padding-right: 72px;
-  }
-
-  .results-header {
-    padding-left: max(48px, calc((100% - 1344px) / 2));
-    padding-right: max(48px, calc((100% - 1344px) / 2));
-  }
-
-  .results-body {
-    padding-left: 72px;
-    padding-right: 72px;
-  }
-
   .inputs-columns {
     grid-template-columns: minmax(0, 1fr) 480px;
   }
@@ -2383,7 +2366,7 @@ textarea {
     position: sticky;
     top: 0;
     z-index: 11;
-    padding: 0 20px;
+    padding: 0 var(--gutter);
     background: transparent;
     border-bottom: 1px solid transparent;
   }
@@ -2529,14 +2512,6 @@ textarea {
   }
 
   /* Screen 1 */
-
-  .screen-projects,
-  .screen-inputs,
-  .site-footer,
-  .on-results .site-footer {
-    padding-left: 20px;
-    padding-right: 20px;
-  }
 
   .screen-projects,
   .screen-inputs {
@@ -2733,8 +2708,8 @@ textarea {
 
   .check-button {
     position: fixed;
-    left: 12px;
-    right: 12px;
+    left: var(--edge);
+    right: var(--edge);
     bottom: calc(14px + env(safe-area-inset-bottom));
     z-index: 9;
     width: auto;
@@ -2805,7 +2780,6 @@ textarea {
 
   .hero-panel {
     min-height: 0;
-    margin: 0 12px;
     padding: 20px;
   }
 
@@ -2865,7 +2839,7 @@ textarea {
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     gap: 4px 12px;
-    margin: 12px 12px 0;
+    margin: 12px var(--edge) 0;
     padding: 8px 16px 12px 20px;
     border-radius: 20px;
     background: var(--paper);
@@ -2894,7 +2868,7 @@ textarea {
   }
 
   .results-body {
-    padding: 0 20px 56px;
+    padding-bottom: 56px;
   }
 
   .stats {
