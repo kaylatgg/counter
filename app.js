@@ -1822,19 +1822,20 @@ function startFresh() {
 
 function newCalculation() {
   if (draft && !projectStore.isUntouched(draft)) {
-    closePanels();
-    show(byId("start-over"), true);
-    byId("start-over-cancel").focus();
+    openDialog("start-over");
+    byId("start-over-cancel").focus({ preventScroll: true });
   } else {
     startFresh();
   }
 }
 
-// "Save as project" from the start-over question: show the draft, save it,
-// then start the new calculation.
+// "Save as project" from the start-over question: the Save dialog takes its
+// place, saves the draft, then starts the new calculation. The page stays put
+// underneath; the draft is loaded into the (hidden) calculator so it's what gets saved.
 function saveThenStartOver() {
-  go({ screen: "inputs" });
-  openSaveField(startFresh);
+  const opener = dialogOpener;
+  if (!draftOnScreen) openDraft();
+  openSaveField(startFresh, opener);
 }
 
 // The header: project name and "Saved" in a project, "Projects 3", and the save button.
@@ -1868,31 +1869,47 @@ function renderHeader() {
   }
 }
 
+// The four dialogs: Save as project, Start over?, Open the shared result?, and
+// the link to copy by hand. One is open at a time. Focus moves without
+// scrolling, so the page underneath never jumps.
+const PANEL_DIALOGS = ["save-panel", "start-over", "share-question", "share-panel"];
+let dialogOpener = null;
+
+function openDialog(id, opener) {
+  const from = opener || document.activeElement;
+  closePanels();
+  dialogOpener = from && from !== document.body ? from : null;
+  byId(id).showModal();
+}
+
 function closePanels() {
-  show(byId("save-panel"), false);
-  show(byId("start-over"), false);
-  show(byId("share-panel"), false);
-  show(byId("share-question"), false);
+  PANEL_DIALOGS.forEach(function (id) {
+    if (byId(id).open) byId(id).close();
+  });
+  dialogOpener = null;
   pendingShare = null;
   setFieldError(byId("save-name"), "");
 }
 
-// "Save as project": a name field under the header, filled in and selected so
-// typing replaces it. then runs after a successful save.
-function openSaveField(then) {
+// Cancel, Close, and Escape: focus goes back to the button that opened the dialog.
+function dismissDialog() {
+  const opener = dialogOpener;
+  afterSave = null;
   closePanels();
+  if (opener && opener.isConnected && !opener.disabled && !opener.closest("[hidden]")) {
+    opener.focus({ preventScroll: true });
+  }
+}
+
+// "Save as project": the name, filled in and selected so typing replaces it.
+// then runs after a successful save.
+function openSaveField(then, opener) {
+  openDialog("save-panel", opener);
   afterSave = then || null;
   const input = byId("save-name");
   input.value = projectStore.defaultProjectName(currentJob(), new Date());
-  show(byId("save-panel"), true);
-  input.focus();
+  input.focus({ preventScroll: true });
   input.select();
-}
-
-function cancelSaveField() {
-  afterSave = null;
-  closePanels();
-  byId("save-project").focus();
 }
 
 function saveAsProject(event) {
@@ -1925,7 +1942,7 @@ function saveAsProject(event) {
   history.replaceState(state, "", addressFor(state));
   renderHeader();
   show(byId("save-status"), true);
-  byId("crumb-name").focus();
+  byId("crumb-name").focus({ preventScroll: true });
 }
 
 // Click the project name to rename: Enter or leaving the field saves, Escape
@@ -2723,11 +2740,10 @@ function showLinkCopied() {
 
 // When copying fails: the link in a read-only field, selected, to copy by hand.
 function showShareField(url) {
-  closePanels();
+  openDialog("share-panel", byId("share-link"));
   const input = byId("share-url");
   input.value = url;
-  show(byId("share-panel"), true);
-  input.focus();
+  input.focus({ preventScroll: true });
   input.select();
 }
 
@@ -2771,10 +2787,9 @@ function openShareLink(hash, onLoad) {
   history.replaceState({ screen: "inputs" }, "", location.href);
   route({ screen: "inputs" });
   if (draft && !projectStore.isUntouched(draft)) {
-    closePanels();
+    openDialog("share-question");
     pendingShare = shared;
-    show(byId("share-question"), true);
-    if (!onLoad) byId("share-open").focus();
+    byId("share-open").focus({ preventScroll: true });
     return;
   }
   pendingShare = shared;
@@ -2816,7 +2831,7 @@ function keepMine() {
   closePanels();
   const state = { screen: "inputs" };
   history.replaceState(state, "", addressFor(state));
-  byId("page-title").focus();
+  byId("page-title").focus({ preventScroll: true });
 }
 
 function showSharedNote(status) {
@@ -3346,13 +3361,7 @@ byId("image-dialog").addEventListener("close", function () { byId("save-image").
 byId("share-link").addEventListener("click", shareResult);
 byId("share-open").addEventListener("click", applyShare);
 byId("share-keep").addEventListener("click", keepMine);
-byId("share-close").addEventListener("click", function () {
-  closePanels();
-  byId("share-link").focus();
-});
-byId("share-url").addEventListener("keydown", function (event) {
-  if (event.key === "Escape") byId("share-close").click();
-});
+byId("share-close").addEventListener("click", dismissDialog);
 
 let resizeFrame = null;
 window.addEventListener("resize", function () {
@@ -3375,10 +3384,7 @@ byId("projects-link").addEventListener("click", function (event) {
 });
 byId("save-project").addEventListener("click", function () { openSaveField(null); });
 byId("save-form").addEventListener("submit", saveAsProject);
-byId("save-cancel").addEventListener("click", cancelSaveField);
-byId("save-name").addEventListener("keydown", function (event) {
-  if (event.key === "Escape") cancelSaveField();
-});
+byId("save-cancel").addEventListener("click", dismissDialog);
 byId("save-name").addEventListener("input", function () {
   if (byId("save-name").getAttribute("aria-invalid")) {
     setFieldError(byId("save-name"), projectStore.validateName(byId("save-name").value) || "");
@@ -3389,9 +3395,15 @@ byId("new-calc").addEventListener("click", newCalculation);
 byId("new-calc-empty").addEventListener("click", newCalculation);
 byId("start-over-yes").addEventListener("click", startFresh);
 byId("start-over-save").addEventListener("click", saveThenStartOver);
-byId("start-over-cancel").addEventListener("click", function () {
-  closePanels();
-  byId(projectList.length ? "new-calc" : "new-calc-empty").focus();
+byId("start-over-cancel").addEventListener("click", dismissDialog);
+// Escape works like Cancel (and like "Keep mine" for a shared link), with our
+// own focus return instead of the browser's.
+PANEL_DIALOGS.forEach(function (id) {
+  byId(id).addEventListener("cancel", function (event) {
+    event.preventDefault();
+    if (id === "share-question") keepMine();
+    else dismissDialog();
+  });
 });
 byId("project-rows").addEventListener("click", onRowClick);
 byId("project-rows").addEventListener("keydown", onRowKey);

@@ -212,7 +212,7 @@ Sizes:
 **Projects page and save field**
 - Projects list: one column, each project is a full-width row (name, job, date), at least 56px tall.
 - Row actions (desktop and phone): Edit, Rename, Duplicate, Delete, as plain text buttons, Delete last. The name opens the project on screen 2; Edit opens it on screen 1. Each has a full accessible name ("Edit Menu, Oct 11"). Added October 13, 2026.
-- Save field: drops in under the header, full width: name input, then Save and Cancel side by side.
+- Dialogs are bottom sheets here (see "Dialogs" below).
 
 **Motion:** the same reveal. The circle in the bottom bar grows into the hero. Off under reduced motion.
 
@@ -229,7 +229,7 @@ Approved by Kayla, October 12, 2026. References: `docs/design-share-desktop.png`
 **Opening a shared link**
 - A mono note above the hero, `--ink-2`, with a small ink dot: "Shared result. Change anything to make it yours." For a partly broken link: "Some numbers in this link didn't work, so we used examples."
   Reason: it explains where the numbers came from without looking like an error. The dot is ink, because red already means "your current hours".
-- If you have unsaved numbers, a panel in the "Start over" style asks: "Open the shared result? Your current numbers will be replaced." Buttons: "Open shared result" and "Keep mine".
+- If you have unsaved numbers, a dialog asks: "Open the shared result? Your current numbers will be replaced." Buttons: "Open shared result" and "Keep mine".
   Reason: a link should never wipe someone's work.
 
 **Save image** (next to "Copy reply")
@@ -244,6 +244,16 @@ Approved by Kayla, October 12, 2026. References: `docs/design-share-desktop.png`
   - Escape and Close return focus to "Save image". It only fades in, and not at all under reduced motion.
   Reason: the image goes to a client, so the student should see exactly what will be sent, and the price in it, before it leaves.
 - The gradient rule ("only four places") is for the page. The saved image is its own canvas and uses the paid gradient and one sunset panel.
+
+## Dialogs
+
+Decided with Kayla, October 13, 2026. Replaces the panels that opened under the header.
+
+- Save as project, "Start over?", "Open the shared result?", and the link to copy by hand (when copying fails) are native `<dialog>`s opened with `showModal()`, styled like the image preview: `--bg`, 28px radius, the same dim backdrop, a 160ms fade in (none under reduced motion).
+  Reason: a panel at the top of the page pushed everything down and scrolled you away from where you were.
+- Desktop: centered, 480px wide, 32px padding, the text or field on top and the buttons under it, aligned left.
+- Phone (below 760px): a bottom sheet, full width, 28px top corners, clear of the home bar. Buttons share the row and are 44px tall.
+- Each keeps its panel's text, field, and buttons. Escape and Cancel (or Close) close it and return focus to the button that opened it; Escape on "Open the shared result?" means "Keep mine". The page never scrolls when a dialog opens or closes.
 
 ## Don'ts
 

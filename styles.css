@@ -347,11 +347,6 @@ h3 {
   margin-bottom: 16px;
 }
 
-.share-field {
-  flex: 1;
-  min-width: min(420px, 100%);
-}
-
 .share-field .unit-input {
   display: flex;
   margin-top: 6px;
@@ -371,10 +366,6 @@ h3 {
   margin-top: 6px;
 }
 
-#share-panel .panel-actions {
-  padding-bottom: 22px;
-}
-
 /* In a saved project the button just says "Saved", and can't be pressed. */
 .save-button:disabled {
   border-color: var(--line);
@@ -383,31 +374,35 @@ h3 {
   cursor: default;
 }
 
-/* Panels under the header: the save field and the start-over question. */
-.header-panel {
-  position: relative;
-  z-index: 2;
+/* Dialogs: Save as project, Start over?, Open the shared result?, and the
+   link to copy. Styled like the image preview: --bg, 28px radius, a dim
+   backdrop. Centered on desktop, a bottom sheet on phones. They only fade in. */
+.panel-dialog {
+  width: min(480px, calc(100vw - 48px));
+  max-height: calc(100vh - 48px);
+  padding: 32px;
+  border: 0;
+  border-radius: 28px;
+  background: var(--bg);
+  color: var(--ink);
+}
+
+.panel-dialog[open] {
   display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
-  gap: 16px 28px;
-  max-width: 1184px;
-  margin: 8px auto 0;
-  padding: 20px 24px;
-  border-radius: 20px;
-  background: var(--paper);
+  flex-direction: column;
+  gap: 28px;
+  animation: dialog-fade 160ms ease-out;
+}
+
+.panel-dialog::backdrop {
+  background: rgba(22, 22, 22, 0.45);
+  animation: dialog-fade 160ms ease-out;
 }
 
 .save-form {
   display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
-  gap: 16px 28px;
-}
-
-.save-form .field {
-  width: 420px;
-  max-width: 100%;
+  flex-direction: column;
+  gap: 28px;
 }
 
 .save-form .unit-input {
@@ -432,18 +427,13 @@ h3 {
 
 .panel-actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
-  padding-bottom: 22px;
-}
-
-#start-over .panel-actions,
-#share-question .panel-actions {
-  padding-bottom: 0;
 }
 
 .start-over-question {
   font-size: 16px;
-  align-self: center;
+  line-height: 1.5;
 }
 
 /* Screen 1: inputs */
@@ -3135,31 +3125,25 @@ textarea {
     padding-left: 0;
   }
 
-  /* The save field and the start-over question, full width under the header. */
-  .header-panel,
   .save-error {
     margin: 8px 12px 0;
   }
+}
 
-  .header-panel {
-    flex-direction: column;
-    align-items: stretch;
-    padding: 16px 20px;
-  }
-
-  .save-form {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .save-form .field {
+/* Phones: the dialogs are bottom sheets, full width, clear of the home bar. */
+@media (max-width: 759px) {
+  .panel-dialog {
     width: 100%;
+    max-width: 100%;
+    max-height: 100%;
+    margin: auto 0 0;
+    padding: 24px 20px calc(20px + env(safe-area-inset-bottom));
+    border-radius: 28px 28px 0 0;
   }
 
-  .panel-actions,
-  #share-panel .panel-actions {
-    flex-wrap: wrap;
-    padding-bottom: 0;
+  .panel-dialog[open],
+  .save-form {
+    gap: 24px;
   }
 
   .panel-actions .action-button {

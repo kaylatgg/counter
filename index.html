@@ -42,56 +42,6 @@
   </header>
 
   <main>
-    <!-- "Save as project": the name field opens right under the header. -->
-    <div class="header-panel" id="save-panel" hidden>
-      <form class="save-form" id="save-form" novalidate>
-        <div class="field">
-          <label for="save-name">Project name</label>
-          <div class="unit-input">
-            <input id="save-name" type="text" maxlength="60" autocomplete="off" aria-describedby="save-name-hint">
-          </div>
-          <p class="mono-note" id="save-name-hint">60 characters max</p>
-        </div>
-        <div class="panel-actions">
-          <button type="submit" class="action-button">Save</button>
-          <button type="button" class="action-button outline" id="save-cancel">Cancel</button>
-        </div>
-      </form>
-    </div>
-
-    <!-- "New calculation" when the unsaved one has changes. -->
-    <div class="header-panel" id="start-over" hidden>
-      <p class="start-over-question" id="start-over-question">Start over? Your unsaved calculation will be replaced.</p>
-      <div class="panel-actions">
-        <button type="button" class="action-button outline" id="start-over-save">Save as project</button>
-        <button type="button" class="action-button" id="start-over-yes">Start over</button>
-        <button type="button" class="action-button outline" id="start-over-cancel">Cancel</button>
-      </div>
-    </div>
-
-    <!-- Opening a shared link over unsaved numbers. -->
-    <div class="header-panel" id="share-question" hidden>
-      <p class="start-over-question">Open the shared result? Your current numbers will be replaced.</p>
-      <div class="panel-actions">
-        <button type="button" class="action-button" id="share-open">Open shared result</button>
-        <button type="button" class="action-button outline" id="share-keep">Keep mine</button>
-      </div>
-    </div>
-
-    <!-- When the link can't be copied: the link itself, selected, to copy by hand. -->
-    <div class="header-panel" id="share-panel" hidden>
-      <div class="field share-field">
-        <label for="share-url">Link to this result</label>
-        <div class="unit-input">
-          <input id="share-url" type="text" readonly aria-describedby="share-url-hint">
-        </div>
-        <p class="mono-note" id="share-url-hint">Couldn't copy. Select the link and copy it yourself.</p>
-      </div>
-      <div class="panel-actions">
-        <button type="button" class="action-button outline" id="share-close">Close</button>
-      </div>
-    </div>
-
     <p class="save-error" id="save-error" role="alert" hidden>Couldn't save. Your changes will be lost if you leave this page.</p>
 
     <!-- Projects -->
@@ -574,6 +524,59 @@
     </section>
 
     <div class="visually-hidden" id="announcer" aria-live="polite"></div>
+
+    <!-- Dialogs for saving, starting over, and share links. Centered on desktop,
+         a bottom sheet on phones, like the image preview. -->
+
+    <!-- "Save as project": the project name, filled in and selected. -->
+    <dialog class="panel-dialog" id="save-panel" aria-labelledby="save-name-label">
+      <form class="save-form" id="save-form" novalidate>
+        <div class="field">
+          <label for="save-name" id="save-name-label">Project name</label>
+          <div class="unit-input">
+            <input id="save-name" type="text" maxlength="60" autocomplete="off" aria-describedby="save-name-hint">
+          </div>
+          <p class="mono-note" id="save-name-hint">60 characters max</p>
+        </div>
+        <div class="panel-actions">
+          <button type="submit" class="action-button">Save</button>
+          <button type="button" class="action-button outline" id="save-cancel">Cancel</button>
+        </div>
+      </form>
+    </dialog>
+
+    <!-- "New calculation" when the unsaved one has changes. -->
+    <dialog class="panel-dialog" id="start-over" aria-labelledby="start-over-question">
+      <p class="start-over-question" id="start-over-question">Start over? Your unsaved calculation will be replaced.</p>
+      <div class="panel-actions">
+        <button type="button" class="action-button outline" id="start-over-save">Save as project</button>
+        <button type="button" class="action-button" id="start-over-yes">Start over</button>
+        <button type="button" class="action-button outline" id="start-over-cancel">Cancel</button>
+      </div>
+    </dialog>
+
+    <!-- Opening a shared link over unsaved numbers. -->
+    <dialog class="panel-dialog" id="share-question" aria-labelledby="share-question-text">
+      <p class="start-over-question" id="share-question-text">Open the shared result? Your current numbers will be replaced.</p>
+      <div class="panel-actions">
+        <button type="button" class="action-button" id="share-open">Open shared result</button>
+        <button type="button" class="action-button outline" id="share-keep">Keep mine</button>
+      </div>
+    </dialog>
+
+    <!-- When the link can't be copied: the link itself, selected, to copy by hand. -->
+    <dialog class="panel-dialog" id="share-panel" aria-labelledby="share-url-label">
+      <div class="field share-field">
+        <label for="share-url" id="share-url-label">Link to this result</label>
+        <div class="unit-input">
+          <input id="share-url" type="text" readonly aria-describedby="share-url-hint">
+        </div>
+        <p class="mono-note" id="share-url-hint">Couldn't copy. Select the link and copy it yourself.</p>
+      </div>
+      <div class="panel-actions">
+        <button type="button" class="action-button outline" id="share-close">Close</button>
+      </div>
+    </dialog>
 
     <!-- Save image: a preview of the PNG before it's downloaded or shared. -->
     <dialog class="image-dialog" id="image-dialog" aria-labelledby="image-dialog-title" aria-describedby="image-dialog-text">
