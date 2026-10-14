@@ -615,7 +615,8 @@ function layoutRateChart(r, morph) {
   const width = plot.clientWidth;
   if (!width) return;
   const height = isPhone() ? 170 : 210;
-  const pad = { left: 40, right: 4, top: 12, bottom: 26 };
+  // pad.left is set below, from the widest y label.
+  const pad = { left: 0, right: 4, top: 12, bottom: 26 };
   const offer = r.offer;
   const total = r.hours.total;
   const net = offer.amount - r.expenses;
@@ -640,6 +641,21 @@ function layoutRateChart(r, morph) {
   const svg = svgElement(plot, "svg", { width: width, height: height, viewBox: "0 0 " + width + " " + height,
     "aria-hidden": "true", focusable: "false" });
 
+  // Y labels: the target always; $0, the top, and the bottom only where they
+  // don't crowd it. The space left of the plot is the widest of them plus 8px,
+  // so none is ever cut off ("$1,250" needs more room than "$50").
+  const yLabels = [[r.rate, calc.formatPrice(r.rate)]];
+  [[0, "$0"], [top, calc.formatPrice(top)], [bottom, "-" + calc.formatPrice(-bottom)]]
+    .forEach(function (item) {
+      if (item[0] === r.rate || (item[0] === bottom && bottom >= 0)) return;
+      if (Math.abs(py(item[0]) - py(r.rate)) >= 16) yLabels.push(item);
+    });
+  const yTexts = yLabels.map(function (item) {
+    return svgElement(svg, "text", { class: "rate-tick", y: py(item[0]) + 4, "text-anchor": "end" }, item[1]);
+  });
+  pad.left = Math.ceil(Math.max.apply(null, yTexts.map(function (text) { return text.getBBox().width; }))) + 8;
+  yTexts.forEach(function (text) { text.setAttribute("x", pad.left - 8); });
+
   for (let h = x0; h <= x1 + 1e-9; h += step) {
     svgElement(svg, "line", { class: "rate-grid", x1: px(h), x2: px(h), y1: pad.top, y2: height - pad.bottom });
     const tick = svgElement(svg, "text", { class: "rate-tick", x: px(h), y: height - 6, "text-anchor": "middle" },
@@ -655,23 +671,11 @@ function layoutRateChart(r, morph) {
     }
   }
 
-  // Y labels: the target always; $0, the top, and the bottom only where they
-  // don't crowd it.
-  const yLabels = [[r.rate, calc.formatPrice(r.rate)]];
-  [[0, "$0"], [top, calc.formatPrice(top)], [bottom, "-" + calc.formatPrice(-bottom)]]
-    .forEach(function (item) {
-      if (item[0] === r.rate || (item[0] === bottom && bottom >= 0)) return;
-      if (Math.abs(py(item[0]) - py(r.rate)) >= 16) yLabels.push(item);
-    });
-  const yLabelBoxes = yLabels.map(function (item) {
-    return svgElement(svg, "text", { class: "rate-tick", x: pad.left - 8, y: py(item[0]) + 4, "text-anchor": "end" },
-      item[1]).getBBox();
-  });
   if (bottom < 0) {
     svgElement(svg, "line", { class: "rate-zero", x1: pad.left, x2: width - pad.right, y1: py(0), y2: py(0) });
   }
 
-  // The target: a solid line. Its label is placed last, where there's room.
+  // The target: a solid line. Its label is placed after the dots' labels.
   const targetY = py(r.rate);
   svgElement(svg, "line", { class: "rate-target", x1: pad.left, x2: width - pad.right, y1: targetY, y2: targetY });
 
@@ -685,17 +689,27 @@ function layoutRateChart(r, morph) {
   }
   const curve = svgElement(svg, "path", { class: "rate-curve", d: points.join(" ") });
 
-  // Each label takes the spot with the fewest conflicts: leaving the plot is
-  // worst, then touching another label or a dot, then the curve, then the target line.
-  // The y labels count as taken, so no label covers "$25" on a narrow chart.
-  const taken = yLabelBoxes.slice();
+  // Labels never overlap each other. They're placed in priority order: the
+  // current-hours label, then the target crossing, then the target. Each may
+  // only use a spot inside the chart and clear of every label placed before it;
+  // of those, it takes the one touching the least (dots, then axis labels, then
+  // the curve, then the target line), the earlier spot on a tie. With no allowed spot, the
+  // label is hidden from the drawing; the summary under the chart still says it.
+  // Axis labels come last: one that a label covers is hidden.
+  const placed = [];
+  const marks = [];
+  function touches(a, b, gap) {
+    return a.x < b.x + b.width + gap && b.x < a.x + a.width + gap &&
+      a.y < b.y + b.height + gap && b.y < a.y + a.height + gap;
+  }
+  function allowed(box) {
+    if (box.x < 0 || box.x + box.width > width || box.y < 0 || box.y + box.height > height - pad.bottom) return false;
+    return !placed.some(function (other) { return touches(box, other, 4); });
+  }
   function conflicts(box) {
     let score = 0;
-    if (box.x < 0 || box.x + box.width > width || box.y < 0 || box.y + box.height > height - pad.bottom) score += 100;
-    taken.forEach(function (other) {
-      if (box.x < other.x + other.width + 4 && other.x < box.x + box.width + 4 &&
-          box.y < other.y + other.height + 4 && other.y < box.y + box.height + 4) score += 20;
-    });
+    marks.forEach(function (mark) { if (touches(box, mark, 4)) score += 20; });
+    yTexts.forEach(function (text) { if (touches(box, text.getBBox(), 4)) score += 10; });
     const hitsCurve = samples.some(function (point) {
       return point.x > box.x - 3 && point.x < box.x + box.width + 3 &&
         point.y > box.y - 3 && point.y < box.y + box.height + 3;
@@ -719,13 +733,19 @@ function layoutRateChart(r, morph) {
       label.setAttribute("x", spot[0]);
       label.setAttribute("y", spot[1]);
       label.setAttribute("text-anchor", spot[2]);
-      const score = conflicts(label.getBBox());
+      const box = label.getBBox();
+      if (!allowed(box)) return;
+      const score = conflicts(box);
       if (!best || score < best.score) best = { spot: spot, score: score };
     });
+    if (!best) {
+      label.setAttribute("display", "none");
+      return;
+    }
     label.setAttribute("x", best.spot[0]);
     label.setAttribute("y", best.spot[1]);
     label.setAttribute("text-anchor", best.spot[2]);
-    taken.push(label.getBBox());
+    placed.push(label.getBBox());
   }
 
   // Now: a glowing red dot at the current hours.
@@ -734,25 +754,15 @@ function layoutRateChart(r, morph) {
   const dot = svgElement(svg, "g", { class: "rate-now" });
   svgElement(dot, "circle", { class: "rate-halo", cx: dotX, cy: dotY, r: 14 });
   svgElement(dot, "circle", { class: "rate-dot", cx: dotX, cy: dotY, r: 7 });
-  taken.push({ x: dotX - 14, y: dotY - 14, width: 28, height: 28 });
+  marks.push({ x: dotX - 14, y: dotY - 14, width: 28, height: 28 });
 
   // Where the curve meets the target: the same hours as "runs out".
   let cross = null;
   if (net > 0 && offer.hoursCovered >= x0 && offer.hoursCovered <= x1) {
     cross = px(offer.hoursCovered);
     svgElement(svg, "circle", { class: "rate-cross", cx: cross, cy: targetY, r: 3.5 });
-    taken.push({ x: cross - 4, y: targetY - 4, width: 8, height: 8 });
+    marks.push({ x: cross - 4, y: targetY - 4, width: 8, height: 8 });
   }
-
-  // The target's label first: it has the fewest places it can go.
-  const targetLabel = svgElement(svg, "text", { class: "rate-label rate-target-label" },
-    "your target " + calc.formatPrice(r.rate) + "/hr");
-  placeText(targetLabel, [
-    [width - pad.right, targetY - 8, "end"], [pad.left + 4, targetY - 8, "start"],
-    [width - pad.right, targetY + 16, "end"], [pad.left + 4, targetY + 16, "start"],
-    [width - pad.right, targetY - 24, "end"], [pad.left + 4, targetY - 24, "start"],
-    [width - pad.right, targetY + 32, "end"], [pad.left + 4, targetY + 32, "start"],
-  ]);
 
   const nowLabel = svgElement(svg, "text", { class: "rate-label rate-now-label" },
     calc.formatNumber(total) + "h → " + calc.formatMoney(value(total)) + "/hr after expenses");
@@ -779,6 +789,21 @@ function layoutRateChart(r, morph) {
     ]);
   }
 
+  // The target's label: right or left end of the line, above or below it.
+  const targetLabel = svgElement(svg, "text", { class: "rate-label rate-target-label" },
+    "your target " + calc.formatPrice(r.rate) + "/hr");
+  placeText(targetLabel, [
+    [width - pad.right, targetY - 8, "end"], [pad.left + 4, targetY - 8, "start"],
+    [width - pad.right, targetY + 16, "end"], [pad.left + 4, targetY + 16, "start"],
+    [width - pad.right, targetY - 24, "end"], [pad.left + 4, targetY - 24, "start"],
+    [width - pad.right, targetY + 32, "end"], [pad.left + 4, targetY + 32, "start"],
+  ]);
+
+  // Axis labels last: any that a label covers is hidden.
+  svg.querySelectorAll(".rate-tick").forEach(function (text) {
+    const box = text.getBBox();
+    if (placed.some(function (other) { return touches(box, other, 2); })) text.setAttribute("display", "none");
+  });
 
   // Live change: the curve and dots move from their old places to the new ones.
   const geometry = { samples: samples, dot: { x: dotX, y: dotY }, cross: cross };

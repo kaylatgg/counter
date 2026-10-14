@@ -120,6 +120,8 @@ Decided with Kayla, October 13, 2026.
   - Glowing red dot (#E8432E, soft halo) at the current hours, labeled "11.5h → $17.39/hr".
   - Hidden with no offer. If the offer is below expenses, show the curve without the target crossing.
   - `aria-hidden` with a text summary for screen readers.
+  - The y labels get exactly the room they need: the widest one plus 8px, so "$1,250" is never cut off.
+  - Labels never overlap. Priority: the current-hours label, then "at 7.2h you hit $25", then "your target $25/hr", then the axis labels. A lower one moves to its next spot; with none left, it's hidden from the drawing (the summary still says it). Decided with Kayla, October 13, 2026.
 - Below: Show the math (collapsed), then Your price and Your reply side by side, then the footer.
 - "Copy reply": fully rounded ink button.
 
