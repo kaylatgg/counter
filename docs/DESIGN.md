@@ -65,19 +65,31 @@ Rules:
 
 Decided with Kayla, October 13, 2026.
 
-- Every row's content sits between two lines: 64px in from each side of the window on desktop (760px and up), up to 1312px wide in all, centered; 20px in from each side on phones. At 1440px the lines are at 64 and 1376; at 1920px, 304 and 1616.
+- A column grid. Blocks span whole columns and use the grid's column gap between them, so inner edges line up from row to row, not just the outer ones.
+
+| Size | Columns | Side margin | Column gap |
+|---|---|---|---|
+| Phone (under 760px) | 4 | 20px | 16px |
+| Tablet (760 to 1023px) | 8 | 40px | 24px |
+| Desktop (1024px and up) | 12 | 64px, content at most 1312px wide, centered | 32px |
+
+- The tokens live in `:root` in styles.css: `--columns`, `--column-gap`, and `--page-margin` (the side margin).
+- Spans:
+  - Desktop: screen 1's inputs 7 + 5 (the right column stays sticky), stats 3 + 3 + 3 + 3, charts 6 + 6 (12 when the rate chart is hidden), Your price and Your reply 6 + 6. The header, control row, hero, Show the math, footer, and Projects span 12.
+  - Tablet: the inputs and the charts stack (8 each), stats 2 by 2 (4 each), Your price and Your reply side by side (4 + 4).
+  - Phone: everything spans 4; stats 2 by 2 (2 each).
+- To check the grid, open the page with `?grid` (`index.html?grid`): the columns show as faint bands over everything. It's never shown otherwise.
 - Everything starts and ends on them: the header (wordmark and buttons), the screen 2 control row, the hero panel, the stats, the charts, Show the math, Your price and Your reply, the footer, screen 1's headline, form, tally card, and button, and the Projects page.
 - Pills and panels (Edit details, the hero panel, the tally card, the phone control panel, the phone bottom bar) put their outer edge on the line; text inside keeps its padding.
-- Screen 1's two columns stay: the left column starts on the left line, the right column ends on the right line.
 - The footer's rule spans the row on every screen, and the reply box fills its column.
-  Reason: rows started at four different edges (24, 48, 64, and 72px), so nothing lined up.
+  Reason: rows started at four different edges (24, 48, 64, and 72px), so nothing lined up; then inner widths (the 480px inputs column, the 544px rate chart) and one-off gaps kept inner edges apart.
 
 ## Screen 1: inputs
 
 - `--bg` page. A soft blurred sunset glow off the top-right corner with two thin circle outlines. Nothing over the form fields.
 - Header: "counter" (Geist 500, 20px) left; "Projects 3" and "Save as project" right. (The "for creative students" note was removed on October 11, 2026.)
 - Headline, then the intro right under it, then "Example numbers..." in mono.
-- Two columns: left (01 The job, 02 The work), right 480px and sticky (tally panel, 03 Your numbers, 04 Their offer, button).
+- Two columns: left (01 The job, 02 The work), right 5 of 12 columns and sticky (tally panel, 03 Your numbers, 04 Their offer, button).
 - **Job choice:** a segmented control on `--paper`, selected segment ink with light text. Real radio inputs.
 - **Steppers:** 44px circles, minus outlined, plus solid ink.
 - **Work rows:** label, a small bar showing that row's hours (solid ink, or stripes for forgotten rows), then the input with a 1px ink underline. Forgotten rows get a mono "usually forgotten" note.
@@ -91,7 +103,7 @@ Decided with Kayla, October 13, 2026.
 - Header row: "counter", "Edit details" pill, then the live controls on the right (item stepper, rounds stepper, offer, target).
 - **Hero panel:** `--sunset`, its outer edge on the grid lines (no bleed past the text), 28px radius, about 380px tall. Top left: "This offer pays". Top right: mono job summary and the sentence ("for 11.5 hours of real work. That's $7.61 an hour under your $25 target.") in ink. Bottom left: the hero number.
 - **Stats row:** 4 columns with a hairline above each: Your estimate, More than they offered, Hours the offer pays for (7.2 of 11.5 hrs), After expenses.
-- **Chart 1, "Where your 11.5 hours go"** (left, about 680px):
+- **Chart 1, "Where your 11.5 hours go"** (left, 6 of 12 columns):
   - One bar per group, 96px tall, 4px gaps, widths by hours.
   - Paid hours filled with `--paid` as one continuous gradient across groups. Unpaid hours in `--stripe`, 1px ink outline.
   - Dashed line at the runs-out point with mono "$200 runs out at 7.2 hrs".

@@ -663,8 +663,9 @@ function layoutRateChart(r, morph) {
       if (item[0] === r.rate || (item[0] === bottom && bottom >= 0)) return;
       if (Math.abs(py(item[0]) - py(r.rate)) >= 16) yLabels.push(item);
     });
-  yLabels.forEach(function (item) {
-    svgElement(svg, "text", { class: "rate-tick", x: pad.left - 8, y: py(item[0]) + 4, "text-anchor": "end" }, item[1]);
+  const yLabelBoxes = yLabels.map(function (item) {
+    return svgElement(svg, "text", { class: "rate-tick", x: pad.left - 8, y: py(item[0]) + 4, "text-anchor": "end" },
+      item[1]).getBBox();
   });
   if (bottom < 0) {
     svgElement(svg, "line", { class: "rate-zero", x1: pad.left, x2: width - pad.right, y1: py(0), y2: py(0) });
@@ -686,7 +687,8 @@ function layoutRateChart(r, morph) {
 
   // Each label takes the spot with the fewest conflicts: leaving the plot is
   // worst, then touching another label or a dot, then the curve, then the target line.
-  const taken = [];
+  // The y labels count as taken, so no label covers "$25" on a narrow chart.
+  const taken = yLabelBoxes.slice();
   function conflicts(box) {
     let score = 0;
     if (box.x < 0 || box.x + box.width > width || box.y < 0 || box.y + box.height > height - pad.bottom) score += 100;
@@ -3442,3 +3444,13 @@ requestAnimationFrame(function () {
     document.body.classList.add("charts-ready");
   });
 });
+
+// ?grid in the address shows the layout columns over the page, for checking
+// alignment. Off otherwise.
+if (new URLSearchParams(location.search).has("grid")) {
+  const overlay = document.createElement("div");
+  overlay.className = "grid-overlay";
+  overlay.setAttribute("aria-hidden", "true");
+  for (let i = 0; i < 12; i++) overlay.appendChild(document.createElement("span"));
+  document.body.appendChild(overlay);
+}

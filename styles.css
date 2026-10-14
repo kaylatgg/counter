@@ -32,15 +32,33 @@
   /* Longest comfortable line: about 75 characters. */
   --measure: 34em;
 
-  /* One layout grid: every row's content sits between two lines, --edge in
-     from each side of the window, up to --frame wide, centered. */
+  /* The layout grid (docs/DESIGN.md, "Layout grid"): 12 columns on desktop,
+     8 on tablet, 4 on phone. Content sits between two lines, --edge in from
+     each side of the window, at most --frame wide and centered. Blocks span
+     whole columns, with --column-gap between them. */
+  --columns: 12;
+  --column-gap: 32px;
   --edge: 64px;
   --frame: 1312px;
-  --gutter: max(var(--edge), calc((100% - var(--frame)) / 2));
+  /* The side margin. Percent is measured from the window, so this works as
+     padding or margin on any full-width row. */
+  --page-margin: max(var(--edge), calc((100% - var(--frame)) / 2));
 }
 
+/* Tablet: 760 to 1023px. */
+@media (max-width: 1023px) {
+  :root {
+    --columns: 8;
+    --column-gap: 24px;
+    --edge: 40px;
+  }
+}
+
+/* Phone: under 760px. */
 @media (max-width: 759px) {
   :root {
+    --columns: 4;
+    --column-gap: 16px;
     --edge: 20px;
   }
 }
@@ -236,11 +254,11 @@ h3 {
 /* Header (screen 1) */
 
 /* Full-width rows put their content on the grid lines with padding.
-   (Percent padding is measured from the window, so --gutter works here.) */
+   (Percent padding is measured from the window, so --page-margin works here.) */
 .topbar {
   position: relative;
   z-index: 1;
-  padding: 0 var(--gutter);
+  padding: 0 var(--page-margin);
 }
 
 .topbar-inner {
@@ -455,8 +473,8 @@ h3 {
 .site-footer {
   position: relative;
   z-index: 1;
-  padding-left: var(--gutter);
-  padding-right: var(--gutter);
+  padding-left: var(--page-margin);
+  padding-right: var(--page-margin);
 }
 
 .screen-projects,
@@ -497,8 +515,7 @@ h1:focus {
 /* Two columns: 01 and 02 on the left; the tally, 03, 04, and the button on the right. */
 .inputs-columns {
   display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 0 96px;
+  row-gap: 0;
   padding-top: 64px;
 }
 
@@ -1317,7 +1334,7 @@ legend {
   align-items: center;
   gap: 8px 28px;
   min-height: 64px;
-  padding: 8px var(--gutter);
+  padding: 8px var(--page-margin);
   background: var(--bg);
 }
 
@@ -1466,7 +1483,7 @@ legend {
 .hero-panel {
   position: relative;
   min-height: 380px;
-  margin: 0 var(--gutter);
+  margin: 0 var(--page-margin);
   padding: 44px 48px 40px;
   border-radius: 28px;
   background: var(--sunset);
@@ -1587,14 +1604,13 @@ legend {
 
 /* Below the panel: content lines up with the panel's outside edge. */
 .results-body {
-  padding: 0 var(--gutter) 72px;
+  padding: 0 var(--page-margin) 72px;
 }
 
 /* Stats: 4 columns, a hairline above each. */
 .stats {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 28px;
+  row-gap: 28px;
   margin-top: 8px;
 }
 
@@ -1660,8 +1676,7 @@ legend {
 /* The two charts side by side. */
 .charts-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 56px 72px;
+  row-gap: 56px;
   margin-top: 52px;
 }
 
@@ -1926,8 +1941,7 @@ legend {
 
 .results-pair {
   display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 40px 72px;
+  row-gap: 40px;
   align-items: start;
   padding-top: 40px;
 }
@@ -2300,36 +2314,96 @@ textarea {
   stroke-width: 1.5;
 }
 
-/* Desktop: 960px and up. */
+/* The column grid. These blocks lay out on the page's columns and span whole
+   ones. Phone (4 columns): everything spans all 4, the stats 2 each. */
+.inputs-columns,
+.stats,
+.charts-row,
+.results-pair {
+  grid-template-columns: repeat(var(--columns), minmax(0, 1fr));
+  column-gap: var(--column-gap);
+}
 
-@media (min-width: 960px) {
-  .inputs-columns {
-    grid-template-columns: minmax(0, 1fr) 480px;
+.inputs-columns > *,
+.charts-row > *,
+.results-pair > * {
+  grid-column: 1 / -1;
+}
+
+.stats > div {
+  grid-column: span 2;
+}
+
+/* Tablet (8 columns): the inputs and charts stack; stats 2 by 2; price and
+   reply side by side, 4 + 4. */
+@media (min-width: 760px) {
+  .stats > div,
+  .results-pair > * {
+    grid-column: span 4;
+  }
+}
+
+/* Desktop (12 columns): inputs 7 + 5, stats 3 each, charts 6 + 6, price and
+   reply 6 + 6. */
+@media (min-width: 1024px) {
+  .inputs-columns > .inputs-column:first-child {
+    grid-column: span 7;
   }
 
   /* The right column (tally, 03, 04, and the button) stays in view while you
      edit hours on the left. */
   .inputs-columns > .inputs-column:last-child {
+    grid-column: span 5;
     position: sticky;
     top: 24px;
     align-self: start;
   }
 
-  .stats {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+  .stats > div {
+    grid-column: span 3;
   }
 
-  .charts-row {
-    grid-template-columns: minmax(0, 1fr) 544px;
+  .charts-row > *,
+  .results-pair > * {
+    grid-column: span 6;
   }
 
   /* No offer, or one at or below expenses: the hours chart takes the full row. */
-  .charts-row.single {
-    grid-template-columns: minmax(0, 1fr);
+  .charts-row.single > * {
+    grid-column: 1 / -1;
   }
+}
 
-  .results-pair {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+/* ?grid: the columns as faint bands over everything, for checking alignment.
+   app.js adds it only when the address has ?grid. */
+.grid-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  grid-template-columns: repeat(var(--columns), minmax(0, 1fr));
+  column-gap: var(--column-gap);
+  padding: 0 var(--page-margin);
+  pointer-events: none;
+}
+
+.grid-overlay > span {
+  background: rgba(232, 67, 46, 0.06);
+}
+
+.grid-overlay > span:nth-child(n + 13) {
+  display: none;
+}
+
+@media (max-width: 1023px) {
+  .grid-overlay > span:nth-child(n + 9) {
+    display: none;
+  }
+}
+
+@media (max-width: 759px) {
+  .grid-overlay > span:nth-child(n + 5) {
+    display: none;
   }
 }
 
@@ -2366,7 +2440,7 @@ textarea {
     position: sticky;
     top: 0;
     z-index: 11;
-    padding: 0 var(--gutter);
+    padding: 0 var(--page-margin);
     background: transparent;
     border-bottom: 1px solid transparent;
   }
@@ -2872,7 +2946,7 @@ textarea {
   }
 
   .stats {
-    gap: 20px;
+    row-gap: 20px;
     margin-top: 12px;
   }
 
@@ -2895,7 +2969,7 @@ textarea {
   }
 
   .charts-row {
-    gap: 48px;
+    row-gap: 48px;
     margin-top: 44px;
   }
 
