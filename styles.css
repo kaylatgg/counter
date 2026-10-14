@@ -3126,6 +3126,19 @@ textarea {
   }
 }
 
+/* Small phones: the Projects title on top, then "New calculation" at full
+   width, so both edges sit on the grid lines. */
+@media (max-width: 419px) {
+  .home-top {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .home-top .round-button {
+    width: 100%;
+  }
+}
+
 /* The narrowest phones: Edit, Projects, Share, and Save still fit on one line
    on screen 2, with a little less padding. Tap targets stay 44px tall. */
 @media (max-width: 359px) {
