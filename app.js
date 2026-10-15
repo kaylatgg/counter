@@ -335,8 +335,16 @@ const FORGOTTEN_GROUPS = ["communication", "revisions", "delivery"];
 // Chart sizes from docs/DESIGN.md, in px.
 const BAR_GAP = 4;
 const LABEL_SPACE = 8;
+// On phones the runs-out label may come this close to its line, to fit.
+const MIN_LABEL_SPACE = 6;
 // Minimum space between two labels, in px.
 const LABEL_GAP = 8;
+
+// A label's width, rounded up. offsetWidth rounds, so a 172.8px label read as
+// 172 could end 0.8px past the chart's edge.
+function labelWidth(element) {
+  return Math.ceil(element.getBoundingClientRect().width);
+}
 
 function isOne(amount) {
   return calc.formatNumber(amount) === "1";
@@ -356,7 +364,7 @@ function ensureChildren(parent, count, make) {
 function placeLabels(items, width) {
   function place(row) {
     const result = calc.spreadLabels(row.map(function (item) {
-      return { left: item.left, width: item.element.offsetWidth };
+      return { left: item.left, width: labelWidth(item.element) };
     }), width, LABEL_GAP);
     row.forEach(function (item, i) { item.element.style.left = result.lefts[i] + "px"; });
     return result.fits;
@@ -487,14 +495,37 @@ function layoutHoursChart(r) {
     lineLabel.style.left = "";
     lineLabel.style.right = "";
     if (isPhone()) {
-      const w = lineLabel.offsetWidth;
-      if (lineX - LABEL_SPACE - w < 0) line.classList.add("flip");
-      // Too long for either side: it stays above the line, inside the chart.
-      if (lineX - LABEL_SPACE - w < 0 && lineX + LABEL_SPACE + w > width) {
-        lineLabel.style.left = (Math.max(0, width - w) - lineX) + "px";
-        lineLabel.style.right = "auto";
+      // Left of the line (8px, or 6px if that's what fits), then right of it.
+      // If neither fits, the short "runs out at 7.2 hrs" tries the same spots:
+      // the offer amount is already in the control panel.
+      // The label is placed from just inside the line's 1px border.
+      const from = lineX + line.clientLeft;
+      const fitsBeside = function () {
+        const w = labelWidth(lineLabel);
+        const gaps = [LABEL_SPACE, MIN_LABEL_SPACE];
+        const left = gaps.filter(function (gap) { return from - gap - w >= 0; })[0];
+        if (left !== undefined) {
+          lineLabel.style.right = left + "px";
+          return true;
+        }
+        const right = gaps.filter(function (gap) { return from + gap + w <= width; })[0];
+        if (right !== undefined) {
+          line.classList.add("flip");
+          lineLabel.style.left = right + "px";
+          return true;
+        }
+        return false;
+      };
+      if (!fitsBeside()) {
+        lineLabel.textContent = "runs out at " + calc.formatHours(offer.hoursCovered);
+        if (!fitsBeside()) {
+          // Still too long for either side: above the line, inside the chart.
+          const w = labelWidth(lineLabel);
+          lineLabel.style.left = (Math.max(0, width - w) - from) + "px";
+          lineLabel.style.right = "auto";
+        }
       }
-    } else if (lineX + LABEL_SPACE + lineLabel.offsetWidth > width) {
+    } else if (lineX + line.clientLeft + LABEL_SPACE + labelWidth(lineLabel) > width) {
       line.classList.add("flip");
     }
   }
@@ -511,7 +542,8 @@ function layoutHoursChart(r) {
     const label = byId("bracket-label");
     label.textContent = calc.formatHours(r.outsideProduction) + " usually forgotten";
     // Keep the label inside the chart.
-    label.style.left = Math.min(0, width - (left + label.offsetWidth)) + "px";
+    // It's placed from just inside the bracket's 1px border.
+    label.style.left = Math.min(0, width - (left + bracket.clientLeft + labelWidth(label))) + "px";
   }
 
   // Phone: group names and hours in a 2-column legend under the bar, each with
