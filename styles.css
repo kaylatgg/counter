@@ -3207,6 +3207,12 @@ textarea {
   .on-results .edit-button {
     padding: 0 12px;
   }
+
+  /* The hours chart legend in one column, so "Communication 1h" fits
+     inside the grid lines. */
+  .group-legend {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 /* Save image preview: a centered panel on desktop, a bottom sheet on phones.

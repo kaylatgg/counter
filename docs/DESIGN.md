@@ -230,7 +230,7 @@ Sizes:
 - Live controls in a `--paper` panel (20px radius, outer edge on the grid lines) right under the hero, not sticky: the item stepper, the rounds stepper, then Offer and Target on one row.
   Reason: the desktop bar doesn't fit a phone. Right under the answer is where people try "what if".
 - Stats in a 2x2 grid.
-- Hours chart full width, 64px tall. Group names move into a 2-column legend under the bar. The runs-out label is placed as on desktop (see Chart 1).
+- Hours chart full width, 64px tall. Group names move into a 2-column legend under the bar (one column below 360px, so "Communication 1h" fits). The runs-out label is placed as on desktop (see Chart 1).
   Reason: four labels under thin bars would overlap.
 - Rate chart full width, about 170px tall. Same label rules as desktop.
 - Then Show the math, Your price, Your reply (stacked), and the footer. "Copy reply" full width.
