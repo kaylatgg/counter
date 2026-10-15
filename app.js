@@ -1523,16 +1523,41 @@ function isPhone() {
   return phoneQuery.matches;
 }
 
-// On a phone the hero number stays on one line: if it's wider than the panel,
-// its size comes down to fit. On desktop it keeps its set size.
-function fitHeroNumber() {
+// The hero number stays on one line and is never cut off: if it's wider than
+// the panel, it shrinks to fit, like the stat numbers, at every width. "$" and
+// "/hr" shrink with it. alsoFit is another value to make room for (the old
+// number during a live change), so nothing is cut off mid-tween.
+function fitHeroNumber(alsoFit) {
   const digits = document.querySelector(".hero-digits");
+  const amount = byId("hero-amount");
+  const unit = byId("hero-unit");
   digits.style.fontSize = "";
-  if (!isPhone()) return;
+  unit.style.fontSize = "";
   const room = byId("result-summary").clientWidth;
-  if (!room || digits.scrollWidth <= room) return;
-  const size = parseFloat(getComputedStyle(digits).fontSize);
-  digits.style.fontSize = Math.floor(size * room / digits.scrollWidth) + "px";
+  if (!room) return;
+  const baseSize = parseFloat(getComputedStyle(digits).fontSize);
+  const baseUnit = parseFloat(getComputedStyle(unit).fontSize);
+  const texts = [amount.textContent];
+  if (alsoFit && alsoFit !== texts[0]) texts.push(alsoFit);
+  let scale = 1;
+  texts.forEach(function (text) {
+    amount.textContent = text;
+    // Two passes, since rounding to whole pixels can leave it a hair too wide.
+    let s = 1;
+    for (let i = 0; i < 2 && digits.scrollWidth > room; i++) {
+      s *= room / digits.scrollWidth;
+      digits.style.fontSize = Math.floor(baseSize * s) + "px";
+      unit.style.fontSize = Math.floor(baseUnit * s * 10) / 10 + "px";
+    }
+    scale = Math.min(scale, s);
+    digits.style.fontSize = "";
+    unit.style.fontSize = "";
+  });
+  amount.textContent = texts[0];
+  if (scale < 1) {
+    digits.style.fontSize = Math.floor(baseSize * scale) + "px";
+    unit.style.fontSize = Math.floor(baseUnit * scale * 10) / 10 + "px";
+  }
 }
 
 // On a phone the live controls sit in a panel right under the hero; on desktop
@@ -1597,9 +1622,13 @@ function stopCountUp() {
 }
 
 // The digits after the "$", which has its own smaller, raised span.
-function paintHeroNumber(r, value) {
+function heroText(r, value) {
   const money = r.offer ? calc.formatMoney(value) : calc.formatWholeMoney(Math.round(value));
-  byId("hero-amount").textContent = money.slice(1);
+  return money.slice(1);
+}
+
+function paintHeroNumber(r, value) {
+  byId("hero-amount").textContent = heroText(r, value);
 }
 
 // The number the hero shows: the estimate, the loss, or the offer per hour.
@@ -1621,17 +1650,23 @@ function countUpHero(r, from, ms) {
   const duration = ms || COUNT_UP_MS;
   const started = performance.now();
   paintHeroNumber(r, start);
+  // One size for the whole count, fitting both ends, then the final fit.
+  fitHeroNumber(heroText(r, target));
   function frame(now) {
     const t = Math.min(1, (now - started) / duration);
     paintHeroNumber(r, mix(start, target, ease(t)));
     countFrame = t < 1 ? requestAnimationFrame(frame) : null;
-    if (t === 1) stopCountUp();
+    if (t === 1) {
+      stopCountUp();
+      fitHeroNumber();
+    }
   }
   countFrame = requestAnimationFrame(frame);
   // If frames don't run (for example a background tab), still land on the value.
   countTimer = setTimeout(function () {
     stopCountUp();
     paintHeroNumber(r, target);
+    fitHeroNumber();
   }, duration + 100);
 }
 
