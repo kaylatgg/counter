@@ -589,11 +589,16 @@ function renderOfferChart(r) {
   layoutRateChart(r, true);
 }
 
-// The smallest round step that gives at most 7 grid spaces: 0.5, 1, 2, 5, 10...
+// The smallest round step at least as big as rough: 0.25, 0.5, then 1, 2, 5 times a
+// power of ten, with no top, so even millions of hours get a handful of lines.
 function niceStep(rough) {
-  const steps = [0.25, 0.5, 1, 2, 5, 10, 20, 50, 100, 200, 500, 1000];
-  for (let i = 0; i < steps.length; i++) if (steps[i] >= rough) return steps[i];
-  return steps[steps.length - 1];
+  if (rough <= 0.25) return 0.25;
+  if (rough <= 0.5) return 0.5;
+  let power = 1;
+  while (power * 5 < rough) power *= 10;
+  if (rough <= power) return power;
+  if (rough <= power * 2) return power * 2;
+  return power * 5;
 }
 
 const SVG_NS = "http://www.w3.org/2000/svg";
