@@ -1120,9 +1120,16 @@ function renderRowBars(values) {
 // On a phone the button is the bottom bar: a shorter line ("11.5 hrs · $200")
 // and a thin bar of the hours under it. With errors it says how many fields
 // to fix; with 0 hours it asks for hours. Either way it stays ink.
+// Writes text only when it changed. Rewriting the button's text while a
+// finger presses it makes Safari drop the tap: leaving a field re-renders the
+// button, so the first tap on "Check the offer" did nothing.
+function setText(element, text) {
+  if (element.textContent !== text) element.textContent = text;
+}
+
 function renderCheckButton(values, hours, errorCount) {
   const hasOffer = values.hasOffer;
-  byId("check-title").textContent = hasOffer ? "Check the offer" : "Get my estimate";
+  setText(byId("check-title"), hasOffer ? "Check the offer" : "Get my estimate");
   byId("check-offer").classList.toggle("has-errors", Boolean(errorCount));
   let message = "";
   if (errorCount) {
@@ -1133,18 +1140,18 @@ function renderCheckButton(values, hours, errorCount) {
   show(byId("check-preview"), Boolean(message || hours));
   show(byId("check-hours"), Boolean(hours) && !message);
   if (message) {
-    byId("preview-long").textContent = message;
-    byId("preview-short").textContent = message;
+    setText(byId("preview-long"), message);
+    setText(byId("preview-short"), message);
     return;
   }
   if (!hours) return;
   const total = calc.formatHours(hours.total);
-  byId("preview-long").textContent = total + " of work " + (hasOffer
+  setText(byId("preview-long"), total + " of work " + (hasOffer
     ? "for " + calc.formatPrice(values.offer)
-    : "at " + calc.formatPrice(values.rate) + "/hr");
-  byId("preview-short").textContent = hasOffer
+    : "at " + calc.formatPrice(values.rate) + "/hr"));
+  setText(byId("preview-short"), hasOffer
     ? total + " · " + calc.formatPrice(values.offer)
-    : total + " at " + calc.formatPrice(values.rate) + "/hr";
+    : total + " at " + calc.formatPrice(values.rate) + "/hr");
 
   // Solid for production, stripes for the rest. Widths share the space by hours.
   const groups = WORK_GROUPS.filter(function (group) { return hours[group] > 1e-9; });
