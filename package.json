@@ -1,0 +1,14 @@
+{
+  "name": "counter",
+  "private": true,
+  "description": "Counter: what a freelance job really pays. The site is plain HTML, CSS, and JS; these packages are only for the tests.",
+  "scripts": {
+    "test": "npm run test:unit && npm run test:e2e",
+    "test:unit": "node calc.test.js && node share.test.js && node projects.test.js",
+    "test:e2e": "node tests/e2e/run.mjs"
+  },
+  "devDependencies": {
+    "axe-core": "4.14.0",
+    "playwright-core": "1.63.0"
+  }
+}
