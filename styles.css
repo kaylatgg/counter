@@ -1739,6 +1739,7 @@ legend {
   border-left: 1px dashed var(--ink);
 }
 
+/* app.js places it beside the line, or centered above it when tight. */
 .runs-out-label {
   position: absolute;
   top: -2px;
@@ -1747,11 +1748,6 @@ legend {
   font-size: 12px;
   line-height: 1.2;
   white-space: nowrap;
-}
-
-.runs-out.flip .runs-out-label {
-  left: auto;
-  right: 8px;
 }
 
 /* With no line, the label row says why: "covers all", "doesn't cover your expenses". */
@@ -2996,22 +2992,6 @@ textarea {
   .runs-out {
     top: 0;
     height: calc(28px + 64px);
-  }
-
-  /* The runs-out label sits left of the line, or right if there's no room. */
-  .runs-out .runs-out-label {
-    left: auto;
-    right: 8px;
-  }
-
-  .runs-out.flip .runs-out-label,
-  .runs-out.flag .runs-out-label {
-    left: 8px;
-    right: auto;
-  }
-
-  .runs-out.flag .runs-out-label {
-    left: 0;
   }
 
   .group-legend {

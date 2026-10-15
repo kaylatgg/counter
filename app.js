@@ -335,7 +335,7 @@ const FORGOTTEN_GROUPS = ["communication", "revisions", "delivery"];
 // Chart sizes from docs/DESIGN.md, in px.
 const BAR_GAP = 4;
 const LABEL_SPACE = 8;
-// On phones the runs-out label may come this close to its line, to fit.
+// The runs-out label may come this close to its line, to fit.
 const MIN_LABEL_SPACE = 6;
 // Minimum space between two labels, in px.
 const LABEL_GAP = 8;
@@ -482,7 +482,11 @@ function layoutHoursChart(r) {
   }
   show(line, Boolean(flag) || lineX !== null);
   line.classList.toggle("flag", Boolean(flag));
-  line.classList.remove("flip");
+  line.style.top = "";
+  line.style.height = "";
+  lineLabel.style.left = "";
+  lineLabel.style.right = "";
+  lineLabel.style.top = "";
   if (flag) {
     lineLabel.textContent = flag;
     line.style.left = "0px";
@@ -490,43 +494,29 @@ function layoutHoursChart(r) {
     lineLabel.textContent = calc.formatPrice(offer.amount) + " runs out at " +
       calc.formatHours(offer.hoursCovered);
     line.style.left = lineX + "px";
-    // Desktop: the label sits right of the line, unless that would run past the
-    // edge. Phone: left of the line, unless there's no room (the CSS swaps sides).
-    lineLabel.style.left = "";
-    lineLabel.style.right = "";
-    if (isPhone()) {
-      // Left of the line (8px, or 6px if that's what fits), then right of it.
-      // If neither fits, the short "runs out at 7.2 hrs" tries the same spots:
-      // the offer amount is already in the control panel.
-      // The label is placed from just inside the line's 1px border.
-      const from = lineX + line.clientLeft;
-      const fitsBeside = function () {
-        const w = labelWidth(lineLabel);
-        const gaps = [LABEL_SPACE, MIN_LABEL_SPACE];
-        const left = gaps.filter(function (gap) { return from - gap - w >= 0; })[0];
-        if (left !== undefined) {
-          lineLabel.style.right = left + "px";
-          return true;
-        }
-        const right = gaps.filter(function (gap) { return from + gap + w <= width; })[0];
-        if (right !== undefined) {
-          line.classList.add("flip");
-          lineLabel.style.left = right + "px";
-          return true;
-        }
-        return false;
-      };
-      if (!fitsBeside()) {
-        lineLabel.textContent = "runs out at " + calc.formatHours(offer.hoursCovered);
-        if (!fitsBeside()) {
-          // Still too long for either side: above the line, inside the chart.
-          const w = labelWidth(lineLabel);
-          lineLabel.style.left = (Math.max(0, width - w) - from) + "px";
-          lineLabel.style.right = "auto";
-        }
-      }
-    } else if (lineX + line.clientLeft + LABEL_SPACE + labelWidth(lineLabel) > width) {
-      line.classList.add("flip");
+    // Left of the line, then right of it, 8px away, then 6px. If neither fits,
+    // the label is centered on the line, inside the chart, and the line starts
+    // 4px below it so it never runs through the text. The label is placed from
+    // just inside the line's 1px border.
+    const from = lineX + line.clientLeft;
+    const w = labelWidth(lineLabel);
+    let side = null;
+    [LABEL_SPACE, MIN_LABEL_SPACE].forEach(function (gap) {
+      if (side) return;
+      if (from - gap - w >= 0) side = { right: gap };
+      else if (from + gap + w <= width) side = { left: gap };
+    });
+    if (side) {
+      lineLabel.style.left = side.left !== undefined ? side.left + "px" : "auto";
+      lineLabel.style.right = side.right !== undefined ? side.right + "px" : "auto";
+    } else {
+      lineLabel.style.left = (Math.max(0, Math.min(width - w, from - w / 2)) - from) + "px";
+      lineLabel.style.right = "auto";
+      const drop = lineLabel.offsetTop + lineLabel.offsetHeight + 4;
+      const lineStyle = getComputedStyle(line);
+      line.style.top = (parseFloat(lineStyle.top) + drop) + "px";
+      line.style.height = (parseFloat(lineStyle.height) - drop) + "px";
+      lineLabel.style.top = (lineLabel.offsetTop - drop) + "px";
     }
   }
 

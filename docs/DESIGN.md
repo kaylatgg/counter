@@ -106,7 +106,7 @@ Decided with Kayla, October 13, 2026.
 - **Chart 1, "Where your 11.5 hours go"** (left, 6 of 12 columns):
   - One bar per group, 96px tall, 4px gaps, widths by hours.
   - Paid hours filled with `--paid` as one continuous gradient across groups. Unpaid hours in `--stripe`, 1px ink outline.
-  - Dashed line at the runs-out point with mono "$200 runs out at 7.2 hrs".
+  - Dashed line at the runs-out point with mono "$200 runs out at 7.2 hrs", always the full label. At every width it sits left of the line, then right of it, 8px away, then 6px. If it fits on neither side, it stays in its row, centered on the line and kept inside the chart, and the line starts 4px below it so it never crosses the text. It never touches the "usually forgotten" bracket. Decided with Kayla, October 15, 2026.
   - A bracket over the three forgotten groups: mono "5.5 hrs usually forgotten".
   - Under each group: hours (Geist 300, 24px) and name. Labels never overlap.
   - Legend: "paid by the offer" and "unpaid".
@@ -230,7 +230,7 @@ Sizes:
 - Live controls in a `--paper` panel (20px radius, outer edge on the grid lines) right under the hero, not sticky: the item stepper, the rounds stepper, then Offer and Target on one row.
   Reason: the desktop bar doesn't fit a phone. Right under the answer is where people try "what if".
 - Stats in a 2x2 grid.
-- Hours chart full width, 64px tall. Group names move into a 2-column legend under the bar. The runs-out label sits left of the dashed line, or right of it if there's no room. The gap to the line can shrink from 8px to 6px to make it fit. If the full label fits on neither side, it becomes "runs out at 7.2 hrs" (the offer is in the control panel). Decided with Kayla, October 15, 2026.
+- Hours chart full width, 64px tall. Group names move into a 2-column legend under the bar. The runs-out label is placed as on desktop (see Chart 1).
   Reason: four labels under thin bars would overlap.
 - Rate chart full width, about 170px tall. Same label rules as desktop.
 - Then Show the math, Your price, Your reply (stacked), and the footer. "Copy reply" full width.

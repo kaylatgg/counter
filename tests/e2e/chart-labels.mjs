@@ -4,12 +4,14 @@
 import { forEachConfig, note, closeAll, report, BASE } from "./lib.mjs";
 
 const OFFERS = ["15", "200", "400", "1000", "5000", "10000"];
+// Cases where the runs-out label fits on neither side of its line at 320px.
+const EXTRA = { socialvideo: ["300"], explainer: ["600"] };
 
 await forEachConfig(async (ctx) => {
   const p = ctx.page;
   await p.goto(BASE); await p.waitForTimeout(150);
   const fields = await p.evaluate(() => Object.fromEntries(Object.keys(calc.WORK_FIELDS).map((f) => [f, calc.WORK_FIELDS[f].jobs])));
-  for (const field of Object.keys(fields)) for (const job of fields[field]) for (const offer of OFFERS) {
+  for (const field of Object.keys(fields)) for (const job of fields[field]) for (const offer of OFFERS.concat(EXTRA[job] || [])) {
     if (job === "custom" && field !== "graphic") continue;
     const ex = await p.evaluate(([j, f]) => projectStore.exampleDraft(j, f).inputs, [job, field]);
     if (job === "custom") Object.assign(ex, { setupHours: "2", itemHours: "3", communicationHours: "1", roundHours: "1", deliveryHours: "1" });
@@ -30,11 +32,21 @@ await forEachConfig(async (ctx) => {
       // Hours chart.
       const hc = document.getElementById("hours-chart").getBoundingClientRect();
       overlapCheck([...document.querySelectorAll("#bar-labels > *, #runs-out-label, #bracket-label")].filter((e) => e.getClientRects().length && e.textContent.trim()).map((e) => [e.textContent.trim(), e.getBoundingClientRect()]), hc, "hours chart");
-      // The dashed runs-out line never runs through its label.
+      // The dashed runs-out line never runs through its label, and the label
+      // never touches the "usually forgotten" bracket.
       const line = document.getElementById("runs-out");
+      const label = document.getElementById("runs-out-label");
       if (line.getClientRects().length && !line.classList.contains("flag")) {
-        const x = line.getBoundingClientRect().left, l = document.getElementById("runs-out-label").getBoundingClientRect();
-        if (l.left < x + 1 && l.right > x) issues.push(`hours chart: the runs-out line crosses "${document.getElementById("runs-out-label").textContent}"`);
+        const L = line.getBoundingClientRect(), l = label.getBoundingClientRect();
+        if (l.left < L.left + 1 && l.right > L.left && L.top < l.bottom) issues.push(`hours chart: the runs-out line crosses "${label.textContent}"`);
+      }
+      const bracket = document.getElementById("bracket");
+      if (label.getClientRects().length && bracket.getClientRects().length && !bracket.hidden) {
+        const l = label.getBoundingClientRect();
+        [bracket, document.getElementById("bracket-label")].forEach((e) => {
+          const B = e.getBoundingClientRect();
+          if (l.left < B.right && B.left < l.right && l.top < B.bottom && B.top < l.bottom) issues.push(`hours chart: "${label.textContent}" overlaps the bracket`);
+        });
       }
       // Rate chart, when it shows.
       const plot = document.getElementById("rate-plot");
@@ -50,5 +62,5 @@ await forEachConfig(async (ctx) => {
     });
     res.forEach((i) => note(ctx, tag, i, "medium"));
   }
-}, { widths: [320, 390, 1024, 1440] });
+});
 report("chart labels"); await closeAll();

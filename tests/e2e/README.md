@@ -52,7 +52,7 @@ Each test prints a line starting with `!!` for anything it finds, then a count. 
 | `not-saved` | "Not saved" and "Try again" when saving fails |
 | `save-error-grid` | The "Couldn't save" box sits on the layout grid lines |
 | `layout-grid` | Every block starts and ends on a column edge (12/8/4 columns) |
-| `chart-labels` | Hours and rate chart labels for every job and offer: no overlaps, nothing cut off, the target label never hidden |
+| `chart-labels` | Hours and rate chart labels for every job and offer: no overlaps, nothing cut off, the runs-out line never through its label, the target label never hidden |
 
 ## Good to know
 
