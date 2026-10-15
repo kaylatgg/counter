@@ -121,7 +121,8 @@ Decided with Kayla, October 13, 2026.
   - Hidden with no offer. If the offer is below expenses, show the curve without the target crossing.
   - `aria-hidden` with a text summary for screen readers.
   - The y labels get exactly the room they need: the widest one plus 8px, so "$1,250" is never cut off.
-  - Labels never overlap. Priority: the current-hours label, then "at 7.2h you hit $25", then "your target $25/hr", then the axis labels. A lower one moves to its next spot; with none left, it's hidden from the drawing (the summary still says it). Decided with Kayla, October 13, 2026.
+  - Labels never overlap. Priority: the current-hours label, then "your target $25/hr", then "at 7.2h you hit $25", then the axis labels. A lower one moves to its next spot; with none left, it's hidden from the drawing (the summary still says it). Decided with Kayla, October 13, 2026.
+  - The target label is never hidden. After its usual spots (either end of the line, above or below), it tries the chart's left edge, above then below the line. If the full label fits nowhere, it becomes "target" in the same spots, but only where the y axis's "$25" stays visible, so the target's value always shows somewhere. Failing that, the full label slides along the line, above or below it, to any clear spot. The current-hours label also keeps clear of a 24px strip along the target line when it has another spot, so the target has room. Decided with Kayla, October 15, 2026.
 - Below: Show the math (collapsed), then Your price and Your reply side by side, then the footer.
 - "Copy reply": fully rounded ink button.
 

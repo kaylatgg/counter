@@ -690,11 +690,12 @@ function layoutRateChart(r, morph) {
   const curve = svgElement(svg, "path", { class: "rate-curve", d: points.join(" ") });
 
   // Labels never overlap each other. They're placed in priority order: the
-  // current-hours label, then the target crossing, then the target. Each may
+  // current-hours label, then the target, then the target crossing. Each may
   // only use a spot inside the chart and clear of every label placed before it;
   // of those, it takes the one touching the least (dots, then axis labels, then
   // the curve, then the target line), the earlier spot on a tie. With no allowed spot, the
   // label is hidden from the drawing; the summary under the chart still says it.
+  // The target label is never hidden (see below).
   // Axis labels come last: one that a label covers is hidden.
   const placed = [];
   const marks = [];
@@ -702,12 +703,16 @@ function layoutRateChart(r, morph) {
     return a.x < b.x + b.width + gap && b.x < a.x + a.width + gap &&
       a.y < b.y + b.height + gap && b.y < a.y + a.height + gap;
   }
-  function allowed(box) {
+  function allowed(box, keepClear) {
     if (box.x < 0 || box.x + box.width > width || box.y < 0 || box.y + box.height > height - pad.bottom) return false;
-    return !placed.some(function (other) { return touches(box, other, 4); });
+    return !placed.concat(keepClear || []).some(function (other) { return touches(box, other, 4); });
   }
+  // While the current-hours label is placed, it also avoids the strip along the
+  // target line when it can, so the target label (next) has room there.
+  let avoidTargetBand = false;
   function conflicts(box) {
     let score = 0;
+    if (avoidTargetBand && box.y < targetY + 24 && box.y + box.height > targetY - 24) score += 8;
     marks.forEach(function (mark) { if (touches(box, mark, 4)) score += 20; });
     yTexts.forEach(function (text) { if (touches(box, text.getBBox(), 4)) score += 10; });
     const hitsCurve = samples.some(function (point) {
@@ -721,7 +726,7 @@ function layoutRateChart(r, morph) {
   // spots: [x, y, anchor] in order of preference. An anchor of "fit" centers the
   // label on x but slides it sideways to stay inside the chart, so a label is
   // never cut off at the edge: it's tried after the others, above and below.
-  function placeText(label, spots) {
+  function placeText(label, spots, keepTrying, keepClear) {
     label.setAttribute("text-anchor", "start");
     const labelWidth = label.getBBox().width;
     let best = null;
@@ -734,18 +739,19 @@ function layoutRateChart(r, morph) {
       label.setAttribute("y", spot[1]);
       label.setAttribute("text-anchor", spot[2]);
       const box = label.getBBox();
-      if (!allowed(box)) return;
+      if (!allowed(box, keepClear)) return;
       const score = conflicts(box);
       if (!best || score < best.score) best = { spot: spot, score: score };
     });
     if (!best) {
-      label.setAttribute("display", "none");
-      return;
+      if (!keepTrying) label.setAttribute("display", "none");
+      return false;
     }
     label.setAttribute("x", best.spot[0]);
     label.setAttribute("y", best.spot[1]);
     label.setAttribute("text-anchor", best.spot[2]);
     placed.push(label.getBBox());
+    return true;
   }
 
   // Now: a glowing red dot at the current hours.
@@ -766,6 +772,7 @@ function layoutRateChart(r, morph) {
 
   const nowLabel = svgElement(svg, "text", { class: "rate-label rate-now-label" },
     calc.formatNumber(total) + "h → " + calc.formatMoney(value(total)) + "/hr after expenses");
+  avoidTargetBand = true;
   placeText(nowLabel, [
     [dotX + 14, dotY + 28, "start"], [dotX + 18, dotY - 18, "start"],
     [dotX - 14, dotY + 28, "end"], [dotX - 18, dotY - 18, "end"],
@@ -775,6 +782,35 @@ function layoutRateChart(r, morph) {
     [dotX, dotY - 22, "fit"], [dotX, dotY + 30, "fit"],
     [dotX, dotY - 38, "fit"], [dotX, dotY + 44, "fit"],
   ]);
+
+  avoidTargetBand = false;
+  // The target's label comes next, and is never hidden: right or left end of
+  // the line, above or below it, then the chart's left edge (over the y labels'
+  // column). If the full label fits nowhere, the short "target" tries the same
+  // spots, but only ones that leave the y axis's "$25" showing: the target's
+  // value always shows somewhere. Failing that, the full label slides along the
+  // line, above and below it, to any spot that's clear.
+  const targetLabel = svgElement(svg, "text", { class: "rate-label rate-target-label" },
+    "your target " + calc.formatPrice(r.rate) + "/hr");
+  const targetSpots = [
+    [width - pad.right, targetY - 8, "end"], [pad.left + 4, targetY - 8, "start"],
+    [width - pad.right, targetY + 16, "end"], [pad.left + 4, targetY + 16, "start"],
+    [width - pad.right, targetY - 24, "end"], [pad.left + 4, targetY - 24, "start"],
+    [width - pad.right, targetY + 32, "end"], [pad.left + 4, targetY + 32, "start"],
+    [0, targetY - 8, "start"], [0, targetY + 16, "start"],
+  ];
+  if (!placeText(targetLabel, targetSpots, true)) {
+    const fullText = targetLabel.textContent;
+    targetLabel.textContent = "target";
+    if (!placeText(targetLabel, targetSpots, true, [yTexts[0].getBBox()])) {
+      targetLabel.textContent = fullText;
+      const slides = [];
+      [-8, 16, -24, 32].forEach(function (dy) {
+        for (let x = 0; x <= width; x += 4) slides.push([x, targetY + dy, "start"]);
+      });
+      placeText(targetLabel, slides);
+    }
+  }
 
   if (cross !== null) {
     const crossLabel = svgElement(svg, "text", { class: "rate-label rate-cross-label" },
@@ -788,16 +824,6 @@ function layoutRateChart(r, morph) {
       [cross, targetY - 24, "fit"], [cross, targetY + 32, "fit"],
     ]);
   }
-
-  // The target's label: right or left end of the line, above or below it.
-  const targetLabel = svgElement(svg, "text", { class: "rate-label rate-target-label" },
-    "your target " + calc.formatPrice(r.rate) + "/hr");
-  placeText(targetLabel, [
-    [width - pad.right, targetY - 8, "end"], [pad.left + 4, targetY - 8, "start"],
-    [width - pad.right, targetY + 16, "end"], [pad.left + 4, targetY + 16, "start"],
-    [width - pad.right, targetY - 24, "end"], [pad.left + 4, targetY - 24, "start"],
-    [width - pad.right, targetY + 32, "end"], [pad.left + 4, targetY + 32, "start"],
-  ]);
 
   // Axis labels last: any that a label covers is hidden.
   svg.querySelectorAll(".rate-tick").forEach(function (text) {
