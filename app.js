@@ -3332,11 +3332,18 @@ Object.keys(FIELD_IDS).forEach(function (name) {
   input.addEventListener("blur", onLeaveField);
 });
 
+// Plain digits while typing. The selection is kept: Tab selects the whole
+// value, and typing should replace it, not add to "1000".
 MONEY_FIELDS.forEach(function (id) {
   byId(id).addEventListener("focus", function () {
     const input = byId(id);
     const plain = input.value.replace(/,/g, "");
-    if (plain !== input.value && calc.groupDigits(plain) === input.value) input.value = plain;
+    if (plain === input.value || calc.groupDigits(plain) !== input.value) return;
+    const all = input.selectionStart === 0 && input.selectionEnd === input.value.length;
+    const caret = input.value.slice(0, input.selectionEnd).replace(/,/g, "").length;
+    input.value = plain;
+    if (all) input.setSelectionRange(0, plain.length);
+    else input.setSelectionRange(caret, caret);
   });
 });
 
