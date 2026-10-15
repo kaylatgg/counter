@@ -2868,11 +2868,9 @@ function showLinkCopied() {
   const button = byId("share-link");
   clearTimeout(linkCopiedTimer);
   button.classList.add("copied");
-  byId("share-label").textContent = "Link copied";
   announce("Link copied");
   linkCopiedTimer = setTimeout(function () {
     button.classList.remove("copied");
-    byId("share-label").textContent = "Share";
   }, LINK_COPIED_MS);
 }
 

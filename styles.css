@@ -264,8 +264,23 @@ h3 {
 .topbar-inner {
   display: flex;
   align-items: center;
-  gap: 32px;
+  gap: 24px;
   height: 64px;
+}
+
+/* The wordmark, then in a saved project "/ name Saved", all on one text
+   baseline, 16px apart. (On phones the group falls away: see below.) */
+.brand {
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+  min-width: 0;
+}
+
+.crumb-slash {
+  font-size: 20px;
+  font-weight: 300;
+  color: var(--muted);
 }
 
 .wordmark {
@@ -325,13 +340,11 @@ h3 {
 }
 
 /* Share: a text button like Projects, between Projects and Save (screen 2).
-   Fixed width, so "Link copied" doesn't move anything. */
+   "Share" and "Copied" share one grid cell, the inactive one hidden, so the
+   button is as wide as the wider label and nothing moves when it changes. */
 .share-button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 6px;
-  width: 112px;
+  display: inline-grid;
+  place-items: center;
   min-height: 36px;
   padding: 0;
   border: 0;
@@ -340,13 +353,20 @@ h3 {
   font-size: 14px;
 }
 
-.share-check,
-.share-button.copied .share-icon {
-  display: none;
+.share-state {
+  grid-area: 1 / 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 
-.share-button.copied .share-check {
-  display: block;
+.share-done,
+.share-button.copied .share-idle {
+  visibility: hidden;
+}
+
+.share-button.copied .share-done {
+  visibility: visible;
 }
 
 /* "Shared result. Change anything to make it yours." Mono, with a small ink dot. */
@@ -1117,7 +1137,7 @@ legend {
 .crumb {
   display: flex;
   align-items: baseline;
-  gap: 8px;
+  gap: 16px;
   min-width: 0;
   font-size: 14px;
 }
@@ -1148,7 +1168,6 @@ legend {
 }
 
 .save-status {
-  margin-left: 4px;
   font-family: var(--mono);
   font-size: 11px;
   color: var(--muted);
@@ -2458,6 +2477,15 @@ textarea {
     padding: 6px 0;
   }
 
+  /* The wordmark and the project line stay separate rows, as before. */
+  .brand {
+    display: contents;
+  }
+
+  .crumb-slash {
+    display: none;
+  }
+
   .wordmark {
     margin-right: auto;
   }
@@ -2466,9 +2494,14 @@ textarea {
   .crumb {
     order: 3;
     flex-basis: 100%;
+    gap: 8px;
     margin-top: -6px;
     font-family: var(--mono);
     font-size: 12px;
+  }
+
+  .save-status {
+    margin-left: 4px;
   }
 
   .crumb-name,

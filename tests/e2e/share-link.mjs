@@ -12,9 +12,14 @@ await forEachConfig(async (ctx) => {
   // Copy.
   await fresh(ctx, "#result");
   await tap(ctx, "#share-link"); await p.waitForTimeout(250);
-  const label = (await p.textContent("#share-label")).trim();
+  // The visible label: "Copied" with a check, while screen readers hear "Link copied".
+  const shownLabel = () => p.evaluate(() => [...document.querySelectorAll("#share-link .share-state")].filter((e) => getComputedStyle(e).visibility !== "hidden").map((e) => e.textContent.trim()).join("|"));
+  const label = await shownLabel();
+  const heard = await p.evaluate(() => new Promise((r) => setTimeout(() => r(document.getElementById("announcer").textContent), 120)));
   const panelOpen = await p.evaluate(() => document.getElementById("share-panel").open);
-  if (label !== "Link copied" && !panelOpen) note(ctx, "share copy", `label "${label}"`, "high");
+  // When copying falls back to the link dialog, there's nothing to announce.
+  if (heard !== "Link copied" && !panelOpen) note(ctx, "share copy", `announced "${heard}"`, "medium");
+  if (label !== "Copied" && !panelOpen) note(ctx, "share copy", `label "${label}"`, "high");
   if (ctx.browser === "chromium" && !panelOpen) {
     const clip = await p.evaluate(() => navigator.clipboard.readText()).catch(() => "");
     if (!clip.endsWith("#s=v=1&field=graphic&job=menu&count=2&rounds=2&setup=2&item=2&comm=1.5&round=1.5&delivery=1&rate=25&expenses=20&offer=200")) note(ctx, "share copy", "clipboard: " + clip, "high");
@@ -22,7 +27,7 @@ await forEachConfig(async (ctx) => {
   }
   if (panelOpen) log("f5-notes.txt", `${ctx.browser} ${ctx.width}: copy fell back to the link dialog`);
   await p.waitForTimeout(2200);
-  const back = (await p.textContent("#share-label")).trim();
+  const back = await shownLabel();
   if (!panelOpen && back !== "Share") note(ctx, "share copy", `label after 2s "${back}"`, "medium");
   // Opening a good link.
   await fresh(ctx, LINK); await p.waitForTimeout(300);

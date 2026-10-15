@@ -25,18 +25,24 @@
 
   <header class="topbar">
     <div class="topbar-inner">
-      <p class="wordmark">Counter</p>
+      <!-- The wordmark and, in a saved project, "/ name Saved", on one baseline. -->
+      <div class="brand">
+        <p class="wordmark">Counter</p>
 
-      <!-- In a saved project: its name (click to rename) and "Saved". -->
-      <div class="crumb" id="crumb" hidden>
-        <button type="button" class="crumb-name" id="crumb-name">Project</button>
-        <input class="crumb-input" id="crumb-input" type="text" maxlength="60" autocomplete="off" aria-label="Project name" hidden>
-        <span class="save-status" id="save-status">Saved</span>
+        <!-- In a saved project: its name (click to rename) and "Saved". -->
+        <div class="crumb" id="crumb" hidden>
+          <span class="crumb-slash" aria-hidden="true">/</span>
+          <button type="button" class="crumb-name" id="crumb-name">Project</button>
+          <input class="crumb-input" id="crumb-input" type="text" maxlength="60" autocomplete="off" aria-label="Project name" hidden>
+          <span class="save-status" id="save-status">Saved</span>
+        </div>
       </div>
 
       <a href="#projects" class="projects-link" id="projects-link"><span class="projects-word">Projects</span> <span class="projects-count" id="projects-count">0</span></a>
       <!-- Screen 2: copies a link to this result (desktop) or opens the share sheet (phone). -->
-      <button type="button" class="share-button" id="share-link" hidden><svg class="share-icon" width="14" height="14" viewBox="0 0 14 14" aria-hidden="true" focusable="false"><path d="M7 9V1.5M4 4.25 7 1.25l3 3M2.5 7v4.75a.75.75 0 0 0 .75.75h7.5a.75.75 0 0 0 .75-.75V7" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg><svg class="share-check" width="14" height="14" viewBox="0 0 14 14" aria-hidden="true" focusable="false"><path d="M2.5 7.5 5.5 10.5 11.5 3.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="share-label" id="share-label">Share</span></button>
+      <!-- Both labels sit in one grid cell, the inactive one hidden, so the
+           button is as wide as the wider one and nothing moves when it changes. -->
+      <button type="button" class="share-button" id="share-link" hidden><span class="share-state share-idle"><svg class="share-icon" width="14" height="14" viewBox="0 0 14 14" aria-hidden="true" focusable="false"><path d="M7 9V1.5M4 4.25 7 1.25l3 3M2.5 7v4.75a.75.75 0 0 0 .75.75h7.5a.75.75 0 0 0 .75-.75V7" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="share-label">Share</span></span><span class="share-state share-done"><svg class="share-check" width="14" height="14" viewBox="0 0 14 14" aria-hidden="true" focusable="false"><path d="M2.5 7.5 5.5 10.5 11.5 3.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="share-label">Copied</span></span></button>
       <button type="button" class="save-button" id="save-project">Save as project</button>
     </div>
   </header>
