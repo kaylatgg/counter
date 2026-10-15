@@ -1158,8 +1158,8 @@ legend {
 .save-error {
   position: relative;
   z-index: 2;
-  max-width: 1184px;
-  margin: 8px auto 0;
+  /* Its outer edge sits on the layout grid lines, like the hero panel. */
+  margin: 8px var(--page-margin) 0;
   padding: 12px 16px;
   border: 1px solid var(--error);
   border-radius: 12px;
@@ -3171,10 +3171,6 @@ textarea {
 
   .row-action:first-child {
     padding-left: 0;
-  }
-
-  .save-error {
-    margin: 8px 12px 0;
   }
 }
 
