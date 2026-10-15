@@ -1798,15 +1798,18 @@ function storage() {
   }
 }
 
-// If saving fails, the page keeps working and says so.
+// If saving fails, the page keeps working and says so: "Couldn't save" under
+// the header, and in a project "Not saved" with a "Try again" button.
+let projectsUnsaved = false;
+
 function showSaveResult(ok) {
   show(byId("save-error"), !ok);
-  show(byId("save-status"), ok);
   return ok;
 }
 
 function persist() {
   const ok = showSaveResult(projectStore.saveProjects(storage(), projectList).ok);
+  projectsUnsaved = !ok;
   renderHeader();
   return ok;
 }
@@ -1956,11 +1959,13 @@ function renderHeader() {
 
   byId("share-link").hidden = screen !== "results";
 
+  byId("save-status").textContent = projectsUnsaved ? "Not saved" : "Saved";
+
   const button = byId("save-project");
   button.hidden = !inCalculator;
-  button.disabled = Boolean(project);
+  button.disabled = Boolean(project) && !projectsUnsaved;
   if (project) {
-    button.textContent = "Saved";
+    button.textContent = projectsUnsaved ? "Try again" : "Saved";
     button.removeAttribute("aria-label");
   } else {
     // On a phone only "Save" fits; the name stays "Save as project".
@@ -2022,8 +2027,20 @@ function saveAsProject(event) {
     return;
   }
   const project = projectStore.createProject(input.value, snapshot(), projectStore.newProjectId(), new Date());
+  const before = projectList;
   projectList = projectList.concat([project]);
-  persist();
+  if (!persist()) {
+    // Nothing was saved: no project, the work stays the unsaved calculation,
+    // and "Start over" doesn't go ahead. "Couldn't save" stays.
+    projectList = before;
+    projectsUnsaved = false;
+    afterSave = null;
+    const opener = byId("save-project");
+    closePanels();
+    renderHeader();
+    opener.focus({ preventScroll: true });
+    return;
+  }
   // The work now lives in the project, so the draft starts fresh.
   draft = projectStore.exampleDraft("menu");
   persistDraft();
@@ -2041,7 +2058,6 @@ function saveAsProject(event) {
   const state = { screen: currentScreen(), project: project.id };
   history.replaceState(state, "", addressFor(state));
   renderHeader();
-  show(byId("save-status"), true);
   byId("crumb-name").focus({ preventScroll: true });
 }
 
@@ -3489,7 +3505,14 @@ byId("projects-link").addEventListener("click", function (event) {
   event.preventDefault();
   go({ screen: "projects" });
 });
-byId("save-project").addEventListener("click", function () { openSaveField(null); });
+byId("save-project").addEventListener("click", function () {
+  // In a project whose last save failed, the button is "Try again".
+  if (currentProject()) {
+    if (persist()) byId("crumb-name").focus({ preventScroll: true });
+    return;
+  }
+  openSaveField(null);
+});
 byId("save-form").addEventListener("submit", saveAsProject);
 byId("save-cancel").addEventListener("click", dismissDialog);
 byId("save-name").addEventListener("input", function () {
