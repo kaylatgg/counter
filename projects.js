@@ -13,6 +13,10 @@ const NAME_MAX = 60;
 // The inputs a project keeps, besides the job, quote, and reply.
 const INPUT_NAMES = projectCalc.HOURS_FIELDS.concat(["rate", "expenses", "offerStatus", "offer"]);
 
+// "Ways to close the gap": which one is picked. "estimate" (the default),
+// "trade", "offer", or "" when the person typed their own price.
+const GAP_CHOICES = ["estimate", "trade", "offer", ""];
+
 // The rate, expenses, and offer every new project starts with.
 const STARTING_NUMBERS = { rate: "25", expenses: "20", offerStatus: "amount", offer: "200" };
 
@@ -33,7 +37,7 @@ function exampleDraft(jobKey, fieldKey) {
   Object.keys(STARTING_NUMBERS).forEach(function (field) { inputs[field] = STARTING_NUMBERS[field]; });
   return {
     field: projectCalc.fieldForJob(jobKey, fieldKey), job: jobKey,
-    inputs: inputs, quote: "", reply: "", replyEdited: false,
+    inputs: inputs, quote: "", reply: "", replyEdited: false, gapChoice: "estimate",
   };
 }
 
@@ -42,7 +46,7 @@ function exampleDraft(jobKey, fieldKey) {
 function isUntouched(draft) {
   const fresh = exampleDraft(draft.job);
   const sameInputs = INPUT_NAMES.every(function (name) { return draft.inputs[name] === fresh.inputs[name]; });
-  return sameInputs && draft.quote === "" && !draft.replyEdited;
+  return sameInputs && draft.quote === "" && !draft.replyEdited && draft.gapChoice === "estimate";
 }
 
 // "Menu, Oct 11"
@@ -61,6 +65,7 @@ function createProject(name, draft, id, now) {
     quote: draft.quote,
     reply: draft.reply,
     replyEdited: draft.replyEdited,
+    gapChoice: draft.gapChoice,
     created: now.toISOString(),
     edited: now.toISOString(),
   };
@@ -91,6 +96,10 @@ function cleanCalculation(raw) {
     quote: typeof raw.quote === "string" ? raw.quote : "",
     reply: typeof raw.reply === "string" ? raw.reply : "",
     replyEdited: raw.replyEdited === true,
+    // Older saves have none: "Raise your price" (the default), or none picked
+    // if they typed their own price, so it's kept.
+    gapChoice: GAP_CHOICES.indexOf(raw.gapChoice) !== -1 ? raw.gapChoice
+      : (typeof raw.quote === "string" && raw.quote !== "" ? "" : "estimate"),
   };
 }
 

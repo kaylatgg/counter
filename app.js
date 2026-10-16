@@ -1013,8 +1013,11 @@ function renderQuote(r, quoteError) {
   if (quoteError) return;
 
   const price = calc.formatPrice(r.quote.amount);
-  let text = "At " + price + ", you'd earn " + calc.formatMoney(r.quote.hourlyBefore) +
-    "/hr before expenses and " + calc.formatMoney(r.quote.hourlyAfter) + "/hr after.";
+  // With a way to close the gap picked, the price is for that option's hours.
+  const option = pickedOption();
+  const hours = option ? option.hours : r.hours.total;
+  let text = "At " + price + ", you'd earn " + calc.formatMoney(r.quote.amount / hours) +
+    "/hr before expenses and " + calc.formatMoney((r.quote.amount - r.expenses) / hours) + "/hr after.";
   const difference = r.quote.differenceFromEstimate;
   if (r.quote.isCustom && difference !== 0) {
     text += " That's " + calc.formatPrice(Math.abs(difference)) +
@@ -1023,13 +1026,172 @@ function renderQuote(r, quoteError) {
   line.textContent = text;
 }
 
+// 05 Ways to close the gap. With an offer below the estimate, up to three
+// options (calc.gapOptions). The picked one sets the price to send, the reply,
+// the quote line, and the image; it never changes the inputs or the charts.
+// gapChoice: "estimate" (the default), "trade", "offer", or "" when the person
+// typed their own price. gapQuoteWritten is the price text the pick last put
+// in the field, so typing something else can be told apart.
+let gapChoice = "estimate";
+let gapQuoteWritten = null;
+// The options on screen now.
+let gapList = [];
+
+const GAP_COPY = {
+  estimate: { tag: "Your estimate", name: function () { return "Raise your price"; } },
+  trade: { tag: "Middle ground", name: function () { return "Trade work for price"; } },
+  offer: { tag: "Their budget", name: function (offer) { return "Take their " + calc.formatPrice(offer); } },
+};
+
+function pickedOption() {
+  if (!gapChoice || gapChoice === "estimate") return null;
+  return gapList.filter(function (option) { return option.type === gapChoice; })[0] || null;
+}
+
+// Puts the pick's price in the field. Returns true if the field changed.
+function applyGapChoice(checked) {
+  const field = byId("quote");
+  // Typing a different price clears the pick.
+  if (gapChoice && !loadingValues && gapQuoteWritten !== null &&
+      field.value.replace(/,/g, "") !== gapQuoteWritten.replace(/,/g, "")) {
+    gapChoice = "";
+  }
+  const blocking = Object.keys(checked.errors).some(function (name) { return name !== "quote"; });
+  gapList = blocking ? [] : calc.gapOptions(checked.values);
+  if (!gapChoice) {
+    gapQuoteWritten = null;
+    return false;
+  }
+  // A picked type that's gone falls back to option 1, which is a blank price.
+  if (!gapList.some(function (option) { return option.type === gapChoice; })) gapChoice = "estimate";
+  const option = pickedOption();
+  const text = option ? calc.groupDigits(String(option.price)) : "";
+  gapQuoteWritten = text;
+  if (field.value === text) return false;
+  field.value = text;
+  return true;
+}
+
+function pickGap(type, focus) {
+  gapChoice = type;
+  gapQuoteWritten = null;
+  clearTimeout(commitTimer);
+  update(true);
+  const option = gapList.filter(function (o) { return o.type === type; })[0];
+  if (option) announce("Your reply now uses " + calc.formatPrice(option.price) + ".");
+  if (focus) {
+    const card = byId("gap-options").querySelector('[data-type="' + type + '"]');
+    if (card) card.focus();
+  }
+}
+
+// "2 pages · 2 rounds of changes"
+function scopeWords(count, rounds) {
+  const job = calc.JOBS[currentJob()];
+  return calc.countWords(count, job.item, job.items) + " · " + calc.countWords(rounds, "round", "rounds") + " of changes";
+}
+
+function renderGapOptions(r, values) {
+  const section = byId("gap-section");
+  const options = gapList;
+  show(section, options.length > 0);
+  if (!options.length) return;
+  byId("gap-title").textContent = "Ways to close the " + calc.formatPrice(r.offer.gap) + " gap";
+  const job = calc.JOBS[currentJob()];
+  const fullHours = r.hours.total;
+  const cards = ensureChildren(byId("gap-options"), options.length, function () {
+    const card = document.createElement("div");
+    card.className = "gap-card";
+    card.setAttribute("role", "radio");
+    card.innerHTML =
+      '<div class="gap-top"><span class="gap-tag"></span><span class="gap-chip"></span></div>' +
+      '<p class="gap-name"></p>' +
+      '<p class="gap-price"><span class="gap-amount"></span><span class="gap-rate"></span></p>' +
+      '<p class="gap-scope"></p>' +
+      '<dl class="gap-levers"><div class="gap-lever"><dt>Price</dt><dd class="gap-price-change"></dd></div>' +
+      '<div class="gap-lever"><dt>Work</dt><dd class="gap-work-change"></dd></div></dl>' +
+      '<div class="gap-bar" aria-hidden="true"><span class="gap-paid"></span><span class="gap-unpaid"></span><span class="gap-saved"></span></div>' +
+      '<div class="gap-bar-labels"><span class="gap-work"></span><span class="gap-saved-label"></span></div>' +
+      '<div class="gap-use-wrap"><span class="gap-use"></span></div>';
+    return card;
+  });
+  const anyPicked = options.some(function (option) { return option.type === gapChoice; });
+  options.forEach(function (option, i) {
+    const card = cards[i];
+    const copy = GAP_COPY[option.type];
+    const picked = option.type === gapChoice;
+    const name = copy.name(r.offer.amount);
+    card.dataset.type = option.type;
+    card.setAttribute("aria-checked", String(picked));
+    card.tabIndex = picked || (!anyPicked && i === 0) ? 0 : -1;
+    const q = function (sel) { return card.querySelector(sel); };
+    q(".gap-tag").textContent = copy.tag;
+    const chip = q(".gap-chip");
+    chip.classList.toggle("meets", option.meetsTarget);
+    chip.textContent = option.meetsTarget ? "meets your target" : calc.formatMoney(option.underBy) + "/hr under";
+    q(".gap-name").textContent = name;
+    q(".gap-amount").textContent = calc.formatPrice(option.price);
+    q(".gap-rate").textContent = calc.formatMoney(option.rateAfter) + "/hr";
+    q(".gap-scope").textContent = scopeWords(option.count, option.rounds);
+    const priceText = option.priceChange > 0 ? "+" + calc.formatPrice(option.priceChange) : "same price";
+    const workText = !option.workChange ? "same work"
+      : option.workChange.by + " " + (option.workChange.kind === "round" ? "round" : job.item) + " less";
+    const priceCell = q(".gap-price-change");
+    priceCell.textContent = priceText;
+    priceCell.classList.toggle("changed", option.priceChange > 0);
+    const workCell = q(".gap-work-change");
+    workCell.textContent = workText;
+    workCell.classList.toggle("changed", Boolean(option.workChange));
+    // The work bar, on one scale for every card: the current job's hours.
+    const unpaid = option.hours - option.covered;
+    const saved = Math.max(0, fullHours - option.hours);
+    [[".gap-paid", option.covered], [".gap-unpaid", unpaid], [".gap-saved", saved]].forEach(function (part) {
+      const el = q(part[0]);
+      el.style.flexGrow = part[1];
+      el.hidden = !(part[1] > 1e-9);
+    });
+    q(".gap-work").textContent = calc.formatHours(option.hours) + " of work, " + calc.formatNumber(unpaid) + " unpaid";
+    q(".gap-saved-label").textContent = saved > 1e-9 ? calc.formatHours(saved) + " saved" : "";
+    q(".gap-use").innerHTML = picked
+      ? '<svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true" focusable="false"><path d="M2.5 7.5 5.5 10.5 11.5 3.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>In your reply'
+      : "Use in reply";
+    // The radio's name says what it picks; its children are presentational.
+    card.setAttribute("aria-label", name + ": " + calc.formatPrice(option.price) + ", " +
+      calc.formatMoney(option.rateAfter) + " an hour after expenses, " +
+      (option.meetsTarget ? "meets your target" : calc.formatMoney(option.underBy) + " an hour under your target") +
+      ". " + scopeWords(option.count, option.rounds).replace(" · ", ", ") + ".");
+  });
+}
+
+// Extra rounds of changes: "$40 each", "1.5 hrs at $25/hr, rounded up".
+function renderExtraRounds(values) {
+  const extra = calc.extraRoundPrice(values);
+  show(byId("extra-rounds"), Boolean(extra));
+  if (!extra) return;
+  byId("extra-rounds-value").textContent = calc.formatPrice(extra.price) + " each";
+  byId("extra-rounds-note").textContent = calc.formatHours(extra.hours) + " at " + calc.formatPrice(extra.rate) +
+    "/hr" + (extra.rounded ? ", rounded up" : "");
+}
+
+// The image uses the picked option's price, rounds, and hours.
+function imageResult() {
+  const option = pickedOption();
+  if (!option) return { r: lastResult, values: lastValues };
+  const values = Object.assign({}, lastValues, { count: option.count, rounds: option.rounds, quote: option.price });
+  return { r: calc.calculate(values), values: values };
+}
+
 // Reply
 
 // The draft from CLAUDE.md, using the quote if there is one, or the estimate.
 // "Hi! Thanks for reaching out. For a menu with 2 pages and 2 rounds of changes, my price is $310."
 function buildReply(r, values) {
-  return calc.replyText(currentJob(), values.count, values.rounds, r.quote.amount,
-    r.offer ? r.offer.amount : null, r.estimate);
+  const extra = calc.extraRoundPrice(values);
+  const option = pickedOption();
+  const offer = r.offer ? r.offer.amount : null;
+  const extras = { extraRoundPrice: extra ? extra.price : null, acceptsOffer: Boolean(option) && option.type === "offer" };
+  if (option) return calc.replyText(currentJob(), option.count, option.rounds, option.price, offer, r.estimate, extras);
+  return calc.replyText(currentJob(), values.count, values.rounds, r.quote.amount, offer, r.estimate, extras);
 }
 
 // Once the person edits the reply, it's never overwritten. If the numbers
@@ -1226,8 +1388,15 @@ function syncMirrors(errors) {
 // When a blank price follows their offer (it's at or above the estimate), the
 // estimate is typed in instead.
 function useEstimate() {
+  if (gapList.length) {
+    pickGap("estimate", false);
+    return;
+  }
   const followsOffer = lastResult && lastResult.quote.defaultsTo === "offer";
   byId("quote").value = followsOffer ? calc.groupDigits(String(lastResult.estimate)) : "";
+  // Typing the estimate over their offer is a price of their own; a blank one follows.
+  gapChoice = followsOffer ? "" : "estimate";
+  gapQuoteWritten = followsOffer ? null : "";
   clearTimeout(commitTimer);
   update(true);
 }
@@ -1278,6 +1447,7 @@ function showResultState(state) {
   if (state !== "result") {
     show(byId("offer-chart"), false);
     show(byId("quote-result"), false);
+    show(byId("gap-section"), false);
   }
 }
 
@@ -1460,7 +1630,9 @@ function formatMoneyFields() {
 }
 
 function updatePage(commit) {
-  const checked = calc.validateInputs(readForm(), currentJob());
+  let checked = calc.validateInputs(readForm(), currentJob());
+  // Ways to close the gap: the pick sets the price to send, so it goes first.
+  if (applyGapChoice(checked)) checked = calc.validateInputs(readForm(), currentJob());
   const errors = checked.errors;
   showErrors(errors, commit);
   syncMirrors(errors);
@@ -1519,6 +1691,8 @@ function updatePage(commit) {
   renderHoursChart(r);
   renderOfferChart(r);
   renderReceipt(r, checked.values);
+  renderGapOptions(r, checked.values);
+  renderExtraRounds(checked.values);
   if (!errors.quote) renderReply(r, checked.values);
   if (!errors.quote || shownErrors.quote) renderQuote(r, errors.quote);
 }
@@ -1856,6 +2030,7 @@ function snapshot() {
     quote: raw.quote,
     reply: byId("reply").value,
     replyEdited: draftWhenEdited !== null,
+    gapChoice: gapChoice,
   };
 }
 
@@ -1890,6 +2065,8 @@ function fillCalculator(values) {
   });
   byId(values.inputs.offerStatus === "none" ? "offer-none" : "offer-yes").checked = true;
   byId("quote").value = values.quote;
+  gapChoice = typeof values.gapChoice === "string" ? values.gapChoice : (values.quote ? "" : "estimate");
+  gapQuoteWritten = null;
   showWorkError(false);
   byId("reply").value = values.reply;
   currentDraft = values.reply;
@@ -3322,7 +3499,8 @@ function makeShareImage() {
     const canvas = document.createElement("canvas");
     canvas.width = IMAGE_W;
     canvas.height = IMAGE_H;
-    drawShareImage(canvas, lastResult, lastValues);
+    const picked = imageResult();
+    drawShareImage(canvas, picked.r, picked.values);
     return canvas;
   });
 }
@@ -3353,7 +3531,7 @@ function canShareFile(file) {
 
 function saveImage() {
   if (!lastResult || !lastValues) return;
-  const r = lastResult;
+  const r = imageResult().r;
   const name = imageFileName(r);
   makeShareImage().then(function (canvas) {
     canvas.toBlob(function (blob) {
@@ -3469,6 +3647,23 @@ byId("skip-link").addEventListener("click", function (event) {
 byId("reply").addEventListener("input", onReplyEdit);
 byId("update-draft").addEventListener("click", updateDraft);
 byId("use-estimate").addEventListener("click", useEstimate);
+byId("gap-options").addEventListener("click", function (event) {
+  const card = event.target.closest(".gap-card");
+  if (card) pickGap(card.dataset.type, true);
+});
+// A radio group: arrows move and pick (wrapping), Space picks the focused card.
+byId("gap-options").addEventListener("keydown", function (event) {
+  const cards = Array.prototype.slice.call(byId("gap-options").children);
+  const at = cards.indexOf(document.activeElement);
+  if (at === -1) return;
+  let next = null;
+  if (event.key === "ArrowRight" || event.key === "ArrowDown") next = (at + 1) % cards.length;
+  else if (event.key === "ArrowLeft" || event.key === "ArrowUp") next = (at - 1 + cards.length) % cards.length;
+  else if (event.key === " " || event.key === "Enter") next = at;
+  if (next === null) return;
+  event.preventDefault();
+  pickGap(cards[next].dataset.type, true);
+});
 byId("copy-reply").addEventListener("click", copyReply);
 byId("save-image").addEventListener("click", saveImage);
 

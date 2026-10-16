@@ -52,6 +52,7 @@ Each test prints a line starting with `!!` for anything it finds, then a count. 
 | `not-saved` | "Not saved" and "Try again" when saving fails |
 | `save-error-grid` | The "Couldn't save" box sits on the layout grid lines |
 | `layout-grid` | Every block starts and ends on a column edge (12/8/4 columns) |
+| `close-the-gap` | Ways to close the gap for every job, offer, and rounds: when it shows, the options, the grid, no overlaps, the keyboard, and how the pick drives the price, reply, saving, and image |
 | `chart-labels` | Hours and rate chart labels for every job and offer: no overlaps, nothing cut off, the runs-out line never through its label, the target label never hidden |
 
 ## Good to know

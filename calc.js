@@ -176,20 +176,28 @@ function countWords(amount, singular, plural) {
 // changes, my price is $310."
 // When the offer is at or above the estimate and the price is the offer, the
 // reply accepts it instead of asking for less: "..., $1,000 works for me."
-function replyText(jobKey, count, rounds, price, offer, estimate) {
+// extras (optional): acceptsOffer, to accept the offer for this work even
+// though it's under the estimate ("Take their $200"), and extraRoundPrice, which
+// adds "Additional rounds of changes are $40 each." before the last sentence.
+function replyText(jobKey, count, rounds, price, offer, estimate, extras) {
   const job = JOBS[jobKey];
+  const more = extras || {};
   const work = "Hi! Thanks for reaching out. For " + job.phrase + " with " +
     countWords(count, job.item, job.items) + " and " +
     countWords(rounds, "round", "rounds") + " of changes, ";
-  if (offer !== null && estimate != null && offer >= estimate && price === offer) {
-    return work + formatPrice(offer) + " works for me. Let me know when you'd like to get started!";
+  const extra = more.extraRoundPrice ? " Additional rounds of changes are " +
+    formatPrice(more.extraRoundPrice) + " each." : "";
+  const accepts = offer !== null && price === offer &&
+    (more.acceptsOffer || (estimate != null && offer >= estimate));
+  if (accepts) {
+    return work + formatPrice(offer) + " works for me." + extra + " Let me know when you'd like to get started!";
   }
   let text = work + "my price is " + formatPrice(price) + ".";
   if (offer !== null && price > offer) {
     text += " I know that's more than the " + formatPrice(offer) +
       " you mentioned, so I'm happy to talk about what would fit your budget.";
   }
-  return text + " Let me know if you have any questions!";
+  return text + extra + " Let me know if you have any questions!";
 }
 
 // Over this many hours, the page asks the person to check their hours.
@@ -430,6 +438,67 @@ function calculate(values) {
   return result;
 }
 
+// One extra round of changes: hours per round x rate, rounded up to $5.
+// null when a round takes no hours. The menu: 1.5 hrs x $25 = $37.50, so $40.
+function extraRoundPrice(values) {
+  if (!(values.roundHours > 0)) return null;
+  const exact = values.roundHours * values.rate;
+  const price = roundUpToFive(exact);
+  return { price: price, hours: values.roundHours, rate: values.rate, rounded: price !== exact };
+}
+
+// Ways to close the gap, when there's an offer below the estimate. Up to three:
+//   estimate  "Raise your price": the estimate, same work.
+//   trade     "Trade work for price": one round of changes fewer (or with 0
+//             rounds, one item fewer), at that smaller job's estimate. Left out
+//             if there's no smaller job, or its estimate isn't above the offer.
+//   offer     "Take their $200": the offer, for the smaller job (or the same
+//             work if there's no smaller job). Left out at or below expenses.
+// Each: { type, price, count, rounds, hours, covered, rateAfter, meetsTarget,
+// underBy, priceChange (price - offer), workChange (null, or { kind, by }) }.
+function gapOptions(values) {
+  const base = Object.assign({}, values, { quote: null });
+  const r = calculate(base);
+  if (!r.hasHours || !r.offer || !(r.offer.gap > 0)) return [];
+  const offer = r.offer.amount;
+
+  function option(type, price, scope, workChange) {
+    const hours = workHours(scope).total;
+    const covered = Math.min(hours, Math.max(0, (price - scope.expenses) / scope.rate));
+    const rateAfter = (price - scope.expenses) / hours;
+    // To the cent, like the hero: $24.999 doesn't read as under the target.
+    const underCents = Math.round((scope.rate - rateAfter) * 100);
+    return {
+      type: type, price: price, count: scope.count, rounds: scope.rounds,
+      hours: hours, covered: covered, rateAfter: rateAfter,
+      meetsTarget: underCents <= 0, underBy: Math.max(0, scope.rate - rateAfter),
+      priceChange: price - offer, workChange: workChange,
+    };
+  }
+
+  // The smaller job: one round fewer, or with no rounds, one item fewer.
+  let smaller = null;
+  let change = null;
+  if (base.rounds >= 1) {
+    smaller = Object.assign({}, base, { rounds: base.rounds - 1 });
+    change = { kind: "round", by: 1 };
+  } else if (base.count >= 2) {
+    smaller = Object.assign({}, base, { count: base.count - 1 });
+    change = { kind: "item", by: 1 };
+  }
+  if (smaller && !(workHours(smaller).total > 0)) smaller = null;
+
+  const options = [option("estimate", r.estimate, base, null)];
+  if (smaller) {
+    const smallerEstimate = calculate(smaller).estimate;
+    if (smallerEstimate > offer) options.push(option("trade", smallerEstimate, smaller, change));
+  }
+  if (offer > base.expenses) {
+    options.push(smaller ? option("offer", offer, smaller, change) : option("offer", offer, base, null));
+  }
+  return options;
+}
+
 // Chart math
 
 // Hours per block in the hours chart: 30 min up to 24 hrs, 1 hr up to 48, then 2 hrs.
@@ -570,6 +639,9 @@ const calc = {
   WORK_FIELDS,
   fieldForJob,
   replyText,
+  extraRoundPrice,
+  gapOptions,
+  countWords,
   LONG_JOB_HOURS,
   fullTimeWeeks,
   HOURS_FIELDS,

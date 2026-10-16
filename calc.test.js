@@ -743,5 +743,130 @@ test("money fields show commas, and typed commas still work", function () {
   assert.strictEqual(run({ offer: "1,000" }).offer.amount, 1000);
 });
 
+group("Ways to close the gap");
+
+function optionsFor(changes, job) {
+  const checked = calc.validateInputs(example(changes), job);
+  assert.deepStrictEqual(checked.errors, {}, "expected no errors");
+  return calc.gapOptions(checked.values);
+}
+
+test("the menu with a $200 offer has three ways, with the numbers from the design", function () {
+  const options = optionsFor({});
+  assert.deepStrictEqual(options.map(function (o) { return o.type; }), ["estimate", "trade", "offer"]);
+  const [raise, trade, take] = options;
+  // Raise your price: $310 for the same work, $25.22/hr after expenses.
+  assert.strictEqual(raise.price, 310);
+  assert.strictEqual(raise.rounds, 2);
+  closeTo(raise.hours, 11.5);
+  closeTo(raise.covered, 11.5);
+  assert.strictEqual(calc.formatMoney(raise.rateAfter), "$25.22");
+  assert.strictEqual(raise.meetsTarget, true);
+  assert.strictEqual(raise.priceChange, 110);
+  assert.strictEqual(raise.workChange, null);
+  // Trade work for price: 1 round fewer, 10 hrs, $270, exactly the target.
+  assert.strictEqual(trade.price, 270);
+  assert.strictEqual(trade.rounds, 1);
+  assert.strictEqual(trade.count, 2);
+  closeTo(trade.hours, 10);
+  closeTo(trade.rateAfter, 25);
+  assert.strictEqual(trade.meetsTarget, true);
+  assert.deepStrictEqual(trade.workChange, { kind: "round", by: 1 });
+  // Take their $200: the smaller job, 7.2 of 10 hrs covered, $7.00/hr under.
+  assert.strictEqual(take.price, 200);
+  assert.strictEqual(take.rounds, 1);
+  closeTo(take.covered, 7.2);
+  closeTo(take.hours - take.covered, 2.8);
+  assert.strictEqual(take.meetsTarget, false);
+  assert.strictEqual(calc.formatMoney(take.underBy), "$7.00");
+  assert.strictEqual(take.priceChange, 0);
+});
+
+test("no gap, no ways: no offer, or an offer at or above the estimate", function () {
+  assert.deepStrictEqual(optionsFor({ offerStatus: "none" }), []);
+  assert.deepStrictEqual(optionsFor({ offer: "310" }), []);
+  assert.deepStrictEqual(optionsFor({ offer: "1000" }), []);
+});
+
+test("with no rounds, the smaller job is one item fewer", function () {
+  // 2 pages, 0 rounds: 8.5 hrs, $235. One page fewer: 6.5 hrs, $185.
+  const options = optionsFor({ rounds: "0", offer: "150" });
+  const trade = options.filter(function (o) { return o.type === "trade"; })[0];
+  assert.strictEqual(trade.price, 185);
+  assert.strictEqual(trade.count, 1);
+  assert.strictEqual(trade.rounds, 0);
+  assert.deepStrictEqual(trade.workChange, { kind: "item", by: 1 });
+});
+
+test("the trade is left out when it wouldn't ask for more than the offer", function () {
+  // 2 pages, 0 rounds, $200 offer: the smaller job's $185 is under the offer.
+  const options = optionsFor({ rounds: "0" });
+  assert.deepStrictEqual(options.map(function (o) { return o.type; }), ["estimate", "offer"]);
+  // Taking their offer still uses the smaller job.
+  assert.strictEqual(options[1].count, 1);
+  // And it never asks for less than the offer, for any offer.
+  [15, 100, 199, 200, 250, 300, 309].forEach(function (offer) {
+    optionsFor({ offer: String(offer) }).forEach(function (o) {
+      if (o.type === "trade") assert.ok(o.price > offer, "trade " + o.price + " for offer " + offer);
+    });
+  });
+});
+
+test("with no smaller job (0 rounds and 1 item), taking the offer is the same work", function () {
+  const options = optionsFor({ count: "1", rounds: "0", offer: "100" });
+  assert.deepStrictEqual(options.map(function (o) { return o.type; }), ["estimate", "offer"]);
+  assert.strictEqual(options[1].count, 1);
+  assert.strictEqual(options[1].rounds, 0);
+  assert.strictEqual(options[1].workChange, null);
+});
+
+test("taking the offer is left out at or below expenses", function () {
+  assert.deepStrictEqual(optionsFor({ offer: "20" }).map(function (o) { return o.type; }), ["estimate", "trade"]);
+  assert.deepStrictEqual(optionsFor({ offer: "15" }).map(function (o) { return o.type; }), ["estimate", "trade"]);
+});
+
+test("hours the price covers stop at the job's hours", function () {
+  const raise = optionsFor({ offer: "100" })[0];
+  closeTo(raise.covered, raise.hours);
+  assert.ok((raise.price - 20) / 25 > raise.hours);
+});
+
+group("Extra rounds of changes");
+
+test("one extra round: hours per round x rate, rounded up to $5", function () {
+  const values = calc.validateInputs(example({})).values;
+  const extra = calc.extraRoundPrice(values);
+  assert.strictEqual(extra.price, 40);
+  closeTo(extra.hours, 1.5);
+  assert.strictEqual(extra.rounded, true);
+  const exact = calc.extraRoundPrice(calc.validateInputs(example({ roundHours: "1" })).values);
+  assert.strictEqual(exact.price, 25);
+  assert.strictEqual(exact.rounded, false);
+  assert.strictEqual(calc.extraRoundPrice(calc.validateInputs(example({ roundHours: "0" })).values), null);
+});
+
+test("the reply adds the extra round price before its last sentence", function () {
+  assert.strictEqual(calc.replyText("menu", 2, 2, 310, 200, 310, { extraRoundPrice: 40 }),
+    "Hi! Thanks for reaching out. For a menu with 2 pages and 2 rounds of changes, my price is $310. " +
+    "I know that's more than the $200 you mentioned, so I'm happy to talk about what would fit your budget. " +
+    "Additional rounds of changes are $40 each. Let me know if you have any questions!");
+  assert.strictEqual(calc.replyText("menu", 2, 2, 1000, 1000, 310, { extraRoundPrice: 40 }),
+    "Hi! Thanks for reaching out. For a menu with 2 pages and 2 rounds of changes, $1,000 works for me. " +
+    "Additional rounds of changes are $40 each. Let me know when you'd like to get started!");
+  assert.strictEqual(calc.replyText("menu", 2, 2, 310, null, 310, { extraRoundPrice: null }).indexOf("Additional"), -1);
+});
+
+test("replies for trading work and for taking their offer", function () {
+  assert.strictEqual(calc.replyText("menu", 2, 1, 270, 200, 310),
+    "Hi! Thanks for reaching out. For a menu with 2 pages and 1 round of changes, my price is $270. " +
+    "I know that's more than the $200 you mentioned, so I'm happy to talk about what would fit your budget. " +
+    "Let me know if you have any questions!");
+  assert.strictEqual(calc.replyText("menu", 2, 1, 200, 200, 310, { acceptsOffer: true }),
+    "Hi! Thanks for reaching out. For a menu with 2 pages and 1 round of changes, $200 works for me. " +
+    "Let me know when you'd like to get started!");
+  // Without acceptsOffer, a price equal to an offer under the estimate is still "my price is".
+  assert.ok(calc.replyText("menu", 2, 1, 200, 200, 310).indexOf("my price is $200") !== -1);
+});
+
 console.log("\n" + passed + " passed, " + failed + " failed");
 if (failed > 0) process.exitCode = 1;

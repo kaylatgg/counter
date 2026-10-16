@@ -1951,8 +1951,9 @@ legend {
   opacity: 0.25;
 }
 
-/* Show the math, then your price and your reply. */
+/* Show the math, ways to close the gap, then your price and your reply. */
 .results-more > .receipt,
+.gap-section,
 .results-pair {
   margin-top: 56px;
   padding-top: 24px;
@@ -2113,6 +2114,266 @@ legend {
   margin-top: 16px;
   font-size: 14px;
   color: var(--ink-2);
+}
+
+/* Extra rounds of changes, under the price. */
+.extra-rounds {
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+
+.extra-rounds-label {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.extra-rounds-value {
+  margin-top: 4px;
+  font-size: 24px;
+  font-weight: 300;
+  letter-spacing: -0.02em;
+}
+
+.extra-rounds .mono-note {
+  margin-top: 4px;
+}
+
+/* 05 Ways to close the gap: up to three cards on the column grid, one per 4
+   columns on desktop, stacked below. They're a radio group; the picked one
+   gets the sunset with a 35% --paper wash, which fades in over 250ms. */
+.gap-heading {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  font-size: 22px;
+  font-weight: 300;
+  letter-spacing: -0.02em;
+}
+
+.gap-intro {
+  max-width: var(--measure);
+  margin-top: 16px;
+  font-size: 14px;
+  color: var(--ink-2);
+}
+
+.gap-options {
+  display: grid;
+  grid-template-columns: repeat(var(--columns), minmax(0, 1fr));
+  gap: var(--column-gap);
+  margin-top: 24px;
+}
+
+.gap-card {
+  position: relative;
+  z-index: 0;
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  padding: 24px;
+  border-radius: 24px;
+  background: var(--paper);
+  cursor: pointer;
+}
+
+.gap-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: linear-gradient(rgba(247, 247, 245, 0.35), rgba(247, 247, 245, 0.35)), var(--sunset);
+  opacity: 0;
+  transition: opacity 250ms var(--ease);
+}
+
+.gap-card[aria-checked="true"]::before {
+  opacity: 1;
+}
+
+.gap-card:focus-visible {
+  outline: 3px solid var(--ink);
+  outline-offset: 3px;
+}
+
+.gap-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.gap-tag {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.gap-chip {
+  padding: 3px 10px;
+  border: 1px solid var(--ink);
+  border-radius: 999px;
+  font-family: var(--mono);
+  font-size: 11px;
+  white-space: nowrap;
+  color: var(--ink);
+}
+
+.gap-chip.meets {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.gap-name {
+  margin-top: 20px;
+  font-size: 20px;
+  letter-spacing: -0.01em;
+}
+
+.gap-price {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+  margin-top: 4px;
+}
+
+.gap-amount {
+  font-size: 48px;
+  font-weight: 300;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+}
+
+.gap-rate {
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--ink-2);
+}
+
+.gap-scope {
+  margin-top: 6px;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--ink-2);
+}
+
+.gap-levers {
+  margin-top: 20px;
+}
+
+.gap-lever {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 0;
+  border-top: 1px solid var(--line);
+  font-size: 14px;
+}
+
+.gap-lever:last-child {
+  border-bottom: 1px solid var(--line);
+}
+
+.gap-lever dt {
+  color: var(--ink-2);
+}
+
+.gap-lever dd {
+  color: var(--muted);
+}
+
+.gap-lever dd.changed {
+  font-weight: 500;
+  color: var(--ink);
+}
+
+/* The option's work on one scale for all cards: paid, unpaid, saved. */
+.gap-bar {
+  display: flex;
+  gap: 2px;
+  height: 16px;
+  margin-top: 20px;
+}
+
+.gap-bar span {
+  flex-basis: 0;
+  min-width: 0;
+}
+
+.gap-paid {
+  background: var(--paid);
+}
+
+.gap-unpaid {
+  background: var(--stripe);
+  box-shadow: inset 0 0 0 1px var(--ink);
+}
+
+.gap-saved {
+  border: 1px dashed var(--ink);
+}
+
+.gap-bar-labels {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 4px 12px;
+  margin-top: 8px;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.gap-use {
+  display: inline-flex;
+  align-self: flex-start;
+  align-items: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 0 16px;
+  border: 1px solid var(--ink);
+  border-radius: 999px;
+  font-size: 14px;
+  color: var(--ink);
+}
+
+.gap-use-wrap {
+  display: flex;
+  flex-grow: 1;
+  align-items: flex-end;
+  margin-top: 24px;
+}
+
+/* The picked card: everything ink or ink-2 on the gradient, ink hairlines. */
+.gap-card[aria-checked="true"] .gap-tag,
+.gap-card[aria-checked="true"] .gap-lever dd,
+.gap-card[aria-checked="true"] .gap-bar-labels {
+  color: var(--ink-2);
+}
+
+.gap-card[aria-checked="true"] .gap-lever dd.changed {
+  color: var(--ink);
+}
+
+.gap-card[aria-checked="true"] .gap-lever {
+  border-color: rgba(22, 22, 22, 0.25);
+}
+
+.gap-card[aria-checked="true"] .gap-paid {
+  box-shadow: inset 0 0 0 1px var(--ink);
+}
+
+.gap-card[aria-checked="true"] .gap-use {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+@media (min-width: 1024px) {
+  .gap-card {
+    grid-column: span 4;
+  }
 }
 
 textarea {
@@ -3063,8 +3324,13 @@ textarea {
   }
 
   .results-more > .receipt,
+  .gap-section,
   .results-pair {
     margin-top: 44px;
+  }
+
+  .gap-heading {
+    font-size: 20px;
   }
 
   #copy-reply {

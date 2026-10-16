@@ -71,6 +71,7 @@ test("a fresh calculation has the job's example numbers and its field", function
   assert.strictEqual(draft.inputs.offer, "200");
   assert.strictEqual(draft.quote, "");
   assert.strictEqual(draft.replyEdited, false);
+  assert.strictEqual(draft.gapChoice, "estimate");
 });
 
 test("saving keeps everything from the calculation, with a trimmed name and dates", function () {
@@ -79,7 +80,9 @@ test("saving keeps everything from the calculation, with a trimmed name and date
   draft.quote = "300";
   draft.reply = "Hi!";
   draft.replyEdited = true;
+  draft.gapChoice = "trade";
   const project = store.createProject("  Luigi's menu  ", draft, "a", MON);
+  assert.strictEqual(project.gapChoice, "trade");
   assert.strictEqual(project.name, "Luigi's menu");
   assert.strictEqual(project.job, "menu");
   assert.strictEqual(project.inputs.rounds, "3");
@@ -114,6 +117,9 @@ test("an untouched calculation has nothing to lose; any change counts", function
   const edited = store.exampleDraft("logo");
   edited.replyEdited = true;
   assert.strictEqual(store.isUntouched(edited), false);
+  const picked = store.exampleDraft("logo");
+  picked.gapChoice = "offer";
+  assert.strictEqual(store.isUntouched(picked), false);
   // A different job's example, still unchanged, is untouched too.
   assert.strictEqual(store.isUntouched(store.exampleDraft("custom")), true);
 });
@@ -260,10 +266,25 @@ test("missing optional parts get their defaults", function () {
   delete raw.quote;
   delete raw.reply;
   delete raw.replyEdited;
+  delete raw.gapChoice;
   const project = store.parseProjects(JSON.stringify([raw]))[0];
   assert.strictEqual(project.quote, "");
   assert.strictEqual(project.reply, "");
   assert.strictEqual(project.replyEdited, false);
+  assert.strictEqual(project.gapChoice, "estimate");
+});
+
+test("the picked way to close the gap is saved and read back; unknown values get the default", function () {
+  const saved = store.createProject("Menu", Object.assign(store.exampleDraft("menu"), { gapChoice: "offer" }), "g", MON);
+  assert.strictEqual(store.parseProjects(store.serializeProjects([saved]))[0].gapChoice, "offer");
+  const none = Object.assign({}, saved, { gapChoice: "" });
+  assert.strictEqual(store.parseProjects(store.serializeProjects([none]))[0].gapChoice, "");
+  const odd = Object.assign({}, saved, { gapChoice: "banana" });
+  assert.strictEqual(store.parseProjects(store.serializeProjects([odd]))[0].gapChoice, "estimate");
+  // An older save with its own typed price keeps it: nothing picked.
+  const typed = Object.assign({}, saved, { quote: "280" });
+  delete typed.gapChoice;
+  assert.strictEqual(store.parseProjects(store.serializeProjects([typed]))[0].gapChoice, "");
 });
 
 test("numbers saved as numbers are read as text", function () {

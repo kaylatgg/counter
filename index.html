@@ -486,6 +486,14 @@
             </details>
           </section>
 
+          <!-- 5 Ways to close the gap: only with an offer below the estimate.
+               The cards are a radio group; app.js builds them. -->
+          <section class="gap-section" id="gap-section" aria-labelledby="gap-title" hidden>
+            <h2 class="gap-heading"><span class="step">05.</span> <span id="gap-title">Ways to close the gap</span></h2>
+            <p class="gap-intro">Change the price, the work, or both. Pick one to put it in your reply. All rates are after expenses.</p>
+            <div class="gap-options" id="gap-options" role="radiogroup" aria-labelledby="gap-title"></div>
+          </section>
+
           <div class="results-pair">
             <!-- 6 Your price -->
             <fieldset class="section result-block">
@@ -502,6 +510,13 @@
               </div>
 
               <p id="quote-result">At $310, you'd earn $26.96/hr before expenses and $25.22/hr after.</p>
+
+              <!-- Extra rounds of changes: hours per round x rate, rounded up to $5. -->
+              <div class="extra-rounds" id="extra-rounds">
+                <p class="extra-rounds-label">Extra rounds of changes</p>
+                <p class="extra-rounds-value" id="extra-rounds-value">$40 each</p>
+                <p class="mono-note" id="extra-rounds-note">1.5 hrs at $25/hr, rounded up</p>
+              </div>
             </fieldset>
 
             <!-- 7 Your reply -->

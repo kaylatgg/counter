@@ -31,7 +31,7 @@ The gradient means "the answer": it glows quietly on screen 1, then opens into t
 ```
 
 Rules:
-- The gradient is only used for: the screen 1 corner glow, the button's arrow circle, the screen 2 hero panel, and paid hours in the chart. Reason: it always means "the answer."
+- The gradient is only used for: the screen 1 corner glow, the button's arrow circle, the screen 2 hero panel, paid hours in the chart, and the picked card in "Ways to close the gap" (with a 35% `--paper` wash, added October 15, 2026). Reason: it always means "the answer."
 - Text on the gradient is `--ink` or `--ink-2` only, and only over the cool left and top parts. Reason: `--muted` fails on the gradient, and warm red is too close to ink for small text.
 - Stripes always mean unpaid or forgotten hours. Solid ink means design work.
 - Add a light grain over gradients (SVG `feTurbulence` noise, about 8% opacity). Optional, drop it if it hurts performance.
@@ -124,7 +124,7 @@ Decided with Kayla, October 13, 2026.
   - The y labels get exactly the room they need: the widest one plus 8px, so "$1,250" is never cut off.
   - Labels never overlap. Priority: the current-hours label, then "your target $25/hr", then "at 7.2h you hit $25", then the axis labels. A lower one moves to its next spot; with none left, it's hidden from the drawing (the summary still says it). Decided with Kayla, October 13, 2026.
   - The target label is never hidden. After its usual spots (either end of the line, above or below), it tries the chart's left edge, above then below the line. If the full label fits nowhere, it becomes "target" in the same spots, but only where the y axis's "$25" stays visible, so the target's value always shows somewhere. Failing that, the full label slides along the line, above or below it, to any clear spot. The current-hours label also keeps clear of a 24px strip along the target line when it has another spot, so the target has room. Decided with Kayla, October 15, 2026.
-- Below: Show the math (collapsed), then Your price and Your reply side by side, then the footer.
+- Below: Show the math (collapsed), then 05 Ways to close the gap (only with an offer below the estimate), then Your price and Your reply side by side, then the footer.
 - "Copy reply": fully rounded ink button.
 
 ## Motion
@@ -243,6 +243,26 @@ Sizes:
 
 **Motion:** the same reveal. The circle in the bottom bar grows into the hero. Off under reduced motion.
 
+## Ways to close the gap (05) and extra rounds (screen 2)
+
+Decided with Kayla, October 15, 2026.
+
+**Ways to close the gap**
+- Shows only with an offer below the estimate, after Show the math and before 06 Your price. Title "Ways to close the $110 gap" (the real gap), intro "Change the price, the work, or both. Pick one to put it in your reply. All rates are after expenses."
+- Up to three cards on the column grid: one per 4 columns on desktop, stacked full width on tablet and phone. `--paper`, 24px radius, 24px padding.
+  1. "Raise your price" (tag "Your estimate"): the estimate, same work.
+  2. "Trade work for price" (tag "Middle ground"): one round of changes fewer (with 0 rounds, one item fewer), at that smaller job's estimate. Left out if there's no smaller job or its estimate isn't above the offer.
+  3. "Take their $200" (tag "Their budget"): the offer, for the smaller job (or the same work). Left out at or below expenses.
+- Each card: the tag (mono 11px) and a chip, "meets your target" (ink fill) or "$7.00/hr under" (ink outline); the name (20px); the price (Geist 300, 48px) with its rate after expenses ("$25.22/hr", mono); the scope in mono 12px ("2 pages · 2 rounds of changes"); two lever rows with hairlines, Price ("+$110" over their offer, or "same price") and Work ("same work", "1 round less", "1 page less"), changed values ink 500 and unchanged ones gray; a bar of the option's work on one scale for all cards (the current job's hours): paid in the paid gradient, unpaid in stripes with an ink outline, saved hours as a dashed outline, with "10 hrs of work, 2.8 unpaid" and "1.5 hrs saved" under it; and "Use in reply" (outline) or "✓ In your reply" (ink).
+- The picked card (option 1 by default) gets the sunset with a 35% `--paper` wash, fading in over 250ms (not under reduced motion). On it all text is `--ink` or `--ink-2`, hairlines are ink at 25%, and the paid bar gets a 1px ink outline.
+- The cards are a radio group named by the title. Arrow keys move and pick (wrapping); one card is in the Tab order.
+- Picking sets Price to send (option 1 leaves it blank, so it follows the estimate) and the reply to that option's price and scope. It never changes the inputs or the charts. An edited reply isn't overwritten; the update notice shows. The price line and the saved image use the option's hours. Typing a different price clears the pick; "Use my estimate" picks option 1. The pick saves with the project, not in the share link. Live changes keep the picked type, or fall back to option 1.
+  Reason: the gap is the decision the result leads to, so the page shows the three honest ways to close it, with what each pays.
+
+**Extra rounds of changes** (every result)
+- Under the price: "Extra rounds of changes", "$40 each", and a mono note "1.5 hrs at $25/hr, rounded up" (hours per round x rate, rounded up to $5; "rounded up" only when it was). Hidden when a round takes no hours.
+- The reply adds "Additional rounds of changes are $40 each." before its last sentence.
+
 ## Share link and Save image (screen 2)
 
 Approved by Kayla, October 12, 2026. References: `docs/design-share-desktop.png`, `docs/design-share-phone.png`, `docs/design-save-image.png`.
@@ -270,7 +290,7 @@ Approved by Kayla, October 12, 2026. References: `docs/design-share-desktop.png`
   - Phone (below 760px): a bottom sheet, full width, 28px top corners. The image on top (up to 54vh), then the text, then the two buttons side by side, clear of the home bar.
   - Escape and Close return focus to "Save image". It only fades in, and not at all under reduced motion.
   Reason: the image goes to a client, so the student should see exactly what will be sent, and the price in it, before it leaves.
-- The gradient rule ("only four places") is for the page. The saved image is its own canvas and uses the paid gradient and one sunset panel.
+- The gradient rule (the places listed under Color) is for the page. The saved image is its own canvas and uses the paid gradient and one sunset panel.
 
 ## Dialogs
 
@@ -285,5 +305,5 @@ Decided with Kayla, October 13, 2026. Replaces the panels that opened under the 
 ## Don'ts
 
 - No black page, no lime, no heavy font weights for numbers.
-- Gradient only in the four places listed.
+- Gradient only in the places listed.
 - No text lighter than `--ink-2` on the gradient.
