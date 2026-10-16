@@ -2974,7 +2974,9 @@ legend {
   letter-spacing: -0.02em;
 }
 
-.gap-intro {
+/* The intro, and the note under the cards when there's no middle ground. */
+.gap-intro,
+.gap-note {
   max-width: var(--measure);
   margin-top: 16px;
   font-size: 14px;

@@ -41,6 +41,14 @@ await forEachConfig(async (ctx) => {
         const shown = !section.hidden && section.getClientRects().length > 0;
         const shouldShow = Boolean(r.offer) && r.offer.amount < r.estimate;
         if (shown !== shouldShow) issues.push(`section shown=${shown}, expected ${shouldShow}`);
+        // The no-middle-ground note: only with no trade card and a "Take their"
+        // card for the smaller job that meets the target.
+        const take = expected.filter((o) => o.type === "offer")[0];
+        const wantNote = shouldShow && !expected.some((o) => o.type === "trade") && Boolean(take && take.workChange && take.meetsTarget);
+        const noteEl = document.getElementById("gap-note");
+        const noteShown = !noteEl.hidden && noteEl.getClientRects().length > 0;
+        if (noteShown !== wantNote) issues.push(`note shown=${noteShown}, expected ${wantNote}`);
+        if (noteShown && noteEl.closest(".gap-card, #gap-options")) issues.push("note is inside the cards");
         if (!shown) return { issues, cards: 0 };
         const cards = [...document.querySelectorAll("#gap-options .gap-card")];
         if (cards.length !== expected.length) issues.push(`${cards.length} cards, expected ${expected.length}`);
@@ -152,5 +160,44 @@ await forEachConfig(async (ctx) => {
   // And it's not in the share link.
   const link = await p.evaluate(() => shareLink.encodeShare(currentField(), currentJob(), snapshot().inputs));
   if (/gap|trade/.test(link)) note(ctx, "share link", "has the pick: " + link, "high");
+
+  // No middle ground: an offer equal to the smaller job's estimate shows the
+  // note; $5 more still does (still no trade), $5 less brings the trade card back.
+  const noteState = () => p.evaluate(() => {
+    const el = document.getElementById("gap-note");
+    return { shown: !el.hidden && el.getClientRects().length > 0, text: el.textContent,
+      types: [...document.querySelectorAll("#gap-options .gap-card")].map((c) => c.dataset.type).join(",") };
+  });
+  for (const [rounds, words] of [["2", "1 round less"], ["0", "1 page less"]]) {
+    const smaller = await p.evaluate(([ex, r]) => {
+      const raw = Object.assign({}, ex, { rounds: String(Number(r) - (r === "0" ? 0 : 1)), quote: "", offerStatus: "amount" });
+      if (r === "0") raw.count = String(Number(ex.count) - 1);
+      return calc.calculate(calc.validateInputs(raw, "menu").values).estimate;
+    }, [ex, rounds]);
+    const cases = [[smaller, true], [smaller + 5, true], [smaller - 5, false]];
+    for (const [offer, want] of cases) {
+      await openLink(p, linkFor(ex, "graphic", "menu", String(offer), rounds));
+      const n = await noteState();
+      const text = `There's no middle ground here: their ${await p.evaluate((o) => calc.formatPrice(o), offer)} already pays your target for ${words}.`;
+      if (n.shown !== want || (want && n.text !== text)) note(ctx, `note, ${rounds} rounds, offer $${offer}`, JSON.stringify(n), "high");
+      if (!want && !/trade/.test(n.types)) note(ctx, `note, ${rounds} rounds, offer $${offer}`, "no trade card: " + n.types, "medium");
+    }
+  }
+  // It follows live changes: one more round makes the smaller job pricier than the offer.
+  const smaller1 = await p.evaluate((ex) => calc.calculate(calc.validateInputs(Object.assign({}, ex, { rounds: "1", quote: "", offerStatus: "amount" }), "menu").values).estimate, ex);
+  await openLink(p, linkFor(ex, "graphic", "menu", String(smaller1), "2"));
+  await p.click('#result button[data-target=rounds][data-step="1"]'); await p.waitForTimeout(200);
+  let live = await noteState();
+  if (live.shown) note(ctx, "note after a live change", JSON.stringify(live), "high");
+  await p.click('#result button[data-target=rounds][data-step="-1"]'); await p.waitForTimeout(200);
+  live = await noteState();
+  if (!live.shown) note(ctx, "note after changing back", JSON.stringify(live), "high");
+  await axe(ctx, "no middle ground note");
+  // Never with 0 rounds and 1 item: there's no smaller job.
+  for (const offer of OFFERS) {
+    await openLink(p, linkFor(Object.assign({}, ex, { count: "1" }), "graphic", "menu", offer, "0"));
+    const n = await noteState();
+    if (n.shown) note(ctx, `note with no smaller job, offer $${offer}`, n.text, "high");
+  }
 }, { widths: [390, 768, 1024, 1440] });
 report("close the gap"); await closeAll();

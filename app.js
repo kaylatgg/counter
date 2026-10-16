@@ -1134,8 +1134,7 @@ function renderGapOptions(r, values) {
     q(".gap-rate").textContent = calc.formatMoney(option.rateAfter) + "/hr";
     q(".gap-scope").textContent = scopeWords(option.count, option.rounds);
     const priceText = option.priceChange > 0 ? "+" + calc.formatPrice(option.priceChange) : "same price";
-    const workText = !option.workChange ? "same work"
-      : option.workChange.by + " " + (option.workChange.kind === "round" ? "round" : job.item) + " less";
+    const workText = gapWorkWords(option, job);
     const priceCell = q(".gap-price-change");
     priceCell.textContent = priceText;
     priceCell.classList.toggle("changed", option.priceChange > 0);
@@ -1161,6 +1160,22 @@ function renderGapOptions(r, values) {
       (option.meetsTarget ? "meets your target" : calc.formatMoney(option.underBy) + " an hour under your target") +
       ". " + scopeWords(option.count, option.rounds).replace(" · ", ", ") + ".");
   });
+
+  // No middle ground: their offer already pays the target for the smaller job,
+  // so a trade card would repeat "Take their $600". Say why it's missing.
+  const take = options.filter(function (option) { return option.type === "offer"; })[0];
+  const noTrade = !options.some(function (option) { return option.type === "trade"; });
+  const explain = noTrade && take && take.workChange && take.meetsTarget;
+  const note = byId("gap-note");
+  show(note, Boolean(explain));
+  note.textContent = explain ? "There's no middle ground here: their " + calc.formatPrice(r.offer.amount) +
+    " already pays your target for " + gapWorkWords(take, job) + "." : "";
+}
+
+// The Work row's words: "same work", "1 round less", "1 page less".
+function gapWorkWords(option, job) {
+  if (!option.workChange) return "same work";
+  return option.workChange.by + " " + (option.workChange.kind === "round" ? "round" : job.item) + " less";
 }
 
 // Extra rounds of changes: "$40 each", "1.5 hrs at $25/hr, rounded up".
