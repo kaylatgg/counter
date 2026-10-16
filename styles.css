@@ -88,6 +88,11 @@ html:has(body.on-results) {
   scroll-padding-top: 136px;
 }
 
+/* While an address like #result is being opened (index.html, head). */
+.routing body {
+  visibility: hidden;
+}
+
 body {
   position: relative;
   margin: 0;
@@ -642,7 +647,10 @@ legend {
   color: var(--ink);
 }
 
-.field-tabs input:focus-visible + label {
+/* .keyboard-nav: Safari drops :focus-visible when arrow keys move between
+   radios, so the ring also shows on a focused radio after a key press. */
+.field-tabs input:focus-visible + label,
+.keyboard-nav .field-tabs input:focus + label {
   outline: 2px solid var(--ink);
   outline-offset: 3px;
 }
@@ -701,7 +709,8 @@ legend {
   color: var(--paper);
 }
 
-.segmented input:focus-visible + label {
+.segmented input:focus-visible + label,
+.keyboard-nav .segmented input:focus + label {
   outline: 2px solid var(--ink);
   outline-offset: 2px;
 }
@@ -1796,7 +1805,8 @@ legend {
   margin-top: 8px;
   font-family: var(--mono);
   font-size: 12px;
-  color: var(--ink-2);
+  /* Ink: over the warm part of the gradient, ink-2 measured under 4.5:1. */
+  color: var(--ink);
 }
 
 .fix-button {
@@ -3171,11 +3181,16 @@ legend {
   margin-top: 24px;
 }
 
-/* The picked card: everything ink or ink-2 on the gradient, ink hairlines. */
-.gap-card[aria-checked="true"] .gap-tag,
+/* The picked card: everything ink or ink-2 on the gradient, ink hairlines.
+   The lever values and bar labels sit over the warm part, where ink-2
+   measured under 4.5:1, so they're ink; changed values stay heavier. */
+.gap-card[aria-checked="true"] .gap-tag {
+  color: var(--ink-2);
+}
+
 .gap-card[aria-checked="true"] .gap-lever dd,
 .gap-card[aria-checked="true"] .gap-bar-labels {
-  color: var(--ink-2);
+  color: var(--ink);
 }
 
 .gap-card[aria-checked="true"] .gap-lever dd.changed {
@@ -3808,8 +3823,8 @@ textarea {
      equal negative margin gives the space back, so nothing looks different. */
   .stepper input {
     min-width: calc(2.2ch + 4px);
-    padding-block: 4px;
-    margin: -4px -2px;
+    padding-block: 6px;
+    margin: -6px -2px;
   }
 
   .work-row .unit-input input {
@@ -3820,6 +3835,29 @@ textarea {
   .field-row .unit-input input {
     padding-inline: 8px;
     margin-inline: -8px;
+  }
+
+  /* Chromium draws these 42.8px tall (WebKit 47px), so 2px more on top. */
+  .field-row .unit-input input,
+  .result-block .unit-input input {
+    padding-top: 2px;
+    margin-top: -2px;
+  }
+
+  /* "Edit" is narrower than 44px; an invisible tap area centered on it makes
+     up the difference without moving anything. */
+  .row-action {
+    position: relative;
+  }
+
+  .row-action::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 50%;
+    width: max(100%, 44px);
+    transform: translateX(-50%);
   }
 
   .bar-input input {

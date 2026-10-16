@@ -8,6 +8,15 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500&family=Geist+Mono:wght@400;500&display=swap">
   <link rel="stylesheet" href="styles.css">
+  <!-- Opening an address like #result or #projects: hide the page until app.js
+       shows the right screen, so screen 1 never flashes first. If app.js
+       doesn't run, the page shows when it finishes loading. -->
+  <script>
+    if (location.hash.length > 1) {
+      document.documentElement.classList.add("routing");
+      addEventListener("load", function () { document.documentElement.classList.remove("routing"); });
+    }
+  </script>
   <script src="calc.js" defer></script>
   <script src="projects.js" defer></script>
   <script src="share.js" defer></script>

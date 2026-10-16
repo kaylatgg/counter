@@ -4209,6 +4209,16 @@ byId("project-rows").addEventListener("focusout", function (event) {
     finishRowRename(event.target.closest("tr").dataset.id, true);
   }
 });
+// Safari drops :focus-visible when arrow keys move between radios, so the
+// page remembers whether the last input was a key or a pointer (see
+// .keyboard-nav in styles.css).
+document.addEventListener("keydown", function () {
+  document.documentElement.classList.add("keyboard-nav");
+}, true);
+document.addEventListener("pointerdown", function () {
+  document.documentElement.classList.remove("keyboard-nav");
+}, true);
+
 byId("crumb-name").addEventListener("click", startHeaderRename);
 byId("crumb-input").addEventListener("keydown", function (event) {
   if (event.key === "Enter") {
@@ -4232,6 +4242,8 @@ if (shareLink.isShareHash(location.hash)) {
   route(startState);
 }
 firstLoad = false;
+// The right screen is showing now (see the script in index.html's head).
+document.documentElement.classList.remove("routing");
 
 // Bars and dots animate only after the first render, never on load.
 requestAnimationFrame(function () {
