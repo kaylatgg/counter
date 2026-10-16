@@ -2794,7 +2794,7 @@ function renderFix(s) {
   byId("fix-labels").style.width = withFix * 100 + "%";
   byId("fix-now-label").textContent = "now " + percentText(s.percent);
   byId("fix-with-label").textContent = "with fix " + percentText(s.withFixPercent);
-  byId("fix-button").textContent = "Fix " + fix.name + "\u00a0→";
+  byId("fix-button").textContent = "Fix " + fix.name;
   byId("fix-button").dataset.id = fix.id;
 }
 

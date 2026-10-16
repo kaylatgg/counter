@@ -95,7 +95,7 @@ await forEachConfig(async (ctx) => {
     "dash-fix-line": "Price Social posts, Oct 14 at your target and you go from 55% to 88% of your target pay.",
     "fix-now-label": "now 55%",
     "fix-with-label": "with fix 88%",
-    "fix-button": "Fix Social posts, Oct 14 →",
+    "fix-button": "Fix Social posts, Oct 14",
   };
   for (const [id, want] of Object.entries(expect)) {
     const got = (await p.evaluate((i) => document.getElementById(i).innerText.replace(/\s+/g, " ").trim(), id));
