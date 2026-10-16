@@ -88,7 +88,7 @@ Decided with Kayla, October 13, 2026.
 
 - `--bg` page. A soft blurred sunset glow off the top-right corner with two thin circle outlines. Nothing over the form fields.
 - Header: "counter" (Geist 500, 20px) left; "Projects 3" and "Save as project" right. (The "for creative students" note was removed on October 11, 2026.)
-- Header spacing (760px and up; phones keep their own header): 24px between Projects, Share, and Save, so the visible gaps are equal. In a saved project the left reads "counter / Menu, Oct 11 Saved": a slash (Geist 300, 20px, `--muted`, hidden from screen readers), the name, then the mono status, 16px apart, all on one text baseline, also while renaming. Decided with Kayla, October 15, 2026.
+- Header spacing (760px and up; phones keep their own header): 24px between Projects, Share, and Save, so the visible gaps are equal. In a saved project the left reads "counter / Menu, Oct 11 Saved": a slash (Geist 300, 20px, `--muted`, hidden from screen readers), the name, then the mono status, 16px apart, all on one text baseline, also while renaming. The wordmark never moves when a project opens: it keeps the same baseline, and the rest lines up to it. Decided with Kayla, October 15, 2026.
 - Headline, then the intro right under it, then "Example numbers..." in mono.
 - Two columns: left (01 The job, 02 The work), right 5 of 12 columns and sticky (tally panel, 03 Your numbers, 04 Their offer, button).
 - **Job choice:** a segmented control on `--paper`, selected segment ink with light text. Real radio inputs.

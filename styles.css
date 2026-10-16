@@ -269,12 +269,17 @@ h3 {
 }
 
 /* The wordmark, then in a saved project "/ name Saved", all on one text
-   baseline, 16px apart. (On phones the group falls away: see below.) */
+   baseline, 16px apart. (On phones the group falls away: see below.)
+   The group fills the 64px row and the wordmark sits a fixed 17px from the
+   top, (64 - its 30px line) / 2, as it does alone, so it never moves when a
+   project opens: the slash, name, and status line up to it. */
 .brand {
   display: flex;
+  align-self: stretch;
   align-items: baseline;
   gap: 16px;
   min-width: 0;
+  padding-top: 17px;
 }
 
 .crumb-slash {
