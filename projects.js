@@ -259,6 +259,107 @@ function formatEdited(iso, now) {
   return date.getFullYear() === now.getFullYear() ? text : text + ", " + date.getFullYear();
 }
 
+// The Projects dashboard: what the saved offers paid against each target,
+// after expenses. A project counts when it has an offer, its numbers work
+// (a broken price to send doesn't block, like the list), and it has hours.
+// Each job is rounded to whole dollars first, so every total adds up.
+function pricingJob(project) {
+  if (project.inputs.offerStatus !== "amount") return null;
+  const raw = Object.assign({}, project.inputs, { quote: project.quote });
+  const checked = projectCalc.validateInputs(raw, project.job);
+  const blocking = Object.keys(checked.errors).filter(function (name) { return name !== "quote"; });
+  if (blocking.length) return null;
+  const r = projectCalc.calculate(checked.values);
+  if (!r.hasHours || !r.offer) return null;
+  const targetPay = Math.round(r.rate * r.hours.total);
+  const kept = Math.round(r.offer.amount - r.expenses);
+  return {
+    id: project.id,
+    name: project.name,
+    created: project.created,
+    rate: r.rate,
+    hours: r.hours.total,
+    offer: r.offer.amount,
+    expenses: r.expenses,
+    hourlyAfter: r.offer.hourlyAfter,
+    targetPay: targetPay,
+    kept: kept,
+    step: kept - targetPay,
+    percent: r.offer.hourlyAfter / r.rate,
+    metTarget: kept >= targetPay,
+    unpaidHours: r.offer.unpaidHours,
+  };
+}
+
+// A sort that keeps the list's order for ties (newest edit first).
+function stableSort(list, compare) {
+  return list.map(function (item, index) { return { item: item, index: index }; })
+    .sort(function (a, b) { return compare(a.item, b.item) || a.index - b.index; })
+    .map(function (entry) { return entry.item; });
+}
+
+// Waterfall order: shortfalls largest first, then gains largest first.
+function waterfallOrder(jobs) {
+  return stableSort(jobs, function (a, b) {
+    const sideA = a.step < 0 ? 0 : 1;
+    const sideB = b.step < 0 ? 0 : 1;
+    return sideA - sideB || Math.abs(b.step) - Math.abs(a.step);
+  });
+}
+
+// list: saved projects, newest edit first. Returns null when none count.
+function pricingSummary(list) {
+  const jobs = list.map(pricingJob).filter(Boolean);
+  if (!jobs.length) return null;
+  function sum(key) { return jobs.reduce(function (total, job) { return total + job[key]; }, 0); }
+  const targetPay = sum("targetPay");
+  const kept = sum("kept");
+  const shortfall = targetPay - kept;
+  const hours = sum("hours");
+  const unpaidHours = sum("unpaidHours");
+  const created = jobs.map(function (job) { return job.created; })
+    .sort(function (a, b) { return Date.parse(a) - Date.parse(b); });
+
+  // The biggest fix: the most negative step, if any.
+  const short = jobs.filter(function (job) { return job.step < 0; });
+  const biggestFix = short.length ? stableSort(short, function (a, b) { return a.step - b.step; })[0] : null;
+  const gapShare = biggestFix && shortfall > 0 ? -biggestFix.step / shortfall : null;
+
+  // The waterfall's steps. With more than 6 jobs: the 5 largest (either sign),
+  // then "Other jobs" with the net of the rest.
+  let steps = waterfallOrder(jobs);
+  let other = null;
+  if (jobs.length > 6) {
+    const largest = stableSort(jobs, function (a, b) { return Math.abs(b.step) - Math.abs(a.step); }).slice(0, 5);
+    steps = waterfallOrder(largest);
+    const rest = jobs.filter(function (job) { return largest.indexOf(job) === -1; });
+    other = { count: rest.length, step: rest.reduce(function (total, job) { return total + job.step; }, 0) };
+  }
+
+  return {
+    jobs: jobs,
+    counted: jobs.length,
+    total: list.length,
+    targetPay: targetPay,
+    kept: kept,
+    shortfall: shortfall,
+    percent: kept / targetPay,
+    hours: hours,
+    unpaidHours: unpaidHours,
+    paidHours: hours - unpaidHours,
+    met: jobs.filter(function (job) { return job.metTarget; }).length,
+    firstCreated: created[0],
+    lastCreated: created[created.length - 1],
+    biggestFix: biggestFix,
+    withFixPercent: biggestFix ? (kept - biggestFix.step) / targetPay : null,
+    // Used only when part of the gap, not all of it, came from one job.
+    gapShare: gapShare !== null && gapShare < 1 ? gapShare : null,
+    steps: steps,
+    other: other,
+    byPercent: stableSort(jobs, function (a, b) { return a.percent - b.percent; }),
+  };
+}
+
 // A new id: random where the browser can, otherwise time plus randomness.
 function newProjectId() {
   if (typeof crypto !== "undefined" && crypto.randomUUID) return crypto.randomUUID();
@@ -293,6 +394,7 @@ const projectStore = {
   saveProjects,
   formatEdited,
   newProjectId,
+  pricingSummary,
 };
 
 if (typeof module !== "undefined") module.exports = projectStore;

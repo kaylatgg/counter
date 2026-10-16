@@ -51,7 +51,8 @@ await forEachConfig(async (ctx) => {
   await tap(ctx, "#projects-link"); await p.waitForTimeout(200);
   let rs = await rows(p);
   if (!/Menu for Ana/.test(rs[0]) || !/Menu/.test(rs[0]) || !/\$345/.test(rs[0]) && ctx.width >= 760 || !/Edited just now/.test(rs[0])) note(ctx, "projects row", rs[0], "medium");
-  if (ctx.width >= 760 && !/\$15\.38\/hr/.test(rs[0])) note(ctx, "projects row offer", rs[0], "low");
+  // Offer pays after expenses: ($200 - $20) / 13 hrs.
+  if (ctx.width >= 760 && !/\$13\.85\/hr/.test(rs[0])) note(ctx, "projects row offer", rs[0], "low");
   const backLabel = (await p.textContent("#back-to-calc-label")).trim();
   if (backLabel !== "Back to Menu for Ana") note(ctx, "back pill", `"${backLabel}"`, "medium");
   // Duplicate.

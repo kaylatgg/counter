@@ -1346,6 +1346,829 @@ legend {
   margin-top: 32px;
 }
 
+/* Your pricing so far (docs/DESIGN.md, "Projects dashboard"). Cards on the
+   column grid: the hero and the chart card full width, three cards 4 + 4 + 4
+   on desktop; on tablet Biggest fix takes its own row; on phones they stack. */
+
+.dashboard-empty {
+  max-width: var(--measure);
+  margin-top: 40px;
+  font-size: 16px;
+  color: var(--ink-2);
+}
+
+.dashboard {
+  display: grid;
+  grid-template-columns: repeat(var(--columns), minmax(0, 1fr));
+  gap: var(--column-gap);
+  margin-top: 40px;
+}
+
+.dash-card {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: 32px 40px;
+  border: 1px solid var(--line);
+  border-radius: 24px;
+  background: var(--paper);
+}
+
+@media (min-width: 760px) {
+  .dash-unpaid,
+  .dash-met {
+    grid-column: span 4;
+  }
+}
+
+@media (min-width: 1024px) {
+  .dash-fix {
+    grid-column: span 4;
+  }
+}
+
+/* The outlined pill every card starts with. */
+.dash-pill {
+  align-self: flex-start;
+  padding: 6px 16px;
+  border: 1px solid var(--ink);
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.3;
+  letter-spacing: 0;
+}
+
+.dash-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.table-toggle {
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font-size: 13px;
+  color: var(--ink-2);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  white-space: nowrap;
+}
+
+.dash-figure {
+  margin: 0;
+}
+
+.wide-only,
+.narrow-only {
+  display: inline;
+}
+
+@media (min-width: 1024px) {
+  .narrow-only {
+    display: none;
+  }
+}
+
+@media (max-width: 1023px) {
+  .wide-only {
+    display: none;
+  }
+}
+
+/* The hero: the sentence on the left, the percent on the right. */
+.dash-hero-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 32px;
+  margin-top: 8px;
+}
+
+.dash-hero-text {
+  max-width: 34em;
+  padding-top: 16px;
+}
+
+.dash-lead {
+  font-size: 24px;
+  font-weight: 300;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+}
+
+.dash-gapline {
+  margin-top: 12px;
+  font-size: 15px;
+  color: var(--ink-2);
+}
+
+.dash-meta {
+  margin-top: 8px;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* The big number repeats the sentence. Its tall glyphs reach over the
+   "Show as table" button, so it never takes clicks. */
+.dash-percent {
+  flex-shrink: 0;
+  pointer-events: none;
+  font-size: 180px;
+  font-weight: 300;
+  line-height: 0.85;
+  letter-spacing: -0.05em;
+}
+
+/* The waterfall: target pay, one floating step per job, you kept. */
+.dash-hero .dash-figure {
+  margin-top: 32px;
+}
+
+.wf-plot {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(var(--wf-count), minmax(0, 1fr));
+  column-gap: 16px;
+  height: 220px;
+  margin-top: 40px;
+}
+
+.wf-labels {
+  display: grid;
+  grid-template-columns: repeat(var(--wf-count), minmax(0, 1fr));
+  column-gap: 16px;
+  margin-top: 12px;
+}
+
+.wf-col {
+  position: relative;
+  grid-row: 1;
+}
+
+.wf-bar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  min-height: 2px;
+  border-radius: 4px;
+}
+
+.wf-bar.total {
+  background: var(--line);
+}
+
+.wf-bar.kept,
+.wf-bar.gain,
+.dash-paid {
+  background: var(--paid);
+}
+
+.wf-bar.short,
+.dash-short {
+  background: var(--stripe);
+  box-shadow: inset 0 0 0 1px var(--ink);
+}
+
+.wf-value {
+  position: absolute;
+  left: -8px;
+  right: -8px;
+  margin-bottom: 6px;
+  font-size: 16px;
+  line-height: 1.2;
+  text-align: center;
+  color: var(--ink-2);
+  white-space: nowrap;
+}
+
+.wf-value.total {
+  font-size: 20px;
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.wf-link {
+  position: absolute;
+  left: 100%;
+  width: 16px;
+  height: 0;
+  border-top: 1px dashed var(--ink-2);
+}
+
+.wf-baseline {
+  position: absolute;
+  left: 0;
+  right: 0;
+  z-index: 1;
+  height: 0;
+  border-top: 1px solid var(--ink);
+}
+
+.wf-label {
+  min-width: 0;
+  text-align: center;
+}
+
+.wf-label .wf-name {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  font-size: 14px;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+.wf-note {
+  display: block;
+  margin-top: 2px;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.wf-rows {
+  display: none;
+}
+
+@media (max-width: 1023px) {
+  .wf-cols {
+    display: none;
+  }
+
+  .wf-rows {
+    display: block;
+  }
+}
+
+.wf-row {
+  padding: 8px 0;
+}
+
+.wf-row.kept {
+  margin-top: 8px;
+  padding-top: 16px;
+  border-top: 1px solid var(--ink);
+}
+
+.wf-row-line {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  font-size: 14px;
+}
+
+.wf-row-line .wf-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wf-row-value {
+  flex-shrink: 0;
+  font-weight: 500;
+}
+
+.wf-row:not(.total):not(.kept) .wf-row-value {
+  font-weight: 400;
+  color: var(--ink-2);
+}
+
+.wf-track {
+  position: relative;
+  height: 12px;
+  margin-top: 6px;
+}
+
+.wf-track .wf-bar {
+  top: 0;
+  bottom: 0;
+  right: auto;
+  min-width: 2px;
+  border-radius: 3px;
+}
+
+/* Unpaid hours and Jobs at your target. */
+.dash-number {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-top: 32px;
+}
+
+.dash-big {
+  font-size: 72px;
+  font-weight: 300;
+  line-height: 1;
+  letter-spacing: -0.04em;
+}
+
+.dash-unit {
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--ink-2);
+}
+
+.dash-line {
+  margin-top: 16px;
+  font-size: 15px;
+  color: var(--ink-2);
+}
+
+.dash-bar {
+  display: flex;
+  gap: 2px;
+  height: 20px;
+  margin-top: 24px;
+}
+
+.dash-bar > span {
+  flex-basis: 0;
+  min-width: 0;
+}
+
+.dash-bar-labels {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 4px 16px;
+  margin-top: 8px;
+  font-size: 13px;
+  color: var(--ink-2);
+}
+
+.dash-strong {
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.met-list {
+  margin-top: 20px;
+}
+
+.met-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 8px 0;
+  border-top: 1px solid var(--line);
+  font-size: 14px;
+}
+
+.met-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.met-status {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--ink-2);
+}
+
+.met-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+}
+
+.met-more {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* Biggest fix: the sunset with a 35% paper wash, like the picked gap card. */
+.dash-fix {
+  border-color: var(--ink);
+  background: linear-gradient(rgba(247, 247, 245, 0.35), rgba(247, 247, 245, 0.35)), var(--sunset);
+}
+
+.dash-fix .dash-line {
+  color: var(--ink-2);
+}
+
+.dash-fix-amount {
+  margin-top: 32px;
+}
+
+.fix-chart {
+  margin-top: 24px;
+}
+
+.fix-bar {
+  display: flex;
+  height: 12px;
+}
+
+.fix-bar > span {
+  flex: none;
+}
+
+.fix-now {
+  background: var(--ink);
+}
+
+.fix-track {
+  background: var(--paper);
+}
+
+.fix-labels {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: max-content;
+  max-width: 100%;
+  margin-top: 8px;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--ink-2);
+}
+
+.fix-button {
+  align-self: flex-start;
+  min-height: 44px;
+  margin-top: 24px;
+  padding: 0 20px;
+  border: 1px solid var(--ink);
+  border-radius: 999px;
+  background: var(--ink);
+  font-size: 14px;
+  color: var(--paper);
+  text-align: left;
+  transition: background 160ms var(--ease), color 160ms var(--ease);
+}
+
+.fix-button:hover {
+  background: var(--ink-2);
+}
+
+/* Each job vs your target: a bullet chart from 0% to 150%. */
+.dash-title {
+  margin-top: 24px;
+  font-size: 24px;
+  font-weight: 300;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+}
+
+.dash-each .dash-line {
+  margin-top: 8px;
+}
+
+.dash-each .dash-figure {
+  margin-top: 32px;
+}
+
+.bullet-rows {
+  position: relative;
+}
+
+.bullet-grid {
+  display: grid;
+  grid-template-columns: 22% minmax(0, 1fr) 76px 132px;
+  column-gap: 20px;
+  align-items: center;
+}
+
+.bullet-name {
+  grid-column: 1;
+  min-width: 0;
+  overflow: hidden;
+  font-size: 15px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bullet-grid > .bullet-track {
+  grid-column: 2;
+  position: relative;
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+}
+
+/* The target line at 100%, dashed, through every row. */
+.bullet-rows .bullet-track::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: calc(100% / 1.5);
+  border-left: 1px dashed var(--ink);
+}
+
+.bullet-head {
+  height: 28px;
+}
+
+.bullet-target-label {
+  position: absolute;
+  bottom: 6px;
+  left: calc(100% / 1.5);
+  padding-left: 8px;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--ink-2);
+  white-space: nowrap;
+}
+
+.bullet-row {
+  min-height: 44px;
+}
+
+.bullet-bar {
+  display: flex;
+  width: 100%;
+  height: 20px;
+}
+
+.bullet-bar > span {
+  flex: none;
+}
+
+.bullet-value {
+  grid-column: 3;
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.2;
+}
+
+.bullet-rate {
+  grid-column: 4;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--ink-2);
+  white-space: nowrap;
+}
+
+.bullet-axis {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
+}
+
+.bullet-axis .bullet-track {
+  height: 16px;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.bullet-axis span {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+}
+
+.bullet-axis span:nth-child(1) { left: 0; transform: none; }
+.bullet-axis span:nth-child(2) { left: calc(100% / 3); }
+.bullet-axis span:nth-child(3) { left: calc(200% / 3); }
+.bullet-axis span:nth-child(4) { left: 100%; transform: translateX(-100%); }
+
+.bullet-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 24px;
+  margin-top: 20px;
+  font-size: 12px;
+  color: var(--ink-2);
+}
+
+.bullet-legend li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.legend-key {
+  width: 16px;
+  height: 10px;
+}
+
+.bullet-tip {
+  position: absolute;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: max-content;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--ink);
+  color: var(--paper);
+  font-size: 12px;
+  line-height: 1.4;
+  pointer-events: none;
+}
+
+.bullet-tip[hidden] {
+  display: none;
+}
+
+.bullet-tip-name {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.bullet-tip-line {
+  font-family: var(--mono);
+}
+
+/* Below 1024px: name and percent on one line, the bar under them, the rate under that. */
+@media (max-width: 1023px) {
+  .bullet-grid {
+    grid-template-columns: minmax(0, 1fr) auto;
+    column-gap: 16px;
+  }
+
+  .bullet-grid > .bullet-track {
+    grid-column: 1 / -1;
+  }
+
+  .bullet-head {
+    height: 24px;
+  }
+
+  .bullet-row {
+    row-gap: 6px;
+    padding: 10px 0;
+  }
+
+  .bullet-row .bullet-track {
+    grid-row: 2;
+  }
+
+  .bullet-value {
+    grid-column: 2;
+    grid-row: 1;
+    text-align: right;
+  }
+
+  .bullet-rate {
+    grid-column: 1 / -1;
+    grid-row: 3;
+  }
+
+  .bullet-bar {
+    height: 16px;
+  }
+}
+
+/* The tables behind "Show as table". */
+.dash-table-wrap {
+  overflow-x: auto;
+}
+
+.dash-table {
+  width: 100%;
+  margin-top: 8px;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.dash-table th,
+.dash-table td {
+  padding: 10px 16px 10px 0;
+  border-bottom: 1px solid var(--line);
+  font-weight: 400;
+  text-align: left;
+  vertical-align: top;
+}
+
+.dash-table thead th {
+  border-bottom-color: var(--ink);
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.dash-table td {
+  white-space: nowrap;
+}
+
+.all-projects-title {
+  margin-top: 72px;
+  font-size: 26px;
+  font-weight: 300;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+.all-projects-title + .project-table {
+  margin-top: 24px;
+}
+
+/* The summary card on a saved result. */
+.pricing-card {
+  max-width: 720px;
+  margin-top: 56px;
+  padding: 28px;
+  border: 1px solid var(--line);
+  border-radius: 24px;
+  background: var(--paper);
+}
+
+.pricing-card .dash-pill {
+  display: inline-block;
+}
+
+.pricing-card-number {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 16px;
+  margin-top: 20px;
+}
+
+.pricing-card-percent {
+  font-size: 64px;
+  font-weight: 300;
+  line-height: 1;
+  letter-spacing: -0.04em;
+}
+
+.pricing-card-text {
+  font-size: 15px;
+  color: var(--ink-2);
+}
+
+.pricing-card .dash-bar {
+  height: 12px;
+  margin-top: 20px;
+}
+
+.mono-labels {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.pricing-card-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  margin-top: 8px;
+  font-size: 15px;
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+@media (max-width: 1023px) {
+  .dash-percent {
+    font-size: 140px;
+  }
+}
+
+@media (max-width: 759px) {
+  .dash-card {
+    padding: 20px;
+  }
+
+  .dash-hero-top {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .dash-percent {
+    order: -1;
+    font-size: 104px;
+  }
+
+  .dash-hero-text {
+    padding-top: 0;
+  }
+
+  .dash-big {
+    font-size: 56px;
+  }
+
+  .pricing-card {
+    max-width: none;
+    padding: 20px;
+  }
+
+  .pricing-card-percent {
+    font-size: 56px;
+  }
+}
+
 /* Screen 2: result */
 
 /* Header row: wordmark, Edit details, then the live controls on the right. */

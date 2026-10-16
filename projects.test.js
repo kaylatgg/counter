@@ -371,5 +371,141 @@ test("just now, today, yesterday, then the date", function () {
   assert.strictEqual(store.formatEdited(new Date(2025, 11, 30, 10, 0).toISOString(), now), "Dec 30, 2025");
 });
 
+group("Your pricing so far (the Projects dashboard)");
+
+// A menu project with all its hours in setup, so the total is exact.
+function priced(name, rate, hours, offer, expenses, day, extra) {
+  const date = new Date(2026, 9, day, 12, 0);
+  const inputs = { count: "0", setupHours: String(hours), itemHours: "0", communicationHours: "0",
+    rounds: "0", roundHours: "0", deliveryHours: "0", rate: String(rate), expenses: String(expenses),
+    offerStatus: "amount", offer: String(offer) };
+  return Object.assign({ id: name, name: name, field: "graphic", job: "menu", inputs: inputs, quote: "",
+    reply: "", replyEdited: false, gapChoice: "estimate", created: date.toISOString(), edited: date.toISOString() }, extra);
+}
+
+function exampleSet() {
+  return [
+    priced("Social posts, Oct 14", 55, 24, 500, 20, 14),
+    priced("Portrait session, Oct 7", 30, 10, 150, 25, 7),
+    priced("Menu, Oct 11", 25, 11.5, 200, 20, 11),
+    priced("Editorial illustration, Oct 15", 25, 11, 200, 0, 15),
+    priced("Logo, Oct 9", 25, 13, 400, 15, 9),
+  ];
+}
+
+function names(jobs) {
+  return jobs.map(function (job) { return job.name; });
+}
+
+test("the example set: totals, steps, unpaid hours, and the biggest fix", function () {
+  const s = store.pricingSummary(exampleSet());
+  assert.strictEqual(s.counted, 5);
+  assert.strictEqual(s.targetPay, 2508);
+  assert.strictEqual(s.kept, 1370);
+  assert.strictEqual(s.shortfall, 1138);
+  assert.strictEqual(Math.round(s.percent * 100), 55);
+  assert.deepStrictEqual(s.steps.map(function (job) { return job.step; }), [-840, -175, -108, -75, 60]);
+  assert.strictEqual(s.other, null);
+  assert.strictEqual(s.unpaidHours.toFixed(1), "28.4");
+  assert.strictEqual(s.hours, 69.5);
+  assert.strictEqual(s.paidHours.toFixed(1), "41.1");
+  assert.strictEqual(s.met, 1);
+  assert.deepStrictEqual(names(s.jobs.filter(function (job) { return job.metTarget; })), ["Logo, Oct 9"]);
+  assert.strictEqual(s.biggestFix.name, "Social posts, Oct 14");
+  assert.strictEqual(s.biggestFix.step, -840);
+  assert.strictEqual(Math.round(s.withFixPercent * 100), 88);
+  assert.strictEqual(Math.round(s.gapShare * 100), 74);
+  assert.strictEqual(new Date(s.firstCreated).getDate(), 7);
+  assert.strictEqual(new Date(s.lastCreated).getDate(), 15);
+});
+
+test("each job's percent is after expenses, lowest first", function () {
+  const s = store.pricingSummary(exampleSet());
+  assert.deepStrictEqual(names(s.byPercent),
+    ["Social posts, Oct 14", "Portrait session, Oct 7", "Menu, Oct 11", "Editorial illustration, Oct 15", "Logo, Oct 9"]);
+  assert.deepStrictEqual(s.byPercent.map(function (job) { return Math.round(job.percent * 100); }), [36, 42, 63, 73, 118]);
+  assert.strictEqual(s.byPercent[0].hourlyAfter, 20);
+  assert.strictEqual(s.byPercent[0].unpaidHours.toFixed(1), "15.3");
+});
+
+test("projects without an offer, hours, or working numbers are left out", function () {
+  const list = exampleSet().concat([
+    priced("No offer", 25, 10, 200, 20, 1, {}),
+    priced("No hours", 25, 0, 200, 20, 2),
+    priced("Broken rate", 0, 10, 200, 20, 3),
+    priced("Broken price", 25, 10, 300, 20, 4, { quote: "abc" }),
+  ]);
+  list[5].inputs.offerStatus = "none";
+  const s = store.pricingSummary(list);
+  assert.strictEqual(s.counted, 6);
+  assert.strictEqual(s.total, 9);
+  assert.ok(names(s.jobs).indexOf("Broken price") !== -1);
+});
+
+test("no counted projects gives nothing", function () {
+  assert.strictEqual(store.pricingSummary([]), null);
+  const none = priced("No offer", 25, 10, 200, 20, 1);
+  none.inputs.offerStatus = "none";
+  assert.strictEqual(store.pricingSummary([none]), null);
+});
+
+test("an offer below expenses keeps a negative amount", function () {
+  const s = store.pricingSummary([priced("Low", 25, 10, 15, 20, 1)]);
+  assert.strictEqual(s.kept, -5);
+  assert.strictEqual(s.jobs[0].step, -255);
+  assert.ok(s.jobs[0].percent < 0);
+  assert.strictEqual(s.unpaidHours, 10);
+  assert.strictEqual(s.biggestFix.name, "Low");
+  // All of the gap came from it, so there's no share to show.
+  assert.strictEqual(s.gapShare, null);
+});
+
+test("every job at its target: no shortfall and no biggest fix", function () {
+  const s = store.pricingSummary([priced("A", 25, 10, 270, 20, 1), priced("B", 25, 4, 100, 0, 2)]);
+  assert.strictEqual(s.shortfall, 0);
+  assert.strictEqual(s.met, 2);
+  assert.strictEqual(s.biggestFix, null);
+  assert.strictEqual(s.withFixPercent, null);
+  assert.strictEqual(s.gapShare, null);
+  assert.strictEqual(s.unpaidHours, 0);
+});
+
+test("one project: all of the gap is its own", function () {
+  const s = store.pricingSummary([priced("Menu, Oct 11", 25, 11.5, 200, 20, 11)]);
+  assert.strictEqual(s.targetPay, 288);
+  assert.strictEqual(s.kept, 180);
+  assert.strictEqual(s.shortfall, 108);
+  assert.strictEqual(s.biggestFix.step, -108);
+  assert.strictEqual(s.gapShare, null);
+  assert.strictEqual(Math.round(s.withFixPercent * 100), 100);
+  assert.strictEqual(s.firstCreated, s.lastCreated);
+});
+
+test("gains larger than the shortfall: over 100%, still a biggest fix, no share", function () {
+  const s = store.pricingSummary([priced("Short", 25, 10, 220, 20, 1), priced("Over", 25, 10, 520, 20, 2)]);
+  assert.strictEqual(s.targetPay, 500);
+  assert.strictEqual(s.kept, 700);
+  assert.strictEqual(s.shortfall, -200);
+  assert.strictEqual(s.percent, 1.4);
+  assert.strictEqual(s.biggestFix.name, "Short");
+  assert.strictEqual(s.gapShare, null);
+  assert.strictEqual(s.withFixPercent, 1.5);
+  assert.deepStrictEqual(s.steps.map(function (job) { return job.step; }), [-50, 250]);
+});
+
+test("ties keep the list's order; more than 6 jobs group the rest as Other jobs", function () {
+  const tied = store.pricingSummary([priced("First", 25, 10, 220, 20, 1), priced("Second", 25, 10, 220, 20, 2)]);
+  assert.strictEqual(tied.biggestFix.name, "First");
+  assert.deepStrictEqual(names(tied.steps), ["First", "Second"]);
+  assert.deepStrictEqual(names(tied.byPercent), ["First", "Second"]);
+  // Steps of -100, -10, +200, -50, +5, -1, +30, -300.
+  const offers = [170, 260, 470, 220, 275, 269, 300, -1];
+  const list = offers.map(function (offer, i) { return priced("Job " + i, 25, 10, offer === -1 ? 0 : offer, offer === -1 ? 50 : 20, i + 1); });
+  const s = store.pricingSummary(list);
+  assert.deepStrictEqual(s.jobs.map(function (job) { return job.step; }), [-100, -10, 200, -50, 5, -1, 30, -300]);
+  assert.deepStrictEqual(names(s.steps), ["Job 7", "Job 0", "Job 3", "Job 2", "Job 6"]);
+  assert.deepStrictEqual(s.other, { count: 3, step: -6 });
+});
+
 console.log("\n" + passed + " passed, " + failed + " failed");
 if (failed > 0) process.exitCode = 1;

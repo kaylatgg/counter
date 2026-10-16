@@ -31,7 +31,7 @@ The gradient means "the answer": it glows quietly on screen 1, then opens into t
 ```
 
 Rules:
-- The gradient is only used for: the screen 1 corner glow, the button's arrow circle, the screen 2 hero panel, paid hours in the chart, and the picked card in "Ways to close the gap" (with a 35% `--paper` wash, added October 15, 2026). Reason: it always means "the answer."
+- The gradient is only used for: the screen 1 corner glow, the button's arrow circle, the screen 2 hero panel, paid hours in the chart, the picked card in "Ways to close the gap" (with a 35% `--paper` wash, added October 15, 2026), and, since October 16, 2026, paid money in the Projects dashboard charts and its summary card (`--paid`) and the dashboard's Biggest fix card (the sunset with a 35% `--paper` wash). Reason: it always means "the answer."
 - Text on the gradient is `--ink` or `--ink-2` only, and only over the cool left and top parts. Reason: `--muted` fails on the gradient, and warm red is too close to ink for small text.
 - Stripes always mean unpaid or forgotten hours. Solid ink means design work.
 - Add a light grain over gradients (SVG `feTurbulence` noise, about 8% opacity). Optional, drop it if it hurts performance.
@@ -262,6 +262,50 @@ Decided with Kayla, October 15, 2026.
 **Extra rounds of changes** (every result)
 - Under the price: "Extra rounds of changes", "$40 each", and a mono note "1.5 hrs at $25/hr, rounded up" (hours per round x rate, rounded up to $5; "rounded up" only when it was). Hidden when a round takes no hours.
 - The reply adds "Additional rounds of changes are $40 each." before its last sentence.
+
+## Projects dashboard and summary card
+
+Kayla's design, October 16, 2026. References: `docs/design-projects-dashboard.png` (desktop left, phone right) and option B in `docs/design-dashboard-link.png` (the summary card). If an image and this file differ, this file wins.
+
+**What counts**
+- A project counts when it has an offer, its numbers work (a broken price to send doesn't block, like the list), and it has hours. Others stay in the list but are left out of the dashboard.
+- Everything is after expenses, like Ways to close the gap (the screen 2 hero stays before expenses). Per job, rounded to whole dollars first so every total adds up: target pay = rate x hours, kept = offer - expenses (can be negative), step = kept - target pay, percent = after-expense hourly ÷ rate, met = kept ≥ target pay. The math is `projectStore.pricingSummary`.
+- Biggest fix: the job with the most negative step. "With fix" = (kept - its step) ÷ target pay. Its share of the gap shows only when the shortfall is above 0 and the share is under 100%. Ties keep the list's order (newest edit first).
+
+**Layout (Projects page)**
+- Order: Back pill, title row, dashboard, then "All projects" (Geist 300, 26px) over the table and storage note. The table's "Offer pays after expenses" column is after expenses too.
+- The dashboard shows when at least one project counts. Projects but none counting: "Add an offer to a project to see your pricing so far." Some left out: a mono 12px `--muted` note under the hero meta, "Based on 3 of 5 projects. The rest need an offer or hours."
+- Cards: `--paper`, 1px `--line` border, 24px radius, 32px 40px padding (20px on phones), each starting and ending on the column grid lines. Hero and chart card full width; the three middle cards 4 columns each on desktop and the same height; on tablet Unpaid hours and Jobs at your target 4 + 4 with Biggest fix full width below; stacked on phones.
+- Each card starts with an outlined pill (1px `--ink`, 999px radius, 14px Geist 400, 6px 16px padding). Smallest text in the dashboard and summary card: 12px. Tabular numbers. Money in whole dollars, with a real minus sign (−) for losses and "+" for gains. Hourly money in cents, except a whole-dollar target ("$55/hr", "$27.50/hr"). "1 job", "2 jobs".
+- The dashboard re-renders after every change to the list. "Show as table" choices are kept, and re-rendering never moves focus.
+
+**1. Your pricing so far** (hero, full width)
+- Left: "You kept 55% of your target pay. Read left to right to see where the other $1,138 went." (24px Geist 300; "Read down" below 1024px). Under it, 15px `--ink-2`: "Social posts, Oct 14 is 74% of the gap." or, when one job is all of it, "All of it came from Social posts, Oct 14." Then mono 12px `--muted`: "5 jobs · Oct 7 to Oct 15 · after expenses" (one date when the same day; the year on dates not in this year). Kept at or over target: "You kept 104% of your target pay. Your offers covered every hour." and no gap line.
+- Right: the percent, Geist 300, 180px desktop, 140px tablet, 104px phone (above the sentence on phones).
+- Waterfall (1024px and up): Target pay (solid `--line`, from $0), one floating step per job, You kept (`--paid`, from $0). Shortfalls in `--stripe` with a 1px ink outline, gains in `--paid`. Dashed 1px `--ink-2` connectors, a 1px ink baseline at $0, 4px radius. Shortfalls largest first, then gains largest first. Values above the bars (totals 20px Geist 500, steps 16px `--ink-2`); under each bar the name (14px, 2 lines then an ellipsis, the full name on hover) and a mono 12px `--muted` note: "your hours at target", "short of target", "over target", "after expenses". With more than 6 jobs: the 5 largest steps (either sign), then "Other jobs (N)" with their net, "net of N jobs", just before You kept. The scale always covers $0 and every running total.
+- Below 1024px: the same steps as rows (name and value on one line, the bar under it, same scale), a 1px ink line above You kept.
+- "Show as table" (13px, underlined, `--ink-2`, top right) swaps the chart for a table (Step, Amount) and reads "Show as chart". Focus stays on the button.
+
+**2. Three cards**
+- **Unpaid hours:** the hours (Geist 300, 72px; 56px on phones) with mono 13px "hrs", shown to one decimal so paid and unpaid add up to the total. "Hours the offers did not cover. About 4 of every 10 hours." (n = unpaid ÷ total x 10, rounded; 0: "Less than 1 of every 10 hours."; 10: "Almost every hour."). None unpaid: "Every hour was covered." All unpaid: "None of your hours were covered." A bar: paid in `--paid`, unpaid in `--stripe` with an ink outline, 2px gap, with "41.1 hrs paid" and "28.4 hrs unpaid" under it (numbers Geist 500).
+- **Jobs at your target:** "1" with mono "of 5". "Every job paid what you asked for." / "No job paid what you asked for yet." / "Only Logo, Oct 9 paid what you asked for." / "2 jobs paid what you asked for." Then up to 5 rows, lowest percent first, with hairlines: the name, mono "met" or "missed", and a 14px circle (`--paid` for met, `--stripe` with an ink outline for missed); then "+ N more".
+- **Biggest fix:** the sunset with a 35% `--paper` wash and a 1px ink border, like the picked gap card; text `--ink` or `--ink-2` only. "+$840", "Price Social posts, Oct 14 at your target and you go from 55% to 88% of your target pay.", a 12px bar (now in ink, the added part in stripes with an ink outline, the rest a `--paper` track, all clamped to 0 to 100%) with mono "now 55%" at the start and "with fix 88%" ending where the added part ends, then an ink pill "Fix Social posts, Oct 14 →". No biggest fix: "Every job met your target." and no bar or button.
+- "Fix" opens that project on screen 2, scrolls to Ways to close the gap (instantly under reduced motion), and focuses its heading. It happens once: Back returns to Projects, and Back, Forward, and reload don't land on the gap again. If the gap section is hidden, screen 2 opens at the top.
+
+**3. Each job vs your target** (full width)
+- Pill and "Show as table" at the top, then "How close each job came to your target" (24px Geist 300) and "Real pay per hour as a share of the target you set for that job. Lowest first."
+- A bullet chart, one row per job, lowest percent first, on a 0% to 150% scale: paid in `--paid`, the gap up to 100% in `--stripe` with an ink outline, a dashed ink line at 100% labeled "your target", and "36%" (Geist 500) with mono "$20.00 of $55/hr". Over 150% the bar stops at the edge and the value shows the real percent. Below 0%: all stripes and "below expenses". Ticks 0%, 50%, 100%, 150% (mono 12px). Legend: "paid, after expenses" and "short of your target".
+- Hover a row (1024px and up, with a mouse): a dark tooltip (`--ink`, `--paper` text, 10px radius) in the empty space right of the target line, never over the values: the name, "Offer $500 · 24 hrs", "15.3 hrs unpaid".
+- Below 1024px: name and percent on one line, the bar under them, the mono rate under the bar.
+- Table view: Project, Real rate after expenses, Target, Share of target, plus Offer, Hours, and Unpaid hours, so the tooltip's information is in the table too.
+
+**Summary card (screen 2)**
+- On a saved project's result only (never the unsaved calculation, which includes shared links), when at least 2 projects count. After Your reply, before the footer. Up to 720px wide on desktop, full width on phones. `--paper`, 1px `--line` border, 24px radius, 28px padding (20px on phones).
+- The pill "Your pricing so far", the percent (Geist 300, 64px; 56px on phones) with "of your target pay, across 5 jobs" (15px `--ink-2`) beside it, or under it when it doesn't fit, a 12px bar (kept in `--paid`, short in `--stripe` with an ink outline, 2px gap, clamped to 0 to 100%), mono 12px "$1,370 kept" and "$1,138 short" under the ends, and an underlined link "See your pricing so far →" to Projects. At 100% or more the bar is all `--paid` and the right label reads "nothing short".
+- Same numbers as the dashboard, updated whenever projects save.
+
+**Accessibility**
+- Each chart is a figure with a visually hidden summary ("Target pay $2,508. Social posts, Oct 14 short $840. ... You kept $1,370."). Drawn bars are hidden from screen readers; the tables are real tables.
 
 ## Share link and Save image (screen 2)
 

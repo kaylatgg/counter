@@ -1962,8 +1962,12 @@ function route(state) {
   } else if (currentId || !draftOnScreen) {
     openDraft();
   }
-  if (state.screen === "results") openResults();
-  else openInputs();
+  if (state.screen === "results") {
+    openResults();
+    landOnGapSection();
+  } else {
+    openInputs();
+  }
 }
 
 window.addEventListener("popstate", function (event) {
@@ -2171,6 +2175,7 @@ function renderHeader() {
     button.innerHTML = '<span class="save-long">Save as project</span><span class="save-short">Save</span>';
     button.setAttribute("aria-label", "Save as project");
   }
+  renderPricingCard();
 }
 
 // The four dialogs: Save as project, Start over?, Open the shared result?, and
@@ -2309,7 +2314,7 @@ function openProjects() {
   focusScreen(byId("projects-title"));
 }
 
-// Estimate and offer per hour for a row, from the saved numbers.
+// Estimate and offer per hour after expenses for a row, from the saved numbers.
 function projectSummary(project) {
   const raw = Object.assign({}, project.inputs, { quote: project.quote });
   const checked = calc.validateInputs(raw, project.job);
@@ -2319,7 +2324,7 @@ function projectSummary(project) {
   if (!r.hasHours) return { estimate: "No estimate yet", offer: "" };
   return {
     estimate: calc.formatWholeMoney(r.estimate),
-    offer: r.offer ? calc.formatMoney(r.offer.hourlyBefore) + "/hr" : "No offer yet",
+    offer: r.offer ? calc.formatMoney(r.offer.hourlyAfter) + "/hr" : "No offer yet",
   };
 }
 
@@ -2352,7 +2357,9 @@ function renderProjects() {
   show(byId("projects-empty"), list.length === 0);
   show(byId("project-table"), list.length > 0);
   show(byId("new-calc"), list.length > 0);
+  show(byId("all-projects-title"), list.length > 0);
   renderBackButton();
+  renderDashboard(list);
 
   const body = byId("project-rows");
   body.textContent = "";
@@ -2477,6 +2484,416 @@ function onRowKey(event) {
   } else if (event.key === "Escape") {
     finishRowRename(id, false);
   }
+}
+
+// Your pricing so far: the Projects dashboard and the summary card on a saved
+// result. All after expenses, like Ways to close the gap. The numbers come from
+// projectStore.pricingSummary, each job rounded to whole dollars first.
+
+const MINUS = "−";
+
+// "$2,508", "−$5"
+function dashMoney(amount) {
+  return amount < 0 ? MINUS + calc.formatWholeMoney(-amount) : calc.formatWholeMoney(amount);
+}
+
+// "−$840", "+$60"
+function signedMoney(amount) {
+  return amount > 0 ? "+" + calc.formatWholeMoney(amount) : dashMoney(amount);
+}
+
+// "$20.00/hr", "−$0.50/hr"
+function dashHourly(amount) {
+  const text = calc.formatMoney(Math.abs(amount)) + "/hr";
+  return amount < 0 && Math.abs(amount) >= 0.005 ? MINUS + text : text;
+}
+
+// "$20.00", "−$0.50"
+function dashCents(amount) {
+  const text = calc.formatMoney(Math.abs(amount));
+  return amount < 0 && Math.abs(amount) >= 0.005 ? MINUS + text : text;
+}
+
+// A whole-dollar target shows no cents: "$55/hr", "$27.50/hr".
+function targetHourly(rate) {
+  return calc.formatPrice(rate) + "/hr";
+}
+
+function jobsText(count) {
+  return count + (count === 1 ? " job" : " jobs");
+}
+
+function percentText(share) {
+  return Math.round(share * 100) + "%";
+}
+
+function clamp01(value) {
+  return Math.max(0, Math.min(1, value));
+}
+
+// Hours to one decimal, so paid and unpaid add up to the total shown.
+function tenths(hours) {
+  return Math.round(hours * 10) / 10;
+}
+
+// "Oct 7", or "Oct 7, 2025" when it isn't this year.
+function dashDate(iso, now) {
+  const date = new Date(iso);
+  const text = MONTHS[date.getMonth()] + " " + date.getDate();
+  return date.getFullYear() === now.getFullYear() ? text : text + ", " + date.getFullYear();
+}
+
+function make(tag, className, text) {
+  const element = document.createElement(tag);
+  if (className) element.className = className;
+  if (text != null) element.textContent = text;
+  return element;
+}
+
+// "Show as table" choices, kept across re-renders.
+let waterfallAsTable = false;
+let bulletAsTable = false;
+
+// "Fix [project]": a one-time flag, never in history, so Back, Forward, and
+// reload don't jump to the gap again.
+let landOnGap = false;
+
+function renderDashboard(list) {
+  const s = projectStore.pricingSummary(list);
+  show(byId("dashboard"), Boolean(s));
+  show(byId("dashboard-empty"), !s && list.length > 0);
+  if (!s) return;
+  const now = new Date();
+  renderDashHero(s, now);
+  renderWaterfall(s);
+  renderUnpaid(s);
+  renderMet(s);
+  renderFix(s);
+  renderBullets(s);
+}
+
+function renderDashHero(s, now) {
+  const percent = percentText(s.percent);
+  const lead = byId("dash-lead");
+  lead.textContent = "";
+  if (s.kept >= s.targetPay) {
+    lead.textContent = "You kept " + percent + " of your target pay. Your offers covered every hour.";
+  } else {
+    // "left to right" next to the chart, "down" when it's rows.
+    lead.append("You kept " + percent + " of your target pay. Read ",
+      make("span", "wide-only", "left to right"), make("span", "narrow-only", "down"),
+      " to see where the other " + dashMoney(s.shortfall) + " went.");
+  }
+  const fix = s.biggestFix;
+  let gapLine = "";
+  if (s.shortfall > 0 && s.gapShare !== null) gapLine = fix.name + " is " + percentText(s.gapShare) + " of the gap.";
+  else if (s.shortfall > 0 && fix) gapLine = "All of it came from " + fix.name + ".";
+  byId("dash-gapline").textContent = gapLine;
+  show(byId("dash-gapline"), Boolean(gapLine));
+
+  const first = dashDate(s.firstCreated, now);
+  const last = dashDate(s.lastCreated, now);
+  byId("dash-meta").textContent = jobsText(s.counted) + " · " + (first === last ? first : first + " to " + last) + " · after expenses";
+  const based = byId("dash-based");
+  show(based, s.counted < s.total);
+  based.textContent = "Based on " + s.counted + " of " + s.total + " projects. The rest need an offer or hours.";
+  byId("dash-percent").textContent = percent;
+}
+
+// The waterfall's bars: target pay, one step per job (or "Other jobs"), you kept.
+function waterfallBars(s) {
+  const bars = [{ kind: "total", name: "Target pay", note: "your hours at target", from: 0, to: s.targetPay, value: dashMoney(s.targetPay) }];
+  let level = s.targetPay;
+  function step(name, amount, note) {
+    bars.push({ kind: amount < 0 ? "short" : "gain", name: name, note: note, from: level, to: level + amount, value: signedMoney(amount) });
+    level += amount;
+  }
+  s.steps.forEach(function (job) { step(job.name, job.step, job.step < 0 ? "short of target" : "over target"); });
+  if (s.other) step("Other jobs (" + s.other.count + ")", s.other.step, "net of " + jobsText(s.other.count));
+  bars.push({ kind: "kept", name: "You kept", note: "after expenses", from: 0, to: s.kept, value: dashMoney(s.kept) });
+  return bars;
+}
+
+function renderWaterfall(s) {
+  const bars = waterfallBars(s);
+  // One scale: $0 and every running total.
+  const levels = [0];
+  bars.forEach(function (bar) { levels.push(bar.from, bar.to); });
+  const low = Math.min.apply(null, levels);
+  const high = Math.max.apply(null, levels);
+  const range = high - low || 1;
+  function at(value) { return (value - low) / range * 100; }
+
+  const chart = byId("waterfall");
+  chart.textContent = "";
+
+  // Desktop: columns, with dashed connectors and a $0 baseline.
+  const cols = make("div", "wf-cols");
+  cols.style.setProperty("--wf-count", bars.length);
+  const plot = make("div", "wf-plot");
+  const baseline = make("span", "wf-baseline");
+  baseline.style.bottom = at(0) + "%";
+  plot.appendChild(baseline);
+  bars.forEach(function (bar, i) {
+    const column = make("div", "wf-col");
+    column.style.gridColumn = String(i + 1);
+    const top = Math.max(bar.from, bar.to);
+    const bottom = Math.min(bar.from, bar.to);
+    const shape = make("span", "wf-bar " + bar.kind);
+    shape.style.bottom = at(bottom) + "%";
+    shape.style.height = (at(top) - at(bottom)) + "%";
+    column.appendChild(shape);
+    const value = make("span", "wf-value" + (bar.kind === "total" || bar.kind === "kept" ? " total" : ""), bar.value);
+    value.style.bottom = at(top) + "%";
+    column.appendChild(value);
+    if (i < bars.length - 1) {
+      const link = make("span", "wf-link");
+      link.style.bottom = at(bar.to) + "%";
+      column.appendChild(link);
+    }
+    plot.appendChild(column);
+  });
+  cols.appendChild(plot);
+  const labels = make("div", "wf-labels");
+  bars.forEach(function (bar) {
+    const label = make("div", "wf-label");
+    const name = make("span", "wf-name", bar.name);
+    name.title = bar.name;
+    label.append(name, make("span", "wf-note", bar.note));
+    labels.appendChild(label);
+  });
+  cols.appendChild(labels);
+  chart.appendChild(cols);
+
+  // Below 1024px: the same steps as rows.
+  const rows = make("div", "wf-rows");
+  bars.forEach(function (bar) {
+    const row = make("div", "wf-row " + bar.kind);
+    const line = make("p", "wf-row-line");
+    const name = make("span", "wf-name", bar.name);
+    name.title = bar.name;
+    line.append(name, make("span", "wf-row-value", bar.value));
+    const track = make("div", "wf-track");
+    const shape = make("span", "wf-bar " + bar.kind);
+    const left = at(Math.min(bar.from, bar.to));
+    shape.style.left = left + "%";
+    shape.style.width = (at(Math.max(bar.from, bar.to)) - left) + "%";
+    track.appendChild(shape);
+    row.append(line, track);
+    rows.appendChild(row);
+  });
+  chart.appendChild(rows);
+
+  // The written summary and the table.
+  byId("waterfall-summary").textContent = bars.map(function (bar) {
+    if (bar.kind === "total") return "Target pay " + bar.value + ".";
+    if (bar.kind === "kept") return "You kept " + bar.value + ".";
+    const amount = dashMoney(Math.abs(bar.to - bar.from));
+    return bar.name + (bar.kind === "short" ? " short " : " over ") + amount + ".";
+  }).join(" ");
+  const body = byId("waterfall-rows");
+  body.textContent = "";
+  bars.forEach(function (bar) {
+    const row = document.createElement("tr");
+    const name = make("th", null, bar.name);
+    name.scope = "row";
+    row.append(name, make("td", null, bar.value));
+    body.appendChild(row);
+  });
+  applyTableToggle("waterfall-toggle", byId("waterfall"), byId("waterfall-table"), waterfallAsTable);
+}
+
+function applyTableToggle(buttonId, chart, table, asTable) {
+  show(chart, !asTable);
+  show(table, asTable);
+  byId(buttonId).textContent = asTable ? "Show as chart" : "Show as table";
+}
+
+function renderUnpaid(s) {
+  const unpaid = tenths(s.unpaidHours);
+  const paid = tenths(s.hours) - unpaid;
+  byId("dash-unpaid").textContent = calc.formatNumber(unpaid);
+  const tens = Math.round(s.unpaidHours / s.hours * 10);
+  let line;
+  if (s.unpaidHours <= 1e-9) line = "Every hour was covered.";
+  else if (Math.abs(s.unpaidHours - s.hours) <= 1e-9) line = "None of your hours were covered.";
+  else if (tens === 0) line = "Hours the offers did not cover. Less than 1 of every 10 hours.";
+  else if (tens === 10) line = "Hours the offers did not cover. Almost every hour.";
+  else line = "Hours the offers did not cover. About " + tens + " of every 10 hours.";
+  byId("dash-unpaid-line").textContent = line;
+  setBar(byId("dash-paid-bar"), paid);
+  setBar(byId("dash-unpaid-bar"), unpaid);
+  byId("dash-paid-hours").textContent = calc.formatHours(paid);
+  byId("dash-unpaid-hours").textContent = calc.formatHours(unpaid);
+}
+
+// A part of a split bar; parts with nothing in them are left out, so no
+// stray 2px gap shows.
+function setBar(element, amount) {
+  element.style.flexGrow = Math.max(0, amount);
+  show(element, amount > 0);
+}
+
+function renderMet(s) {
+  byId("dash-met").textContent = s.met;
+  byId("dash-met-of").textContent = "of " + s.counted;
+  let line;
+  if (s.met === s.counted) line = "Every job paid what you asked for.";
+  else if (s.met === 0) line = "No job paid what you asked for yet.";
+  else if (s.met === 1) line = "Only " + s.jobs.filter(function (job) { return job.metTarget; })[0].name + " paid what you asked for.";
+  else line = jobsText(s.met) + " paid what you asked for.";
+  byId("dash-met-line").textContent = line;
+
+  const list = byId("met-list");
+  list.textContent = "";
+  s.byPercent.slice(0, 5).forEach(function (job) {
+    const item = make("li", "met-row");
+    const name = make("span", "met-name", job.name);
+    name.title = job.name;
+    const status = make("span", "met-status", job.metTarget ? "met" : "missed");
+    status.appendChild(make("span", "met-dot " + (job.metTarget ? "dash-paid" : "dash-short")));
+    item.append(name, status);
+    list.appendChild(item);
+  });
+  if (s.byPercent.length > 5) list.appendChild(make("li", "met-row met-more", "+ " + (s.byPercent.length - 5) + " more"));
+}
+
+function renderFix(s) {
+  const fix = s.biggestFix;
+  show(byId("dash-fix-amount"), Boolean(fix));
+  show(byId("fix-chart"), Boolean(fix));
+  show(byId("fix-button"), Boolean(fix));
+  if (!fix) {
+    byId("dash-fix-line").textContent = "Every job met your target.";
+    return;
+  }
+  byId("dash-fix-amount").textContent = signedMoney(-fix.step);
+  byId("dash-fix-line").textContent = "Price " + fix.name + " at your target and you go from " +
+    percentText(s.percent) + " to " + percentText(s.withFixPercent) + " of your target pay.";
+  const now = clamp01(s.percent);
+  const withFix = clamp01(s.withFixPercent);
+  byId("fix-now-bar").style.width = now * 100 + "%";
+  byId("fix-added-bar").style.width = (withFix - now) * 100 + "%";
+  byId("fix-track-bar").style.width = (1 - withFix) * 100 + "%";
+  show(byId("fix-added-bar"), withFix > now);
+  byId("fix-labels").style.width = withFix * 100 + "%";
+  byId("fix-now-label").textContent = "now " + percentText(s.percent);
+  byId("fix-with-label").textContent = "with fix " + percentText(s.withFixPercent);
+  byId("fix-button").textContent = "Fix " + fix.name + "\u00a0→";
+  byId("fix-button").dataset.id = fix.id;
+}
+
+// Each job vs its target: 0% to 150%, lowest first.
+const BULLET_MAX = 1.5;
+
+function renderBullets(s) {
+  const rows = byId("bullet-rows");
+  rows.textContent = "";
+  const head = make("div", "bullet-grid bullet-head");
+  head.setAttribute("aria-hidden", "true");
+  const headTrack = make("div", "bullet-track");
+  headTrack.appendChild(make("span", "bullet-target-label", "your target"));
+  head.appendChild(headTrack);
+  rows.appendChild(head);
+
+  const summary = [];
+  s.byPercent.forEach(function (job) {
+    const row = make("div", "bullet-grid bullet-row");
+    row.dataset.id = job.id;
+    row.setAttribute("aria-hidden", "true");
+    const name = make("p", "bullet-name", job.name);
+    name.title = job.name;
+    const below = job.percent < 0;
+    const value = make("p", "bullet-value", below ? "below expenses" : percentText(job.percent));
+    const rate = make("p", "bullet-rate", dashCents(job.hourlyAfter) + " of " + targetHourly(job.rate));
+    const track = make("div", "bullet-track");
+    const bar = make("div", "bullet-bar");
+    const paid = make("span", "dash-paid");
+    paid.style.width = Math.max(0, Math.min(job.percent, BULLET_MAX)) / BULLET_MAX * 100 + "%";
+    const short = make("span", "dash-short");
+    short.style.width = (1 - clamp01(job.percent)) / BULLET_MAX * 100 + "%";
+    show(paid, job.percent > 0);
+    show(short, job.percent < 1);
+    bar.append(paid, short);
+    track.appendChild(bar);
+    row.append(name, track, value, rate);
+    rows.appendChild(row);
+    summary.push(job.name + (below ? " pays below expenses, " : " pays " + percentText(job.percent) + " of its target, ") +
+      dashCents(job.hourlyAfter) + " of " + targetHourly(job.rate) + ".");
+  });
+  const tip = make("div", "bullet-tip");
+  tip.id = "bullet-tip";
+  tip.setAttribute("aria-hidden", "true");
+  tip.hidden = true;
+  rows.appendChild(tip);
+  byId("bullet-summary").textContent = "Real pay per hour after expenses as a share of each target, lowest first. " + summary.join(" ");
+
+  const body = byId("bullet-table-rows");
+  body.textContent = "";
+  s.byPercent.forEach(function (job) {
+    const row = document.createElement("tr");
+    const name = make("th", null, job.name);
+    name.scope = "row";
+    row.append(name,
+      make("td", null, dashHourly(job.hourlyAfter)),
+      make("td", null, targetHourly(job.rate)),
+      make("td", null, job.percent < 0 ? "below expenses" : percentText(job.percent)),
+      make("td", null, calc.formatPrice(job.offer)),
+      make("td", null, calc.formatHours(job.hours)),
+      make("td", null, calc.formatHours(tenths(job.unpaidHours))));
+    body.appendChild(row);
+  });
+  applyTableToggle("bullet-toggle", byId("bullet-chart"), byId("bullet-table"), bulletAsTable);
+}
+
+// The tooltip: in the empty space right of the target line, never over the values.
+const bulletHover = window.matchMedia("(min-width: 1024px) and (hover: hover)");
+
+function showBulletTip(row) {
+  const tip = byId("bullet-tip");
+  if (!tip) return;
+  if (!row || !bulletHover.matches) {
+    tip.hidden = true;
+    return;
+  }
+  const job = projectStore.pricingSummary(projectStore.sortByEdited(projectList)).jobs
+    .filter(function (item) { return item.id === row.dataset.id; })[0];
+  if (!job) return;
+  tip.textContent = "";
+  tip.append(make("span", "bullet-tip-name", job.name),
+    make("span", "bullet-tip-line", "Offer " + calc.formatPrice(job.offer) + " · " + calc.formatHours(job.hours)),
+    make("span", "bullet-tip-line", calc.formatHours(tenths(job.unpaidHours)) + " unpaid"));
+  const track = row.querySelector(".bullet-track");
+  const left = track.offsetLeft + track.offsetWidth / BULLET_MAX + 12;
+  tip.style.left = left + "px";
+  tip.style.maxWidth = (track.offsetLeft + track.offsetWidth - left) + "px";
+  tip.hidden = false;
+  tip.style.top = (row.offsetTop + row.offsetHeight / 2 - tip.offsetHeight / 2) + "px";
+}
+
+// The summary card on a saved project's result: 2 or more projects count.
+function renderPricingCard() {
+  const card = byId("pricing-card");
+  const s = currentId ? projectStore.pricingSummary(projectList) : null;
+  show(card, Boolean(s) && s.counted >= 2);
+  if (card.hidden) return;
+  byId("pricing-card-percent").textContent = percentText(s.percent);
+  byId("pricing-card-text").textContent = "of your target pay, across " + jobsText(s.counted);
+  const kept = clamp01(s.percent);
+  setBar(byId("pricing-card-kept-bar"), kept);
+  setBar(byId("pricing-card-short-bar"), 1 - kept);
+  byId("pricing-card-kept").textContent = dashMoney(s.kept) + " kept";
+  byId("pricing-card-short").textContent = s.kept >= s.targetPay ? "nothing short" : dashMoney(s.shortfall) + " short";
+}
+
+// After "Fix [project]" opens screen 2: go to its Ways to close the gap.
+function landOnGapSection() {
+  if (!landOnGap) return;
+  landOnGap = false;
+  const section = byId("gap-section");
+  if (section.hidden) return;
+  section.scrollIntoView({ behavior: reduceMotion.matches ? "instant" : "smooth", block: "start" });
+  byId("gap-heading").focus({ preventScroll: true });
 }
 
 // "Check the offer": with errors, go to the first one. Otherwise show the result
@@ -3751,6 +4168,26 @@ PANEL_DIALOGS.forEach(function (id) {
   });
 });
 byId("project-rows").addEventListener("click", onRowClick);
+byId("waterfall-toggle").addEventListener("click", function () {
+  waterfallAsTable = !waterfallAsTable;
+  applyTableToggle("waterfall-toggle", byId("waterfall"), byId("waterfall-table"), waterfallAsTable);
+});
+byId("bullet-toggle").addEventListener("click", function () {
+  bulletAsTable = !bulletAsTable;
+  applyTableToggle("bullet-toggle", byId("bullet-chart"), byId("bullet-table"), bulletAsTable);
+});
+byId("bullet-rows").addEventListener("mouseover", function (event) {
+  showBulletTip(event.target.closest(".bullet-row"));
+});
+byId("bullet-rows").addEventListener("mouseleave", function () { showBulletTip(null); });
+byId("fix-button").addEventListener("click", function () {
+  landOnGap = true;
+  go({ screen: "results", project: this.dataset.id });
+});
+byId("pricing-card-link").addEventListener("click", function (event) {
+  event.preventDefault();
+  go({ screen: "projects" });
+});
 byId("project-rows").addEventListener("keydown", onRowKey);
 byId("project-rows").addEventListener("focusout", function (event) {
   if (event.target.classList.contains("row-rename")) {

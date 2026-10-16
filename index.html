@@ -68,6 +68,90 @@
         <button type="button" class="round-button" id="new-calc-empty">New calculation</button>
       </div>
 
+      <!-- Your pricing so far: only when at least one project has an offer and
+           hours. All after expenses. app.js fills it in renderProjects. -->
+      <p class="dashboard-empty" id="dashboard-empty" hidden>Add an offer to a project to see your pricing so far.</p>
+
+      <div class="dashboard" id="dashboard" hidden>
+        <section class="dash-card dash-hero" aria-labelledby="dash-hero-pill">
+          <div class="dash-card-top">
+            <h2 class="dash-pill" id="dash-hero-pill">Your pricing so far</h2>
+            <button type="button" class="table-toggle" id="waterfall-toggle" aria-controls="waterfall-figure">Show as table</button>
+          </div>
+          <div class="dash-hero-top">
+            <div class="dash-hero-text">
+              <p class="dash-lead" id="dash-lead"></p>
+              <p class="dash-gapline" id="dash-gapline"></p>
+              <p class="dash-meta" id="dash-meta"></p>
+              <p class="dash-meta" id="dash-based" hidden></p>
+            </div>
+            <p class="dash-percent" id="dash-percent" aria-hidden="true"></p>
+          </div>
+          <figure class="dash-figure" id="waterfall-figure">
+            <figcaption class="visually-hidden" id="waterfall-summary"></figcaption>
+            <div class="waterfall" id="waterfall" aria-hidden="true"></div>
+            <table class="dash-table" id="waterfall-table" hidden>
+              <thead><tr><th scope="col">Step</th><th scope="col">Amount</th></tr></thead>
+              <tbody id="waterfall-rows"></tbody>
+            </table>
+          </figure>
+        </section>
+
+        <section class="dash-card dash-unpaid" aria-labelledby="dash-unpaid-pill">
+          <h2 class="dash-pill" id="dash-unpaid-pill">Unpaid hours</h2>
+          <p class="dash-number"><span class="dash-big" id="dash-unpaid"></span> <span class="dash-unit">hrs</span></p>
+          <p class="dash-line" id="dash-unpaid-line"></p>
+          <div class="dash-bar" aria-hidden="true"><span class="dash-paid" id="dash-paid-bar"></span><span class="dash-short" id="dash-unpaid-bar"></span></div>
+          <p class="dash-bar-labels"><span><span class="dash-strong" id="dash-paid-hours"></span> paid</span> <span><span class="dash-strong" id="dash-unpaid-hours"></span> unpaid</span></p>
+        </section>
+
+        <section class="dash-card dash-met" aria-labelledby="dash-met-pill">
+          <h2 class="dash-pill" id="dash-met-pill">Jobs at your target</h2>
+          <p class="dash-number"><span class="dash-big" id="dash-met"></span> <span class="dash-unit" id="dash-met-of"></span></p>
+          <p class="dash-line" id="dash-met-line"></p>
+          <ul class="met-list" id="met-list"></ul>
+        </section>
+
+        <section class="dash-card dash-fix" aria-labelledby="dash-fix-pill">
+          <h2 class="dash-pill" id="dash-fix-pill">Biggest fix</h2>
+          <p class="dash-big dash-fix-amount" id="dash-fix-amount"></p>
+          <p class="dash-line" id="dash-fix-line"></p>
+          <div class="fix-chart" id="fix-chart">
+            <div class="fix-bar" aria-hidden="true"><span class="fix-now" id="fix-now-bar"></span><span class="dash-short" id="fix-added-bar"></span><span class="fix-track" id="fix-track-bar"></span></div>
+            <p class="fix-labels" id="fix-labels"><span id="fix-now-label"></span> <span id="fix-with-label"></span></p>
+          </div>
+          <button type="button" class="fix-button" id="fix-button"></button>
+        </section>
+
+        <section class="dash-card dash-each" aria-labelledby="dash-each-pill">
+          <div class="dash-card-top">
+            <p class="dash-pill" id="dash-each-pill">Each job vs your target</p>
+            <button type="button" class="table-toggle" id="bullet-toggle" aria-controls="bullet-figure">Show as table</button>
+          </div>
+          <h2 class="dash-title" id="dash-each-title">How close each job came to your target</h2>
+          <p class="dash-line">Real pay per hour as a share of the target you set for that job. Lowest first.</p>
+          <figure class="dash-figure" id="bullet-figure">
+            <figcaption class="visually-hidden" id="bullet-summary"></figcaption>
+            <div class="bullet-chart" id="bullet-chart">
+              <div class="bullet-rows" id="bullet-rows"></div>
+              <div class="bullet-grid bullet-axis" aria-hidden="true"><div class="bullet-track"><span>0%</span><span>50%</span><span>100%</span><span>150%</span></div></div>
+              <ul class="bullet-legend" aria-hidden="true">
+                <li><span class="legend-key dash-paid"></span>paid, after expenses</li>
+                <li><span class="legend-key dash-short"></span>short of your target</li>
+              </ul>
+            </div>
+            <div class="dash-table-wrap" id="bullet-table" role="region" aria-label="Each job vs your target, as a table" tabindex="0" hidden>
+              <table class="dash-table">
+                <thead><tr><th scope="col">Project</th><th scope="col">Real rate after expenses</th><th scope="col">Target</th><th scope="col">Share of target</th><th scope="col">Offer</th><th scope="col">Hours</th><th scope="col">Unpaid hours</th></tr></thead>
+                <tbody id="bullet-table-rows"></tbody>
+              </table>
+            </div>
+          </figure>
+        </section>
+      </div>
+
+      <h2 class="all-projects-title" id="all-projects-title">All projects</h2>
+
       <!-- Explicit table roles, kept when the phone layout restyles the rows. -->
       <table class="project-table" id="project-table" role="table">
         <thead role="rowgroup">
@@ -75,7 +159,7 @@
             <th scope="col" role="columnheader">Name</th>
             <th scope="col" role="columnheader">Job</th>
             <th scope="col" role="columnheader">Estimate</th>
-            <th scope="col" role="columnheader">Offer pays</th>
+            <th scope="col" role="columnheader">Offer pays after expenses</th>
             <th scope="col" role="columnheader">Edited</th>
             <th scope="col" role="columnheader"><span class="visually-hidden">Actions</span></th>
           </tr>
@@ -489,7 +573,7 @@
           <!-- 5 Ways to close the gap: only with an offer below the estimate.
                The cards are a radio group; app.js builds them. -->
           <section class="gap-section" id="gap-section" aria-labelledby="gap-title" hidden>
-            <h2 class="gap-heading"><span class="step">05.</span> <span id="gap-title">Ways to close the gap</span></h2>
+            <h2 class="gap-heading" id="gap-heading" tabindex="-1"><span class="step">05.</span> <span id="gap-title">Ways to close the gap</span></h2>
             <p class="gap-intro">Change the price, the work, or both. Pick one to put it in your reply. All rates are after expenses.</p>
             <div class="gap-options" id="gap-options" role="radiogroup" aria-labelledby="gap-title"></div>
           </section>
@@ -540,6 +624,16 @@
               </div>
             </fieldset>
           </div>
+
+          <!-- Your pricing so far: on a saved project's result, with 2 or more
+               projects that have an offer. Leads to the Projects dashboard. -->
+          <section class="pricing-card" id="pricing-card" aria-labelledby="pricing-card-pill" hidden>
+            <h2 class="dash-pill" id="pricing-card-pill">Your pricing so far</h2>
+            <p class="pricing-card-number"><span class="pricing-card-percent" id="pricing-card-percent"></span> <span class="pricing-card-text" id="pricing-card-text"></span></p>
+            <div class="dash-bar" aria-hidden="true"><span class="dash-paid" id="pricing-card-kept-bar"></span><span class="dash-short" id="pricing-card-short-bar"></span></div>
+            <p class="dash-bar-labels mono-labels"><span id="pricing-card-kept"></span> <span id="pricing-card-short"></span></p>
+            <a class="pricing-card-link" id="pricing-card-link" href="#projects">See your pricing so far →</a>
+          </section>
         </div>
       </div>
     </section>

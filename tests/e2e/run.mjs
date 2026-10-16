@@ -8,7 +8,7 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 const ALL = [
   "inputs", "offers", "result", "save-image", "share-link", "projects", "navigation",
   "storage", "accessibility", "huge-values", "one-tap", "hero-fit", "not-saved",
-  "save-error-grid", "layout-grid", "chart-labels", "close-the-gap",
+  "save-error-grid", "layout-grid", "chart-labels", "close-the-gap", "dashboard",
 ];
 const names = process.argv.slice(2).length ? process.argv.slice(2) : ALL;
 const unknown = names.filter((n) => !ALL.includes(n));

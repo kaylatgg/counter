@@ -102,9 +102,10 @@ export function report(name) {
   if (findings.length) process.exitCode = 1;
 }
 
-// Runs fn once per browser and width. widths filters the default list.
+// Runs fn once per browser and width. A test's own widths are used as given,
+// unless E2E_WIDTHS is set: then they filter that list.
 export async function forEachConfig(fn, { widths, opts } = {}) {
-  const ws = widths ? WIDTHS.filter((w) => widths.includes(w)) : WIDTHS;
+  const ws = !widths ? WIDTHS : process.env.E2E_WIDTHS ? WIDTHS.filter((w) => widths.includes(w)) : widths;
   for (const b of BROWSERS) for (const w of (ws.length ? ws : WIDTHS)) {
     const ctx = await open(b, w, opts);
     console.log(`-- ${b} ${w}`);
