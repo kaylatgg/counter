@@ -2,6 +2,7 @@
   "name": "counter",
   "private": true,
   "description": "Counter: what a freelance job really pays. The site is plain HTML, CSS, and JS; these packages are only for the tests.",
+  "license": "UNLICENSED",
   "scripts": {
     "test": "npm run test:unit && npm run test:e2e",
     "test:unit": "node calc.test.js && node share.test.js && node projects.test.js",
