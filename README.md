@@ -4,7 +4,7 @@ Counter helps you count all the work in a freelance job and see what an offer re
 
 It's for creative students (graphic design, illustration, photography, and motion) pricing their first freelance jobs, who tend to forget the work outside production: emails, calls, revisions, and file prep.
 
-**Live:** (link coming after deploy)
+**Live:** https://kaylatgg.github.io/counter/
 
 ## Run it
 
