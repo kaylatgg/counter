@@ -28,7 +28,7 @@ Each visual answers one question a student has while pricing a job.
 | Where your 11.5 hours go | Which hours does the offer pay for? | A bar per type of work: paid hours in the gradient, unpaid in stripes, a line where the money runs out, and a bracket over the usually forgotten work. |
 | Your rate drops as hours grow | When does this job stop paying my target? | A line chart of pay per hour against hours, crossing the target line. Drag or use arrow keys to scrub any number of hours. |
 | Ways to close the gap | What can I change? | Up to three cards, side by side on desktop, each with its option's work on one shared scale, so price and scope trade-offs compare at a glance. |
-| Your pricing so far (waterfall) | Where did my money go across every job? | The bridge chart finance teams use in earnings reports, turned into rows on phones: from target pay, each job's shortfall or gain, to what you kept. Every step adds up to the dollar. |
+| Your pricing so far (waterfall) | Where did my money go across every job? | The bridge chart finance teams use in earnings reports, turned into rows on smaller screens: from target pay, each job's shortfall or gain, to what you kept. Every step adds up to the dollar. |
 | Each job vs your target | Which jobs are underpriced? | A bullet chart: each job as a share of its own target, lowest first, so different targets compare on one scale. |
 
 ![The two result charts: "Where your 11.5 hours go", with paid hours in the gradient, unpaid hours in stripes, and "$200 runs out at 7.2 hrs"; and "Your rate drops as hours grow", a curve crossing the $25 target at 7.2 hours](docs/screenshot-charts.png)
@@ -38,7 +38,7 @@ Each visual answers one question a student has while pricing a job.
 ## Rules every chart follows
 
 - One visual language: the gradient means paid, or the answer, and stripes mean unpaid.
-- Every chart has a sentence that states its takeaway.
+- Every chart has a sentence that says what it shows, and the main ones state the takeaway.
 - Values are labeled directly, not only in a legend.
 - Color is never the only cue, so stripes still read in grayscale and for color blindness.
 - Every chart has a screen reader summary, and the dashboard charts have a table view.
