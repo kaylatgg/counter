@@ -1626,9 +1626,52 @@ function update(commit) {
   updatePage(commit);
   formatMoneyFields();
   autosave();
+  if (commit) announceSummary();
   if (sharedSnapshot !== null && !loadingValues && JSON.stringify(snapshot()) !== sharedSnapshot) {
     hideSharedNote();
   }
+}
+
+// Screen readers hear one short summary after the person changes a value:
+// right away on a change, or after about 1 second without typing. Never the
+// same text twice in a row, and never while a calculation is loading.
+let lastSummary = null;
+
+function summaryText() {
+  const checked = calc.validateInputs(readForm(), currentJob());
+  const blocking = Object.keys(checked.errors).filter(function (name) { return name !== "quote"; });
+  if (blocking.length) return null;
+  const r = calc.calculate(checked.values);
+  if (!r.hasHours) return null;
+  let text = "Estimated price " + calc.formatWholeMoney(r.estimate) + " for " +
+    calc.formatHours(r.hours.total) + ".";
+  if (r.offer && r.offer.belowExpenses) {
+    return text + " The offer of " + calc.formatPrice(r.offer.amount) + " is " +
+      calc.formatMoney(r.offer.shortfall) + " less than your expenses.";
+  }
+  if (r.offer) {
+    text += " The offer of " + calc.formatPrice(r.offer.amount) + " pays " +
+      calc.formatMoney(r.offer.hourlyBefore) + " an hour before expenses and " +
+      calc.formatMoney(r.offer.hourlyAfter) + " after.";
+  }
+  return text + " Your target is " + calc.formatMoney(r.rate) + ".";
+}
+
+// Remembers what's on the page without saying it (on load, or when a
+// project or share link fills the calculator).
+function quietSummary() {
+  lastSummary = summaryText();
+}
+
+function announceSummary() {
+  if (loadingValues || firstLoad) {
+    quietSummary();
+    return;
+  }
+  const text = summaryText();
+  if (text === null || text === lastSummary) return;
+  lastSummary = text;
+  announce(text);
 }
 
 // Money fields show "1,000" when not focused, and "1000" while typing.
@@ -2107,6 +2150,7 @@ function fillCalculator(values) {
   }
   loadingValues = false;
   lastSaved = JSON.stringify(snapshot());
+  quietSummary();
 }
 
 function openProject(id) {
@@ -4242,6 +4286,7 @@ if (shareLink.isShareHash(location.hash)) {
   route(startState);
 }
 firstLoad = false;
+quietSummary();
 // The right screen is showing now (see the script in index.html's head).
 document.documentElement.classList.remove("routing");
 

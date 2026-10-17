@@ -38,9 +38,7 @@ Rules:
 
 ## Type
 
-```html
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500&family=Geist+Mono:wght@400;500&display=swap">
-```
+Self-hosted since October 17, 2026: Geist 300, 400, and 500 and Geist Mono 400 and 500, latin woff2 only, in `fonts/` (from the official `@fontsource/geist` and `@fontsource/geist-mono` packages; license in `fonts/OFL.txt`). The `@font-face` rules are at the top of `styles.css`, with relative paths and `font-display: swap`. The two most used files, Geist 400 and Geist Mono 400, are preloaded, only when the page is served over http(s), since browsers block font preloads on a page opened as a file. The family names stay "Geist" and "Geist Mono" (`--font`, `--mono`, and Save image's canvas use them). Reason: the page doesn't wait for Google's stylesheet, and the fonts work where Google is blocked.
 
 - **Geist 300** for big numbers and headings, tight tracking. Reason: light, large numbers feel calm and premium.
 - **Geist 400** for body and labels.
@@ -126,6 +124,7 @@ Decided with Kayla, October 13, 2026.
   - The target label is never hidden. After its usual spots (either end of the line, above or below), it tries the chart's left edge, above then below the line. If the full label fits nowhere, it becomes "target" in the same spots, but only where the y axis's "$25" stays visible, so the target's value always shows somewhere. Failing that, the full label slides along the line, above or below it, to any clear spot. The current-hours label also keeps clear of a 24px strip along the target line when it has another spot, so the target has room. Decided with Kayla, October 15, 2026.
 - Below: Show the math (collapsed), then 05 Ways to close the gap (only with an offer below the estimate), then Your price and Your reply side by side, then the footer.
 - "Copy reply": fully rounded ink button.
+- The reply box: `--paper` fill, 1px `--muted` border (4.99:1, since a box you type into needs 3:1), 16px radius. Changed from `--line` on October 17, 2026.
 
 ## Motion
 
@@ -290,7 +289,7 @@ Kayla's design, October 16, 2026. References: `docs/design-projects-dashboard.pn
 **2. Three cards**
 - **Unpaid hours:** the hours (Geist 300, 72px; 56px on phones) with mono 13px "hrs", shown to one decimal so paid and unpaid add up to the total. "Hours the offers did not cover. About 4 of every 10 hours." (n = unpaid ÷ total x 10, rounded; 0: "Less than 1 of every 10 hours."; 10: "Almost every hour."). None unpaid: "Every hour was covered." All unpaid: "None of your hours were covered." A bar: paid in `--paid`, unpaid in `--stripe` with an ink outline, 2px gap, with "41.1 hrs paid" and "28.4 hrs unpaid" under it (numbers Geist 500).
 - **Jobs at your target:** "1" with mono "of 5". "Every job paid what you asked for." / "No job paid what you asked for yet." / "Only Logo, Oct 9 paid what you asked for." / "2 jobs paid what you asked for." Then up to 5 rows, lowest percent first, with hairlines: the name, mono "met" or "missed", and a 14px circle (`--paid` for met, `--stripe` with an ink outline for missed); then "+ N more".
-- **Biggest fix:** the sunset with a 35% `--paper` wash and a 1px ink border, like the picked gap card; text `--ink` or `--ink-2` only. "+$840", "Price Social posts, Oct 14 at your target and you go from 55% to 88% of your target pay.", a 12px bar (now in ink, the added part in stripes with an ink outline, the rest a `--paper` track, all clamped to 0 to 100%) with mono "now 55%" at the start and "with fix 88%" ending where the added part ends, then an ink pill "Fix Social posts, Oct 14". No biggest fix: "Every job met your target." and no bar or button.
+- **Biggest fix:** the sunset with a 35% `--paper` wash and a 1px ink border, like the picked gap card; text `--ink` only (the sentence was `--ink-2` until October 17, 2026, at 4.50:1 on the warm part). "+$840", "Price Social posts, Oct 14 at your target and you go from 55% to 88% of your target pay.", a 12px bar (now in ink, the added part in stripes with an ink outline, the rest a `--paper` track, all clamped to 0 to 100%) with mono "now 55%" at the start and "with fix 88%" ending where the added part ends, then an ink pill "Fix Social posts, Oct 14". No biggest fix: "Every job met your target." and no bar or button.
 - "Fix" opens that project on screen 2, scrolls to Ways to close the gap (instantly under reduced motion), and focuses its heading. It happens once: Back returns to Projects, and Back, Forward, and reload don't land on the gap again. If the gap section is hidden, screen 2 opens at the top.
 
 **3. Each job vs your target** (full width)

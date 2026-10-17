@@ -125,4 +125,70 @@ await forEachConfig(async (ctx) => {
   await p.focus("#rate-plot"); await p.keyboard.press("ArrowRight");
   if (!(await p.getAttribute("#rate-plot", "aria-valuetext"))) note(ctx, "reduced motion scrub", "no value", "medium");
 }, { widths: [390, 1440] });
+// The result summary for screen readers (CLAUDE.md section 8): announced once
+// after a value changes, never on load, when a saved project or share link
+// opens, or when only the screen changes. Errors announce nothing new.
+const RECORD = () => {
+  window.__said = [];
+  document.addEventListener("DOMContentLoaded", () => {
+    if (!document.getElementById("announcer")) return;
+    new MutationObserver(() => {
+      const t = document.getElementById("announcer").textContent;
+      if (t) window.__said.push(t);
+    }).observe(document.getElementById("announcer"), { childList: true, characterData: true, subtree: true });
+  });
+};
+await forEachConfig(async (ctx) => {
+  const p = ctx.page;
+  const summaries = () => p.evaluate(() => window.__said.filter((t) => t.startsWith("Estimated price")));
+  const clear = () => p.evaluate(() => { window.__said.length = 0; });
+  async function expectSaid(where, expected) {
+    await p.waitForTimeout(1400);
+    const said = await summaries();
+    const want = expected ? [expected] : [];
+    if (JSON.stringify(said) !== JSON.stringify(want)) note(ctx, "result summary: " + where, "heard " + JSON.stringify(said) + ", expected " + JSON.stringify(want), "high");
+    await clear();
+  }
+  await fresh(ctx);
+  await expectSaid("page load", null);
+  // A change event: right away, once.
+  await tap(ctx, 'button[data-target=rounds][data-step="1"]');
+  await p.waitForTimeout(300);
+  if ((await summaries()).length !== 1) note(ctx, "result summary: stepper", "not announced right away", "high");
+  await expectSaid("stepper (offer)", "Estimated price $345 for 13 hrs. The offer of $200 pays $15.38 an hour before expenses and $13.85 after. Your target is $25.00.");
+  // Typing: nothing per keystroke, then once after the pause, and not again on leaving the field.
+  await p.click("#offer", { clickCount: 3 });
+  await p.keyboard.type("15", { delay: 150 });
+  await p.waitForTimeout(500);
+  if ((await summaries()).length) note(ctx, "result summary: typing", "announced before the pause", "high");
+  await p.waitForTimeout(400);
+  await p.locator("#offer").blur();
+  await expectSaid("typing (offer below expenses)", "Estimated price $345 for 13 hrs. The offer of $15 is $5.00 less than your expenses.");
+  await tap(ctx, 'label[for="offer-none"]');
+  await expectSaid("no offer", "Estimated price $345 for 13 hrs. Your target is $25.00.");
+  // Only the screen changes: nothing.
+  await tap(ctx, "#check-offer");
+  await expectSaid("screen change", null);
+  await p.goBack();
+  await expectSaid("Back", null);
+  // Errors and 0 hours: nothing new.
+  await p.fill("#rate", "0"); await p.locator("#rate").blur();
+  await expectSaid("rate error", null);
+  await p.fill("#rate", "25"); await p.locator("#rate").blur();
+  await expectSaid("error fixed, same result as before", null);
+  await p.evaluate(() => ["setup-hours", "item-hours", "communication-hours", "round-hours", "delivery-hours"].forEach((id) => { document.getElementById(id).value = "0"; }));
+  await p.focus("#delivery-hours"); await p.locator("#delivery-hours").blur();
+  await expectSaid("0 hours", null);
+  // A saved project opening (from the list, and by address), and a share link.
+  await p.evaluate(() => localStorage.setItem("counter.projects", projectStore.serializeProjects([projectStore.createProject("Logo for Sam", projectStore.exampleDraft("logo"), "a1", new Date())])));
+  await p.goto("about:blank"); await p.goto(BASE + "#projects"); await p.waitForTimeout(300);
+  await tap(ctx, '[data-action="open"]');
+  await expectSaid("saved project opens", null);
+  await p.goto("about:blank"); await p.goto(BASE + "#p/a1/result");
+  await expectSaid("saved project by address", null);
+  const link = await p.evaluate(() => shareLink.encodeShare("graphic", "menu", projectStore.exampleDraft("menu").inputs));
+  await p.evaluate(() => localStorage.clear());
+  await p.goto("about:blank"); await p.goto(BASE + link);
+  await expectSaid("share link opens", null);
+}, { widths: [390, 1440], opts: { init: RECORD } });
 report("accessibility"); await closeAll();

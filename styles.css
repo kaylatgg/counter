@@ -2,6 +2,49 @@
    Calm, light, and warm. Big light numbers, small mono labels, one sunset
    gradient that always means "the answer." Every color is a token. */
 
+/* Fonts live in the repo (fonts/, license in fonts/OFL.txt): latin only,
+   so the page loads fast and works where Google Fonts is blocked. */
+
+@font-face {
+  font-family: "Geist";
+  font-style: normal;
+  font-weight: 300;
+  font-display: swap;
+  src: url("fonts/geist-latin-300-normal.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Geist";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("fonts/geist-latin-400-normal.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Geist";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("fonts/geist-latin-500-normal.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Geist Mono";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("fonts/geist-mono-latin-400-normal.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Geist Mono";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("fonts/geist-mono-latin-500-normal.woff2") format("woff2");
+}
+
 :root {
   --ease: cubic-bezier(.2, .7, .2, 1);  /* every motion (DESIGN.md, Motion) */
   --bg: #ECECEA;      /* page */
@@ -1768,7 +1811,7 @@ legend {
 }
 
 .dash-fix .dash-line {
-  color: var(--ink-2);
+  color: var(--ink);
 }
 
 .dash-fix-amount {
@@ -3222,7 +3265,7 @@ textarea {
   max-width: var(--measure);
   margin-top: 8px;
   padding: 16px 18px;
-  border: 1px solid var(--line);
+  border: 1px solid var(--muted);
   border-radius: 16px;
   background: var(--paper);
   font-size: 16px;

@@ -4,9 +4,21 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Counter</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500&family=Geist+Mono:wght@400;500&display=swap">
+  <!-- Preload the two most used fonts. Only over http(s): opened as a file,
+       browsers block crossorigin font preloads, and Safari then skips the font. -->
+  <script>
+    if (location.protocol !== "file:") {
+      ["fonts/geist-latin-400-normal.woff2", "fonts/geist-mono-latin-400-normal.woff2"].forEach(function (href) {
+        var link = document.createElement("link");
+        link.rel = "preload";
+        link.href = href;
+        link.as = "font";
+        link.type = "font/woff2";
+        link.crossOrigin = "anonymous";
+        document.head.appendChild(link);
+      });
+    }
+  </script>
   <link rel="stylesheet" href="styles.css">
   <!-- Opening an address like #result or #projects: hide the page until app.js
        shows the right screen, so screen 1 never flashes first. If app.js
