@@ -1,7 +1,7 @@
 # Counter: typography and readability QA
 
 Desktop only, both screens, checked at 1280, 1440, and 1920 px wide. October 7, 2026.
-Checked against `docs/DESIGN.md` (v3, "Two screens") and CLAUDE.md.
+Checked against `docs/DESIGN.md` (v3, "Two screens") and the build spec.
 
 Part 1 lists what was fixed directly. Part 2 lists what needs a decision. Part 3 is the readability report. No wording has been changed yet.
 
@@ -55,7 +55,7 @@ These are used but not in the type table. Some are named elsewhere in DESIGN.md'
 
 ### 2.2 Spacing scale
 
-DESIGN.md v3 has no spacing scale. The old scale in CLAUDE.md section 6 (4, 8, 12, 16, 20, 24, 32, 40, 56) was replaced along with the rest of section 6. DESIGN.md itself names these values: 18, 22, 28, 30, 34, 36, 40, 44, 56, 64, 96.
+DESIGN.md v3 has no spacing scale. The old scale in the build spec section 6 (4, 8, 12, 16, 20, 24, 32, 40, 56) was replaced along with the rest of section 6. DESIGN.md itself names these values: 18, 22, 28, 30, 34, 36, 40, 44, 56, 64, 96.
 
 Values used in `styles.css`, with how often they appear:
 1 (5), 2 (8), 3 (3), 4 (9), 6 (12), 7.5 (1), 8 (10), 9 (2), 10 (5), 12 (4), 14 (7), 16 (12), 18 (4), 20 (6), 22 (6), 24 (4), 28 (7), 30 (2), 32 (2), 34 (3), 36 (3), 40 (7), 44 (1), 48 (1), 56 (2), 64 (8), 80 (1), 96 (1), 120 (1).
@@ -239,7 +239,7 @@ Grades are shown for full sentences. Short labels are marked "label".
 | Rows | Expenses · $20.00; Subtotal · $307.50 | label | Keep |
 | Row | Rounded up to nearest $5 · +$2.50 | label. Missing "the". | Rounded up to the nearest $5 · +$2.50 |
 | Final row | Estimated project price · $310 | label | Your estimate · $310 (see 3.3) |
-| Note | Taxes are not included. None of these numbers are take-home pay. | 2.6, clear | Keep (CLAUDE.md requires this idea) |
+| Note | Taxes are not included. None of these numbers are take-home pay. | 2.6, clear | Keep (the build spec requires this idea) |
 
 #### Screen 2: quote
 
@@ -289,7 +289,7 @@ Counts (pages, rounds) and everything else carry their units.
 | Idea | Names used now | Where | Suggested single term |
 |---|---|---|---|
 | The rounded price from your hours, rate, and expenses | "Your estimate", "Estimated project price", "estimate", "Get my estimate", "Use estimate" | Metrics, hero label (no offer), receipt final row, button, quote | **Your estimate** everywhere |
-| The price you actually send | "Your quote" (section), "Price you'll send" (field), "my price" (reply draft), "quote" (CLAUDE.md) | Quote section, reply | **Your price** for the section, keeping "Price you'll send". Or keep "quote" and rename the field "Your quote". Pick one. |
+| The price you actually send | "Your quote" (section), "Price you'll send" (field), "my price" (reply draft), "quote" (the build spec) | Quote section, reply | **Your price** for the section, keeping "Price you'll send". Or keep "quote" and rename the field "Your quote". Pick one. |
 | Your target hourly rate | "Target hourly rate", "target rate", "target", "Rate" (bar), "your $25 target" | Screen 1, pay chart, bar, hero | **Target rate** in full, **target** for short. Rename the bar's "Rate" to "Target". |
 | Hours of design work | "Production" (group, receipt, chart), "the design itself" (chart summary) | Screen 1, chart, receipt | One name: **Production** (and "outside production"), or **Design work** everywhere |
 | Rounds of changes | "Rounds of changes", "Rounds" (bar), "Revisions" (group), "Hours per round of changes" | Screen 1, bar, chart | Fine. Revisions is the work, rounds are the count. Worth a test question. |

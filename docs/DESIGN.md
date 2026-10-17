@@ -1,6 +1,6 @@
 # Counter design system (v5, "Sunset")
 
-Source of truth for how Counter looks. Replaces every earlier version. CLAUDE.md still owns the flow, math, copy, validation, accessibility, and tests.
+Source of truth for how Counter looks. Replaces every earlier version. The build spec still owns the flow, math, copy, validation, accessibility, and tests.
 
 Reference images: `docs/design-v5-screen1.png` and `docs/design-v5-screen2.png` (desktop), `docs/design-v5-phone.png` (phone), and the share and image references listed in their section. Match them. If an image and this file differ, this file wins. If something isn't covered, ask. Ignore all older reference images.
 
@@ -171,12 +171,12 @@ Reason: the full show plays once. After that, motion only shows what changed.
 
 Decided with Kayla, October 11, 2026:
 - **"h" only in small mono chart labels** (axis ticks, tally bar labels, the rate chart's dot labels). Sentences, stats, inputs, and headings keep "hrs": the tally note reads "5.5 hrs usually forgotten".
-  Reason: CLAUDE.md's terms stay intact; the short form only where space is tight and the context is clearly data.
+  Reason: the build spec's terms stay intact; the short form only where space is tight and the context is clearly data.
 - **The rate curve is after expenses**, so "at 7.2h you hit $25" matches "$200 runs out at 7.2 hrs" in the chart beside it. Subtitle: "After your $20 in expenses, $200 spread over more hours pays less per hour." Red dot: "11.5h → $15.65/hr after expenses".
   Reason: both charts tell the same story.
 - **No offer:** stats are Total hours, Your time at $25/hr, Expenses, and Usually forgotten (5.5 hrs, mono note "worth $137.50 at your rate"). The hours chart takes the full row.
 - **Chart summaries are visible**, one 14px `--ink-2` line under each legend.
-  Reason: CLAUDE.md requires a written summary under every chart.
+  Reason: the build spec requires a written summary under every chart.
 
 Decided while building:
 - **No offer in the hours chart:** the legend reads "design work" (solid) and "usually forgotten" (stripes).

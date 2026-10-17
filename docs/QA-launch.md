@@ -109,7 +109,7 @@ See the table at the top.
   - Projects: the waterfall and the bullet chart.
 - **Pass:** dialogs move focus in, keep Tab inside (it can reach the browser's toolbar, never the page behind), and Escape returns focus to the button that opened them.
 - **Live regions, pass:** "Couldn't save" is an alert; the replace question, copy status, and the announcer are polite. Nothing is announced on every keystroke.
-- **Done October 17** (it needed a decision): the summary announcement in CLAUDE.md section 8 ("Estimated price $310 for 11.5 hrs. The offer of $200 pays ...") was never built. The polite region exists, but only "Link copied", "Image saved", and "Your reply now uses $270." use it. So a screen reader user changing numbers on screen 1 heard nothing about the result. Now built with the wording in item 1 below, and tested in tests/e2e/accessibility.mjs (each case heard once with the right text, nothing on load, when a saved project or share link opens, on a screen change, on errors, or on 0 hours; Chromium and WebKit, 390 and 1440).
+- **Done October 17** (it needed a decision): the summary announcement in the build spec section 8 ("Estimated price $310 for 11.5 hrs. The offer of $200 pays ...") was never built. The polite region exists, but only "Link copied", "Image saved", and "Your reply now uses $270." use it. So a screen reader user changing numbers on screen 1 heard nothing about the result. Now built with the wording in item 1 below, and tested in tests/e2e/accessibility.mjs (each case heard once with the right text, nothing on load, when a saved project or share link opens, on a screen change, on errors, or on 0 hours; Chromium and WebKit, 390 and 1440).
 
 ### Zoom and reflow
 - **Pass:** at 200% zoom on a 1280px screen (640 CSS px wide) and at 320px: screen 1, screen 2 (Show the math closed and open), Projects, and Projects with both tables shown. No sideways scrolling, nothing cut off, no text overlapping, in both browsers.
@@ -158,8 +158,8 @@ The two partner audits aren't in the repo under that name. The October 12 access
 
 ## Needs Kayla's decision
 
-1. **Done October 17, as suggested.** **The live result summary (CLAUDE.md section 8) was never built.** It's screen reader only, so nothing changes visually. The spec gives one example, but the wording for other cases is yours. Suggested:
-   - With an offer: "Estimated price $310 for 11.5 hrs. The offer of $200 pays $17.39 an hour before expenses and $15.65 after. Your target is $25.00." (as in CLAUDE.md)
+1. **Done October 17, as suggested.** **The live result summary (the build spec section 8) was never built.** It's screen reader only, so nothing changes visually. The spec gives one example, but the wording for other cases is yours. Suggested:
+   - With an offer: "Estimated price $310 for 11.5 hrs. The offer of $200 pays $17.39 an hour before expenses and $15.65 after. Your target is $25.00." (as in the build spec)
    - No offer: "Estimated price $310 for 11.5 hrs. Your target is $25.00."
    - Offer below expenses: "Estimated price $310 for 11.5 hrs. The offer of $15 is $5.00 less than your expenses."
    - With errors or 0 hours: nothing new (the field errors are already linked to their fields).
