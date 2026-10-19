@@ -3734,6 +3734,52 @@ function setSpacing(ctx, value) {
   if ("letterSpacing" in ctx) ctx.letterSpacing = value;
 }
 
+// The header's mark, from favicon.svg (viewBox 4 4 92 92).
+const IMAGE_MARK = "M4,50A46,46 0 1 0 96,50A46,46 0 1 0 4,50ZM31,44A27,27 0 1 0 85,44A27,27 0 1 0 31,44Z";
+
+// The logo lockup at 34px: the mark 0.666em square, 0.012em below the
+// baseline, 0.166em left of "counter". Returns where the mark starts.
+function drawImageLogo(ctx, right, baseline) {
+  const size = 34;
+  const mark = 0.666 * size;
+  ctx.fillStyle = IMAGE_COLORS.ink;
+  ctx.font = imageFont(size, 400);
+  setSpacing(ctx, (-0.035 * size) + "px");
+  ctx.textAlign = "right";
+  ctx.fillText("counter", right, baseline);
+  const textLeft = right - ctx.measureText("counter").width;
+  ctx.textAlign = "left";
+  setSpacing(ctx, "0px");
+
+  const markLeft = textLeft - 0.166 * size - mark;
+  ctx.save();
+  ctx.translate(markLeft, baseline + 0.012 * size - mark);
+  ctx.scale(mark / 92, mark / 92);
+  ctx.translate(-4, -4);
+  ctx.fill(new Path2D(IMAGE_MARK), "evenodd");
+  ctx.restore();
+  return markLeft;
+}
+
+// The job summary in lines: whole " · " parts, the first line within
+// firstWidth (beside the logo), later ones the full width.
+function summaryLines(ctx, text, firstWidth) {
+  const lines = [];
+  let line = "";
+  text.split(" · ").forEach(function (part) {
+    const next = line ? line + " · " + part : part;
+    const width = lines.length ? IMAGE_RIGHT - IMAGE_X : firstWidth;
+    if (line && ctx.measureText(next).width > width) {
+      lines.push(line);
+      line = part;
+    } else {
+      line = next;
+    }
+  });
+  if (line) lines.push(line);
+  return lines;
+}
+
 function drawShareImage(canvas, r, values) {
   const ctx = canvas.getContext("2d");
   const ink = IMAGE_COLORS.ink;
@@ -3742,10 +3788,16 @@ function drawShareImage(canvas, r, values) {
   ctx.fillRect(0, 0, IMAGE_W, IMAGE_H);
   ctx.textBaseline = "alphabetic";
 
-  // Job summary, the hours, and the intro.
+  // The logo, top right: "counter" ends on the right margin, on the job
+  // summary's baseline, with the mark to its left (sized as in the header).
+  const logoLeft = drawImageLogo(ctx, IMAGE_RIGHT, 103);
+
+  // Job summary, the hours, and the intro. A summary that would come within
+  // 32px of the logo breaks at its " · " onto a second line.
   ctx.fillStyle = ink2;
   ctx.font = imageFont(22, 400, true);
-  ctx.fillText(jobSummary(values), IMAGE_X, 103);
+  summaryLines(ctx, jobSummary(values), logoLeft - 32 - IMAGE_X)
+    .forEach(function (line, i) { ctx.fillText(line, IMAGE_X, 103 + i * 30); });
 
   ctx.fillStyle = ink;
   ctx.font = imageFont(88, 300);
@@ -3969,6 +4021,7 @@ function makeShareImage() {
     fonts.ready,
     fonts.load(imageFont(88, 300)),
     fonts.load(imageFont(22, 400)),
+    fonts.load(imageFont(34, 400)),
     fonts.load(imageFont(22, 400, true)),
   ]).catch(function () {}) : Promise.resolve();
   return ready.then(function () {
