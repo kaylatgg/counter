@@ -2185,9 +2185,20 @@ function startFresh() {
   go({ screen: "inputs" });
 }
 
-function newCalculation() {
+// "Your unsaved menu calculation will be replaced if you start a new one."
+// The job's name starts lowercase after "unsaved"; the rest stays as written.
+function startOverText(jobKey) {
+  const name = calc.JOBS[jobKey].name;
+  return "Your unsaved " + name.charAt(0).toLowerCase() + name.slice(1) +
+    " calculation will be replaced if you start a new one.";
+}
+
+// The button that was pressed is the opener, since Safari doesn't focus a
+// clicked button; focus goes back to it when the dialog closes.
+function newCalculation(event) {
   if (draft && !projectStore.isUntouched(draft)) {
-    openDialog("start-over");
+    byId("start-over-text").textContent = startOverText(draft.job);
+    openDialog("start-over", event && event.currentTarget);
     byId("start-over-cancel").focus({ preventScroll: true });
   } else {
     startFresh();
@@ -2226,8 +2237,14 @@ function renderHeader() {
   const button = byId("save-project");
   button.hidden = !inCalculator;
   button.disabled = Boolean(project) && !projectsUnsaved;
-  if (project) {
-    button.textContent = projectsUnsaved ? "Try again" : "Saved";
+  if (project && projectsUnsaved) {
+    // On a phone only "Retry" fits; its name there is "Retry saving", so it
+    // starts with the visible word. Tablet and desktop: "Try again".
+    button.innerHTML = '<span class="save-long">Try again</span>' +
+      '<span class="save-short">Retry<span class="visually-hidden"> saving</span></span>';
+    button.removeAttribute("aria-label");
+  } else if (project) {
+    button.textContent = "Saved";
     button.removeAttribute("aria-label");
   } else {
     // On a phone only "Save" fits; the name stays "Save as project".
@@ -2415,7 +2432,6 @@ function renderProjects() {
   const now = new Date();
   show(byId("projects-empty"), list.length === 0);
   show(byId("project-table"), list.length > 0);
-  show(byId("new-calc"), list.length > 0);
   show(byId("all-projects-title"), list.length > 0);
   renderBackButton();
   renderDashboard(list);

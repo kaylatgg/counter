@@ -8,7 +8,7 @@ const init = () => {
   Storage.prototype.setItem = function () { if (window.__fail === "full") throw new DOMException("Quota exceeded", "QuotaExceededError"); return set.apply(this, arguments); };
 };
 const hdr = (p) => p.evaluate(() => ({
-  button: document.getElementById("save-project").textContent.trim(), disabled: document.getElementById("save-project").disabled,
+  button: document.getElementById("save-project").textContent.trim(), shown: document.getElementById("save-project").innerText.replace(/\s+/g, " ").trim(), disabled: document.getElementById("save-project").disabled,
   crumb: document.getElementById("crumb").hidden ? "" : document.getElementById("crumb-name").textContent,
   status: document.getElementById("save-status").textContent, statusMono: getComputedStyle(document.getElementById("save-status")).fontFamily.includes("Mono"),
   error: !document.getElementById("save-error").hidden, hash: location.hash, count: document.getElementById("projects-count").textContent,
@@ -35,12 +35,14 @@ for (const mode of ["blocked", "full"]) {
     await p.evaluate((m) => { window.__fail = m; }, mode);
     await p.click('#result button[data-target=rounds][data-step="1"]'); await p.waitForTimeout(400);
     h = await hdr(p); logState(ctx, mode + " autosave fails", h);
-    if (h.button !== "Try again" || h.disabled || !h.crumb || h.status !== "Not saved" || !h.statusMono || !h.error) note(ctx, mode + " autosave fails", JSON.stringify(h), "high");
+    // Phones: "Retry", named "Retry saving". Tablet and desktop: "Try again".
+    const retry = ctx.width < 760 ? "Retry saving" : "Try again";
+    if (h.shown !== retry || h.disabled || !h.crumb || h.status !== "Not saved" || !h.statusMono || !h.error) note(ctx, mode + " autosave fails", JSON.stringify(h), "high");
     if (mode === "blocked" && ctx.width === 1440) await axe(ctx, "not saved");
     // Try again while still failing: nothing else changes.
     await p.click("#save-project"); await p.waitForTimeout(150);
     const h2 = await hdr(p);
-    if (h2.button !== "Try again" || h2.disabled || h2.status !== "Not saved" || !h2.error ) note(ctx, mode + " try again, still failing", JSON.stringify(h2), "high");
+    if (h2.shown !== retry || h2.disabled || h2.status !== "Not saved" || !h2.error ) note(ctx, mode + " try again, still failing", JSON.stringify(h2), "high");
     // Storage back: Try again saves.
     await p.evaluate(() => { window.__fail = null; });
     await p.click("#save-project"); await p.waitForTimeout(150);

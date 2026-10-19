@@ -6,7 +6,7 @@ import { forEachConfig, note, closeAll, report, BASE } from "./lib.mjs";
 const SCREENS = {
   "screen 1": ["", [["header", ".topbar-inner"], ["headline", ".inputs-top"], ["left column", ".inputs-columns > .inputs-column:first-child"], ["right column", ".inputs-columns > .inputs-column:last-child"], ["tally card", ".tally"], ["button", "#check-offer"], ["footer", ".site-footer p"]]],
   "screen 2": ["#result", [["header", ".topbar-inner"], ["edit details", "#edit-details", false, "left"], ["controls", ".control-bar", false, "right"], ["hero panel", "#hero-panel"], ["stat", "#metrics > div", true], ["chart", ".charts-row > .chart", true], ["show the math", ".math summary"], ["price/reply", ".results-pair > *", true], ["reply box", "#reply"], ["footer", ".site-footer p"]]],
-  projects: ["#projects", [["header", ".topbar-inner"], ["back pill", "#back-to-calc", false, "left"], ["title", "#projects-title", false, "left"], ["new calc", "#new-calc", false, "right"], ["table", "#project-table"], ["footer", ".site-footer p"]]],
+  projects: ["#projects", [["header", ".topbar-inner"], ["back pill", "#back-to-calc", false, "left"], ["title", "#projects-title", false, "left"], ["table", "#project-table"], ["footer", ".site-footer p"]]],
 };
 
 await forEachConfig(async (ctx) => {

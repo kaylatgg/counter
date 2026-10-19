@@ -94,6 +94,8 @@ Decided with Kayla, October 13, 2026.
 - `--bg` page. A soft blurred sunset glow off the top-right corner with two thin circle outlines. Nothing over the form fields.
 - Header: "counter" (Geist 500, 20px) left; "Projects 3" and "Save as project" right. (The "for creative students" note was removed on October 11, 2026.)
 - Header spacing (760px and up; phones keep their own header): 24px between Projects, Share, and Save, so the visible gaps are equal. In a saved project the left reads "counter / Menu, Oct 11 Saved": a slash (Geist 300, 20px, `--muted`, hidden from screen readers), the name, then the mono status, 16px apart, all on one text baseline, also while renaming. The wordmark never moves when a project opens: it keeps the same baseline, and the rest lines up to it. Decided with Kayla, October 15, 2026.
+- **New calculation, in the header (October 19, 2026).** On every screen, between Share and Save (Projects, Share on screen 2, New calculation, Save). An outlined pill: 36px tall, 16px side padding, 1px `--ink` border, transparent fill, `--ink` text, 14px, with a 12px "+" (two 1.4px round-capped lines, `currentColor`) 7px before the label, drawn like the Share and Back icons. Hover adds the outline buttons' faint ink tint. It replaces the button next to the Projects title; the empty state keeps its own. A long project name gives way first (it ends in "…"); the wordmark never shrinks.
+  Reason: one filled action per screen. "Save as project" stays the only ink button, so starting over never looks like the main thing to do.
 - Headline, then the intro right under it, then "Example numbers..." in mono.
 - Two columns: left (01 The job, 02 The work), right 5 of 12 columns and sticky (tally panel, 03 Your numbers, 04 Their offer, button).
 - **Job choice:** a segmented control on `--paper`, selected segment ink with light text. Real radio inputs.
@@ -213,8 +215,11 @@ Sizes:
 **Header (both screens)**
 - 56px. Screen 1: "counter" left. Screen 2: "← Edit" left in place of the wordmark.
   Reason: on a phone, getting back to your inputs matters more than the logo.
-- Right: "Projects N" (`--paper` pill) and "Save" (ink pill). "Save as project" is shortened to "Save". After saving, it behaves the same as on desktop.
+- Right: "+" (New calculation), "Projects" (`--paper` pill) and "Save" (ink pill). "Save as project" is shortened to "Save". After saving, it behaves the same as on desktop.
   Reason: the full label doesn't fit next to Projects.
+- **New calculation (October 19, 2026):** only the "+", in an outlined 44px circle, named "New calculation", left of Projects, on screen 1 and Projects. Screen 2 leaves it out: Edit, Projects, Share, and Save already fill the row (358px of 350 at 390), and Edit is one tap away. Decided with Kayla.
+- **The Projects count is hidden on phones** to make room; the link's name still says it ("Projects 3"). Below 360px every header has 4px gaps and slightly less padding (Projects 9px, Save 14px, Edit 12px).
+- **"Try again" reads "Retry" on phones** (after an autosave fails), named "Retry saving" so the name starts with the visible word. Tablet and desktop keep "Try again". With these, every state fits one line at 320, 360, and 390. Decided with Kayla.
 - Sticky on both screens on phone. Clear at the top of screen 1 so the glow shows, then `--bg` with a 1px `--line` bottom border once you scroll.
   Reason: the form is long on a phone, so Save and Projects stay in reach.
 - On screen 2, the project name and its "Saved" status (when there is a project) go in one mono line under the header.
@@ -349,11 +354,13 @@ Approved by Kayla, October 12, 2026. References: `docs/design-share-desktop.png`
 
 Decided with Kayla, October 13, 2026. Replaces the panels that opened under the header.
 
-- Save as project, "Start over?", "Open the shared result?", and the link to copy by hand (when copying fails) are native `<dialog>`s opened with `showModal()`, styled like the image preview: `--bg`, 28px radius, the same dim backdrop, a 160ms fade in (none under reduced motion).
+- Save as project, "Save this calculation first?", "Open the shared result?", and the link to copy by hand (when copying fails) are native `<dialog>`s opened with `showModal()`, styled like the image preview: `--bg`, 28px radius, the same dim backdrop, a 160ms fade in (none under reduced motion).
   Reason: a panel at the top of the page pushed everything down and scrolled you away from where you were.
 - Desktop: centered, 480px wide, 32px padding, the text or field on top and the buttons under it, aligned left.
 - Phone (below 760px): a bottom sheet, full width, 28px top corners, clear of the home bar. Buttons share the row and are 44px tall.
 - Each keeps its panel's text, field, and buttons. Escape and Cancel (or Close) close it and return focus to the button that opened it; Escape on "Open the shared result?" means "Keep mine". The page never scrolls when a dialog opens or closes.
+- **"Save this calculation first?" (October 19, 2026)**, when New calculation would replace an unsaved calculation with changes. Under the title, 15px `--ink-2`, linked with `aria-describedby`: "Your unsaved menu calculation will be replaced if you start a new one." (the job's name, its first letter lowercase). Buttons: "Save as project" (filled ink, the main action: saves, then starts the new calculation; nothing starts over if saving fails), "Don't save" (outline: starts the new calculation), then "Cancel" as a link. Focus opens on Cancel, the safest choice. On phones the two actions stack full width, with Cancel under them.
+  Reason: one filled action per screen, and the safe choice is the main button, like banking apps: keeping your work is the easy path, throwing it away takes a deliberate tap.
 
 ## Don'ts
 

@@ -73,4 +73,61 @@ await forEachConfig(async (ctx) => {
   const w2 = await where(p);
   if (w2.screen !== "on-results" || w2.revealing || (await p.textContent("#hero-amount")) !== "17.39") note(ctx, "Forward after reveal", JSON.stringify(w2) + " " + await p.textContent("#hero-amount"), "high");
 }, { widths: [390, 1440], opts: { motion: true } });
+// New calculation, in the header: every screen (phone screen 2 leaves it out
+// for room; Edit is one tap away), the "Save this calculation first?" dialog.
+await forEachConfig(async (ctx) => {
+  const p = ctx.page;
+  const phone = ctx.width < 760;
+  const state = () => p.evaluate(() => ({ screen: document.body.className.match(/on-\w+/)?.[0], job: document.querySelector('input[name="job"]:checked').value, count: document.getElementById("count").value,
+    projects: document.getElementById("projects-count").textContent, dialog: document.getElementById("start-over").open, save: document.getElementById("save-panel").open,
+    text: document.getElementById("start-over-text").textContent, focus: document.activeElement.id }));
+  for (const [screen, hash] of [["screen 1", ""], ["screen 2", "#result"], ["projects", "#projects"]]) {
+    await fresh(ctx, hash);
+    const b = await p.evaluate(() => { const e = document.getElementById("new-calc"); const r = e.getBoundingClientRect(); return { shown: r.width > 0 && getComputedStyle(e).display !== "none", w: r.width, h: r.height, inHeader: !!e.closest(".topbar-inner") }; });
+    const want = !(phone && screen === "screen 2");
+    if (b.shown !== want || !b.inHeader) note(ctx, "new calculation " + screen, JSON.stringify(b), "high");
+    if (b.shown && phone && (b.w < 44 || b.h < 44)) note(ctx, "new calculation " + screen, "tap area " + b.w + "x" + b.h, "high");
+    if (b.shown && await p.locator(".topbar").getByRole("button", { name: "New calculation", exact: true }).count() !== 1) note(ctx, "new calculation " + screen, "no button named New calculation", "high");
+  }
+  // Nothing changed: straight to a fresh menu example, no dialog.
+  await fresh(ctx, "#projects");
+  await p.click("#new-calc"); await p.waitForTimeout(300);
+  let s = await state();
+  if (s.screen !== "on-inputs" || s.job !== "menu" || s.count !== "2" || s.dialog) note(ctx, "new calculation, untouched", JSON.stringify(s), "high");
+  // Changed: the dialog names the job; focus on Cancel.
+  const change = async (job, field) => {
+    await fresh(ctx);
+    await p.click(`label[for="field-${field}"]`); await p.click(`label[for="job-${job}"]`); await p.waitForTimeout(150);
+    await p.fill("#count", "5"); await p.locator("#count").blur(); await p.waitForTimeout(150);
+    await p.click("#new-calc"); await p.waitForTimeout(200);
+  };
+  for (const [job, field, name] of [["logo", "graphic", "logo"], ["custom", "graphic", "custom project"], ["socialvideo", "motion", "social video"]]) {
+    await change(job, field);
+    s = await state();
+    if (!s.dialog || s.text !== `Your unsaved ${name} calculation will be replaced if you start a new one.` || s.focus !== "start-over-cancel") note(ctx, "dialog for " + job, JSON.stringify(s), "high");
+  }
+  const named = await p.evaluate(() => { const d = document.getElementById("start-over"); return [document.getElementById(d.getAttribute("aria-labelledby")).textContent, document.getElementById(d.getAttribute("aria-describedby")).textContent.slice(0, 13),
+    ...["start-over-save", "start-over-yes", "start-over-cancel"].map((id) => { const e = document.getElementById(id); return e.textContent + ":" + e.className; })].join(" | "); });
+  if (named !== "Save this calculation first? | Your unsaved  | Save as project:action-button | Don't save:action-button outline | Cancel:link-button") note(ctx, "dialog parts", named, "high");
+  // Cancel keeps everything, focus back on the header button.
+  await p.click("#start-over-cancel"); await p.waitForTimeout(150);
+  s = await state();
+  if (s.dialog || s.job !== "socialvideo" || s.count !== "5" || s.focus !== "new-calc") note(ctx, "dialog Cancel", JSON.stringify(s), "high");
+  // Escape cancels too.
+  await p.click("#new-calc"); await p.waitForTimeout(150); await p.keyboard.press("Escape"); await p.waitForTimeout(150);
+  s = await state();
+  if (s.dialog || s.count !== "5") note(ctx, "dialog Escape", JSON.stringify(s), "high");
+  // Don't save: a fresh menu, nothing saved.
+  await p.click("#new-calc"); await p.waitForTimeout(150); await p.click("#start-over-yes"); await p.waitForTimeout(300);
+  s = await state();
+  if (s.dialog || s.screen !== "on-inputs" || s.job !== "menu" || s.count !== "2" || s.projects !== "0") note(ctx, "Don't save", JSON.stringify(s), "high");
+  // Save as project: saves, then a fresh menu.
+  await change("logo", "graphic");
+  await p.click("#start-over-save"); await p.waitForTimeout(150);
+  if (!(await state()).save) note(ctx, "Save as project from dialog", "save dialog didn't open", "high");
+  await p.keyboard.press("Enter"); await p.waitForTimeout(300);
+  s = await state();
+  const saved = await p.evaluate(() => { const list = JSON.parse(localStorage.getItem("counter.projects") || "[]"); return list.map((x) => x.job + ":" + x.inputs.count).join(","); });
+  if (s.dialog || s.save || s.screen !== "on-inputs" || s.job !== "menu" || s.count !== "2" || s.projects !== "1" || saved !== "logo:5") note(ctx, "Save as project, then fresh", JSON.stringify(s) + " saved " + saved, "high");
+}, { widths: [390, 1440] });
 report("navigation"); await closeAll();

@@ -336,7 +336,9 @@ h3 {
   color: var(--muted);
 }
 
+/* It never shrinks: a long project name gives way (ellipsis) instead. */
 .wordmark {
+  flex: none;
   font-size: 20px;
   font-weight: 400;
   letter-spacing: -0.035em;
@@ -400,6 +402,27 @@ h3 {
   background: var(--ink);
   color: var(--paper);
   font-size: 14px;
+}
+
+/* New calculation: an outlined pill with a "+" before the label, between
+   Share and Save, so "Save as project" stays the one filled button. */
+.new-calc-button {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  white-space: nowrap;
+  min-height: 36px;
+  padding: 0 16px;
+  border: 1px solid var(--ink);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ink);
+  font-size: 14px;
+}
+
+.new-calc-icon {
+  flex: none;
 }
 
 /* Share: a text button like Projects, between Projects and Save (screen 2).
@@ -547,6 +570,22 @@ h3 {
 .start-over-question {
   font-size: 16px;
   line-height: 1.5;
+}
+
+.start-over-text {
+  margin-top: 8px;
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+
+/* Save as project (filled), Don't save (outline), then Cancel as a link. */
+.start-over-actions {
+  align-items: center;
+}
+
+.start-over-actions .link-button {
+  margin: 0 0 0 8px;
 }
 
 /* Screen 1: inputs */
@@ -3334,6 +3373,7 @@ textarea {
 .segmented label,
 .action-button,
 .round-button,
+.new-calc-button,
 .edit-button,
 .check-button {
   transition: background-color 160ms var(--ease), color 160ms var(--ease);
@@ -3369,7 +3409,8 @@ textarea {
   .bar-stepper button:not([data-step="1"]):hover::before,
   .segmented input:not(:checked) + label:hover,
   .action-button.outline:hover,
-  .round-button.outline:hover {
+  .round-button.outline:hover,
+  .new-calc-button:hover {
     background: rgba(22, 22, 22, 0.06);
   }
 
@@ -3679,15 +3720,55 @@ textarea {
     background: var(--paper);
   }
 
+  /* The count is hidden on phones to make room for New calculation; the
+     link's name still says it ("Projects 3"). */
   .projects-count {
+    position: absolute;
+    width: 1px;
+    height: 1px;
     min-width: 0;
     padding: 0;
-    background: none;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  .projects-link {
+    position: relative;
   }
 
   .save-button {
     min-height: 44px;
     padding: 0 18px;
+  }
+
+  /* New calculation: only the "+", in an outlined 44px circle, left of
+     Projects. Its name stays "New calculation". */
+  .wordmark {
+    order: -2;
+  }
+
+  .new-calc-button {
+    order: -1;
+    justify-content: center;
+    width: 44px;
+    min-height: 44px;
+    padding: 0;
+  }
+
+  /* Screen 2 has no room for it next to Edit, Projects, Share, and Save;
+     Edit is one tap away, and screen 1 and Projects have it. */
+  .on-results .new-calc-button {
+    display: none;
+  }
+
+  .new-calc-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
   }
 
   /* Share: a 44px icon button on paper. Its name stays "Share" for screen readers. */
@@ -4400,33 +4481,30 @@ textarea {
     flex: 1;
     min-height: 44px;
   }
-}
 
-/* Small phones: the Projects title on top, then "New calculation" at full
-   width, so both edges sit on the grid lines. */
-@media (max-width: 419px) {
-  .home-top {
+  /* Start over: the two actions stacked full width, Cancel under them. */
+  .start-over-actions {
     flex-direction: column;
     align-items: stretch;
   }
 
-  .home-top .round-button {
-    width: 100%;
+  .start-over-actions .link-button {
+    margin: 0;
   }
 }
 
-/* The narrowest phones: Edit, Projects, Share, and Save still fit on one line
-   on screen 2, with a little less padding. Tap targets stay 44px tall. */
+/* The narrowest phones: every header still fits on one line, with a little
+   less padding. Tap targets stay 44px tall. */
 @media (max-width: 359px) {
-  .on-results .topbar-inner {
+  .topbar-inner {
     column-gap: 4px;
   }
 
-  .on-results .projects-link {
-    padding: 0 10px;
+  .projects-link {
+    padding: 0 9px;
   }
 
-  .on-results .save-button {
+  .save-button {
     padding: 0 14px;
   }
 

@@ -78,6 +78,8 @@
       <!-- Both labels sit in one grid cell, the inactive one hidden, so the
            button is as wide as the wider one and nothing moves when it changes. -->
       <button type="button" class="share-button" id="share-link" hidden><span class="share-state share-idle"><svg class="share-icon" width="14" height="14" viewBox="0 0 14 14" aria-hidden="true" focusable="false"><path d="M7 9V1.5M4 4.25 7 1.25l3 3M2.5 7v4.75a.75.75 0 0 0 .75.75h7.5a.75.75 0 0 0 .75-.75V7" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="share-label">Share</span></span><span class="share-state share-done"><svg class="share-check" width="14" height="14" viewBox="0 0 14 14" aria-hidden="true" focusable="false"><path d="M2.5 7.5 5.5 10.5 11.5 3.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="share-label">Copied</span></span></button>
+      <!-- Every screen: a fresh calculation (asks first if the unsaved one has changes). -->
+      <button type="button" class="new-calc-button" id="new-calc" aria-label="New calculation"><svg class="new-calc-icon" width="12" height="12" viewBox="0 0 12 12" aria-hidden="true" focusable="false"><path d="M6 1.5v9M1.5 6h9" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg><span class="new-calc-label">New calculation</span></button>
       <button type="button" class="save-button" id="save-project">Save as project</button>
     </div>
   </header>
@@ -95,7 +97,6 @@
 
       <div class="home-top">
         <h1 id="projects-title" tabindex="-1">Projects</h1>
-        <button type="button" class="round-button" id="new-calc">New calculation</button>
       </div>
 
       <div class="projects-empty" id="projects-empty" hidden>
@@ -699,12 +700,15 @@
     </dialog>
 
     <!-- "New calculation" when the unsaved one has changes. -->
-    <dialog class="panel-dialog" id="start-over" aria-labelledby="start-over-question">
-      <p class="start-over-question" id="start-over-question">Start over? Your unsaved calculation will be replaced.</p>
-      <div class="panel-actions">
-        <button type="button" class="action-button outline" id="start-over-save">Save as project</button>
-        <button type="button" class="action-button" id="start-over-yes">Start over</button>
-        <button type="button" class="action-button outline" id="start-over-cancel">Cancel</button>
+    <dialog class="panel-dialog" id="start-over" aria-labelledby="start-over-question" aria-describedby="start-over-text">
+      <div class="start-over-copy">
+        <p class="start-over-question" id="start-over-question">Save this calculation first?</p>
+        <p class="start-over-text" id="start-over-text">Your unsaved menu calculation will be replaced if you start a new one.</p>
+      </div>
+      <div class="panel-actions start-over-actions">
+        <button type="button" class="action-button" id="start-over-save">Save as project</button>
+        <button type="button" class="action-button outline" id="start-over-yes">Don't save</button>
+        <button type="button" class="link-button" id="start-over-cancel">Cancel</button>
       </div>
     </dialog>
 
