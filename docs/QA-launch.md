@@ -46,6 +46,17 @@ Same setup: Lighthouse 13.5.0 through `npx --yes`, `http://127.0.0.1:8000/counte
 - **Screen 1's layout shift is 0.068** (was 0.05), still within Google's "good" limit of 0.1. It's the title rewrapping when Geist arrives: item 4 below, still open.
 - **Best Practices and SEO** are unchanged: the favicon 404 and the missing meta description, both expected.
 
+### Link preview (October 18, 2026)
+
+The meta description and the link preview image (`og-image.png`, 1200 × 630, with Open Graph and Twitter tags) are now in `index.html`, so SEO no longer loses points for the meta description. Lighthouse 13.5.0 through `npx --yes`, SEO only, on screen 1 at the live URL `https://kaylatgg.github.io/counter/`:
+
+| Page | Mode | SEO |
+|---|---|---|
+| Screen 1 | mobile | 90 → 100 |
+| Screen 1 | desktop | 90 → 100 |
+
+No SEO audits fail. The favicon still waits for the logo.
+
 ## 1. Tests
 
 - `npm test`, the one full run, in a scratch copy, because Playwright and axe aren't installed in the project folder by design:
@@ -175,4 +186,4 @@ The two partner audits aren't in the repo under that name. The October 12 access
 4. **The font swap rewraps screen 1's title** (layout shift about 0.05, within Google's "good" limit of 0.1). It could be smoothed with a size-matched fallback font, if it bothers you.
 5. **"same work" and "same price" on the picked gap card are now ink** (fix 2), so on the picked card the difference between changed and unchanged values is only weight (500 vs 400). If you'd like a stronger cue there, it can't be a lighter color on that gradient.
 6. **Done October 17: ink, now 9.61:1.** **The Biggest fix sentence measured 4.50:1** at its worst pixel: it passes, but only just. Making it ink would give it room.
-7. **Expected, not added:** the meta description, the favicon (its 404 is the Best Practices point), and the link preview image. They wait for the logo.
+7. **Done October 18: the meta description and the link preview image** (SEO 100 on screen 1). **Still expected, not added:** the favicon (its 404 is the Best Practices point). It waits for the logo.
