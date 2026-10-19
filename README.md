@@ -78,24 +78,24 @@ Change: the calculation autosaves, so closing the tab loses nothing. One-tap + a
 
 Built to WCAG AA: every text and control contrast passes, everything works with the keyboard only, screen readers hear a short summary of the result after each change, and with reduced motion on, nothing moves.
 
-Lighthouse, October 17, 2026 (from [docs/QA-launch.md](docs/QA-launch.md)):
+Lighthouse, October 18, 2026, on the live site (from [docs/QA-launch.md](docs/QA-launch.md)):
 
 | Page | Mode | Performance | Accessibility | Best Practices | SEO |
 |---|---|---|---|---|---|
-| Screen 1 | mobile | 93 | 100 | 96 | 90 |
-| Screen 1 | desktop | 100 | 100 | 96 | 90 |
-| Screen 2 (result) | mobile | 89 | 100 | 96 | 90 |
-| Screen 2 (result) | desktop | 100 | 100 | 96 | 90 |
-| Projects | mobile | 89 | 100 | 96 | 90 |
-| Projects | desktop | 100 | 100 | 96 | 90 |
+| Screen 1 | mobile | 100 | 100 | 100 | 100 |
+| Screen 1 | desktop | 100 | 100 | 100 | 100 |
+| Screen 2 (result) | mobile | 100 | 100 | 100 | 100 |
+| Screen 2 (result) | desktop | 100 | 100 | 100 | 100 |
+| Projects | mobile | 100 | 100 | 100 | 100 |
+| Projects | desktop | 100 | 100 | 100 | 100 |
 
-Best Practices and SEO lose points only for the favicon and meta description, which wait for the logo.
+Nothing loses points: the favicon and the meta description are in.
 
 ## How it's built
 
 Plain HTML, CSS, and JavaScript, with no build step and no frameworks. The fonts are stored in the repo.
 
-150 unit tests (96 for the math, 10 for share links, 44 for projects) run on every push. 18 browser tests run locally in Chromium and WebKit, at widths from 320 to 1440px.
+151 unit tests (97 for the math, 10 for share links, 44 for projects) run on every push. 18 browser tests run locally in Chromium and WebKit, at widths from 320 to 1440px.
 
 In a production fintech build, I'd use TypeScript and store money in whole cents.
 

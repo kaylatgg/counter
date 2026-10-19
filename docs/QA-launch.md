@@ -57,6 +57,23 @@ The meta description and the link preview image (`og-image.png`, 1200 × 630, wi
 
 No SEO audits fail. The favicon still waits for the logo.
 
+### Favicon, logo, and live scores (October 18, 2026)
+
+The favicon (`favicon.ico`, `favicon.svg`, `apple-touch-icon.png`) and the header logo are in, so nothing waits for the logo anymore. Lighthouse 13.5.0 through `npx --yes`, all four categories, at the live URL `https://kaylatgg.github.io/counter/`. Projects ran with no saved projects. The middle column is the October 17 local score.
+
+| Page | Mode | Performance | Accessibility | Best Practices | SEO |
+|---|---|---|---|---|---|
+| Screen 1 | mobile | 93 → 100 | 100 | 96 → 100 | 90 → 100 |
+| Screen 1 | desktop | 100 | 100 | 96 → 100 | 90 → 100 |
+| Screen 2 (#result) | mobile | 89 → 100 | 100 | 96 → 100 | 90 → 100 |
+| Screen 2 (#result) | desktop | 100 | 100 | 96 → 100 | 90 → 100 |
+| Projects (#projects) | mobile | 89 → 100 | 100 | 96 → 100 | 90 → 100 |
+| Projects (#projects) | desktop | 100 | 100 | 96 → 100 | 90 → 100 |
+
+- **Nothing loses points.** Best Practices 100: the favicon 404 is gone. SEO 100: the meta description is in.
+- **Mobile Performance 100 is partly the server.** GitHub Pages compresses and caches files; the local Python server didn't, so these aren't a like-for-like comparison with the earlier local runs. Mobile: first paint 1.1s, largest paint 1.6 to 1.7s, layout shift 0.05 on screen 1 (item 4 below, still open), 0.001 on screen 2, 0 on Projects.
+- **Still listed, but costing no points:** Lighthouse's diagnostics suggest minifying and trimming `styles.css` and `app.js`, and longer cache times. Not done: there's no build step, on purpose.
+
 ## 1. Tests
 
 - `npm test`, the one full run, in a scratch copy, because Playwright and axe aren't installed in the project folder by design:
@@ -186,4 +203,4 @@ The two partner audits aren't in the repo under that name. The October 12 access
 4. **The font swap rewraps screen 1's title** (layout shift about 0.05, within Google's "good" limit of 0.1). It could be smoothed with a size-matched fallback font, if it bothers you.
 5. **"same work" and "same price" on the picked gap card are now ink** (fix 2), so on the picked card the difference between changed and unchanged values is only weight (500 vs 400). If you'd like a stronger cue there, it can't be a lighter color on that gradient.
 6. **Done October 17: ink, now 9.61:1.** **The Biggest fix sentence measured 4.50:1** at its worst pixel: it passes, but only just. Making it ink would give it room.
-7. **Done October 18: the meta description and the link preview image** (SEO 100 on screen 1). **Still expected, not added:** the favicon (its 404 is the Best Practices point). It waits for the logo.
+7. **Done October 18: the meta description and the link preview image** (SEO 100 on screen 1). **Done October 18: the favicon** (Best Practices 100). Nothing from this item is left.
