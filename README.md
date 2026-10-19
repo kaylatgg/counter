@@ -8,7 +8,7 @@ Counter helps you count all the work in a freelance job and see what an offer re
 
 **Live:** https://kaylatgg.github.io/counter/
 
-![Counter's result screen on desktop: "This offer pays $17.39/hr" on a sunset gradient, then the estimate, the gap, and the hours the offer pays for](docs/screenshot-result-desktop.png)
+![count every hour. A chart of 10 hours of work, where a $200 offer covers 7.2 hours and 2.8 hours are unpaid.](og-image.png)
 
 ## The problem
 
@@ -30,6 +30,8 @@ Each visual answers one question a student has while pricing a job.
 | Ways to close the gap | What can I change? | Up to three cards, side by side on desktop, each with its option's work on one shared scale, so price and scope trade-offs compare at a glance. |
 | Your pricing so far (waterfall) | Where did my money go across every job? | The bridge chart finance teams use in earnings reports, turned into rows on smaller screens: from target pay, each job's shortfall or gain, to what you kept. Every step adds up to the dollar. |
 | Each job vs your target | Which jobs are underpriced? | A bullet chart: each job as a share of its own target, lowest first, so different targets compare on one scale. |
+
+![Counter's result screen on desktop: "This offer pays $17.39/hr" on a sunset gradient, then the estimate, the gap, and the hours the offer pays for](docs/screenshot-result-desktop.png)
 
 ![The two result charts: "Where your 11.5 hours go", with paid hours in the gradient, unpaid hours in stripes, and "$200 runs out at 7.2 hrs"; and "Your rate drops as hours grow", a curve crossing the $25 target at 7.2 hours](docs/screenshot-charts.png)
 

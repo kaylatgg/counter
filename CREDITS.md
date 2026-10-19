@@ -22,6 +22,10 @@ Designed by Kayla Tang with Claude (planning, design mockups, and prompts) and b
 
 Every example job, hour, rate, expense, and offer in Counter is provisional, made up for illustration. They aren't benchmarks or market rates.
 
+## Link preview image
+
+The link preview image (`og-image.png`) was designed by Kayla Tang.
+
 ## Everything else
 
 No other images, code, or content come from outside sources.
