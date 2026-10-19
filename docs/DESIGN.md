@@ -59,6 +59,13 @@ Self-hosted since October 17, 2026: Geist 300, 400, and 500 and Geist Mono 400 a
 | Small labels | Geist 400, 13px, `--muted` |
 | Mono notes, units, ticks | Geist Mono 11 to 13px |
 
+**The logo lockup (October 18, 2026).** The header shows the mark, a ring with an off-center hole (the same shape as `favicon.svg`), just left of the wordmark "counter". The wordmark is Geist 400, 20px, -0.035em, lowercase. The mark is an inline SVG in `currentColor`, hidden from screen readers (the text "Counter" stays the name), cropped to the ring with no padding. Its sizes are in em, so it scales with the wordmark:
+- 0.666em tall and wide, the height of the "t".
+- Sits 0.012em below the baseline, the same overshoot as the round letters.
+- 0.166em from the "c", the width of the ring's thick side, so the gap matches the ring.
+
+Reason: built from the type's own measurements, so the mark and the word read as one lockup. The wordmark's line box is unchanged (30px tall, 17px from the top), so nothing moves when a project opens. On phones, screen 2 hides the wordmark for "Edit", and the mark hides with it.
+
 ## Layout grid
 
 Decided with Kayla, October 13, 2026.

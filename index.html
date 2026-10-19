@@ -5,6 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Counter</title>
   <meta name="description" content="See what a freelance offer really pays per hour. Built for art and design students.">
+  <link rel="icon" href="favicon.ico" sizes="32x32">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://kaylatgg.github.io/counter/">
   <meta property="og:title" content="Counter">
@@ -59,7 +62,7 @@
     <div class="topbar-inner">
       <!-- The wordmark and, in a saved project, "/ name Saved", on one baseline. -->
       <div class="brand">
-        <p class="wordmark">Counter</p>
+        <p class="wordmark"><svg class="wordmark-mark" viewBox="4 4 92 92" aria-hidden="true" focusable="false"><path fill="currentColor" fill-rule="evenodd" d="M4,50A46,46 0 1 0 96,50A46,46 0 1 0 4,50ZM31,44A27,27 0 1 0 85,44A27,27 0 1 0 31,44Z"/></svg>Counter</p>
 
         <!-- In a saved project: its name (click to rename) and "Saved". -->
         <div class="crumb" id="crumb" hidden>
@@ -240,6 +243,8 @@
               <label for="job-social">Social posts</label>
               <input id="job-poster" name="job" type="radio" value="poster">
               <label for="job-poster">Poster or flyer</label>
+              <input id="job-website" name="job" type="radio" value="website">
+              <label for="job-website">Website</label>
               <input id="job-portrait" name="job" type="radio" value="portrait">
               <label for="job-portrait">Portrait commission</label>
               <input id="job-editorial" name="job" type="radio" value="editorial">

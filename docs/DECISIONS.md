@@ -29,7 +29,10 @@ Four more graphic design jobs, all **provisional example numbers**, none validat
 | Logo | concepts | 3 | 2 | 1.5 | 1.5 | 2 x 1 | 1.5 | 11.5 hrs, $310 |
 | Social posts | posts | 6 | 2 | 0.5 | 1 | 2 x 1 | 0.5 | 8.5 hrs, $235 |
 | Poster or flyer | sizes | 2 | 3 | 0.75 | 1 | 2 x 1 | 1 | 8.5 hrs, $235 |
+| Website (added October 18, 2026) | pages | 5 | 4 | 3 | 2 | 2 x 2 | 2 | 27 hrs, $695 |
 | Custom | pieces | 1 | 0 | 0 | 0 | 0 x 0 | 0 | 0 hrs |
+
+Website is a provisional example too, not validated: research and wireframes 4, design per page 3, responsive versions and handoff 2. Its 27 hrs is shared with no other job.
 
 Note: the logo lands on the same 11.5 hrs and $310 as the menu, and the poster on the same 8.5 hrs and $235 as the social posts. Fine for examples, but worth knowing when comparing jobs in testing.
 

@@ -248,7 +248,7 @@ test("JSON that isn't a list gives an empty list", function () {
 test("broken projects are skipped, good ones kept", function () {
   const good = make("Good", "menu", "good", MON);
   const noName = Object.assign({}, good, { id: "x1", name: "  " });
-  const badJob = Object.assign({}, good, { id: "x2", job: "website" });
+  const badJob = Object.assign({}, good, { id: "x2", job: "billboard" });
   const badDate = Object.assign({}, good, { id: "x3", edited: "someday" });
   const missingInput = JSON.parse(JSON.stringify(good));
   missingInput.id = "x4";
@@ -353,7 +353,7 @@ test("no draft, a broken draft, or blocked storage gives no draft", function () 
   const storage = fakeStorage();
   storage.data[store.DRAFT_KEY] = "{oops";
   assert.deepStrictEqual(store.loadDraft(storage), { ok: true, draft: null });
-  storage.data[store.DRAFT_KEY] = JSON.stringify({ job: "website", inputs: {} });
+  storage.data[store.DRAFT_KEY] = JSON.stringify({ job: "billboard", inputs: {} });
   assert.deepStrictEqual(store.loadDraft(storage), { ok: true, draft: null });
   assert.deepStrictEqual(store.loadDraft(fakeStorage({ broken: true })), { ok: false, draft: null });
   assert.deepStrictEqual(store.saveDraft(fakeStorage({ full: true }), store.exampleDraft("menu")), { ok: false });

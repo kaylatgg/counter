@@ -562,7 +562,7 @@ function runJob(key) {
 
 // The Total column from the job table in CLAUDE.md. All provisional examples.
 const JOB_TOTALS = {
-  menu: 11.5, logo: 13, social: 8.5, poster: 9.5,
+  menu: 11.5, logo: 13, social: 8.5, poster: 9.5, website: 27,
   portrait: 9, editorial: 12.5,
   session: 10, event: 14.5, product: 13.5,
   logoanim: 15, socialvideo: 22, character: 32, explainer: 45,
@@ -572,7 +572,7 @@ const JOB_TOTALS = {
 test("four fields; every job is in one, and each field ends with Custom", function () {
   assert.deepStrictEqual(Object.keys(calc.WORK_FIELDS), ["graphic", "illustration", "photography", "motion"]);
   assert.deepStrictEqual(calc.WORK_FIELDS.motion.jobs, ["logoanim", "socialvideo", "character", "explainer", "custom"]);
-  assert.deepStrictEqual(calc.WORK_FIELDS.graphic.jobs, ["menu", "logo", "social", "poster", "custom"]);
+  assert.deepStrictEqual(calc.WORK_FIELDS.graphic.jobs, ["menu", "logo", "social", "poster", "website", "custom"]);
   assert.deepStrictEqual(calc.WORK_FIELDS.illustration.jobs, ["portrait", "editorial", "custom"]);
   assert.deepStrictEqual(calc.WORK_FIELDS.photography.jobs, ["session", "event", "product", "custom"]);
   Object.keys(calc.JOBS).forEach(function (key) {
@@ -603,6 +603,17 @@ test("logo: 2 + 3 x 2 = 8 production, 13 hrs, $345", function () {
   const r = runJob("logo");
   closeTo(r.hours.production, 8);
   assert.strictEqual(r.estimate, 345);
+});
+
+test("website: 4 + 5 x 3 = 19 production, 27 hrs, $695 with no rounding", function () {
+  const r = runJob("website");
+  closeTo(r.hours.production, 19);
+  closeTo(r.hours.revisions, 4);
+  closeTo(r.hours.total, 27);
+  closeTo(r.subtotal, 695);
+  assert.strictEqual(r.estimate, 695);
+  closeTo(r.rounding, 0);
+  assert.ok(calc.replyText("website", 5, 2, 695, 200).indexOf("For a website with 5 pages and 2 rounds of changes, my price is $695.") !== -1);
 });
 
 test("portrait session: 3 + 20 x 0.2 = 7 production, 10 hrs, $270", function () {
@@ -662,7 +673,7 @@ test("reply: counts of 2 or more are plural, with the offer line when the price 
 
 test("every job has its reply phrase", function () {
   const phrases = Object.keys(calc.JOBS).map(function (key) { return calc.JOBS[key].phrase; });
-  assert.deepStrictEqual(phrases, ["a menu", "a logo", "a set of social posts", "a poster or flyer",
+  assert.deepStrictEqual(phrases, ["a menu", "a logo", "a set of social posts", "a poster or flyer", "a website",
     "a portrait commission", "an editorial illustration", "a portrait session", "an event shoot",
     "a product shoot", "a logo animation", "a social video", "a character animation",
     "an explainer video", "a custom project"]);

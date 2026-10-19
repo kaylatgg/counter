@@ -46,6 +46,12 @@ const JOBS = {
     example: { count: 2, rounds: 2, setupHours: 4, itemHours: 0.75,
       communicationHours: 1, roundHours: 1, deliveryHours: 1 },
   },
+  website: {
+    name: "Website", phrase: "a website", countLabel: "Pages", item: "page", items: "pages",
+    setup: "Research and wireframes", perItem: "Design, per page", delivery: "Responsive versions and handoff",
+    example: { count: 5, rounds: 2, setupHours: 4, itemHours: 3,
+      communicationHours: 2, roundHours: 2, deliveryHours: 2 },
+  },
   portrait: {
     name: "Portrait commission", phrase: "a portrait commission", countLabel: "Figures",
     item: "figure", items: "figures",
@@ -124,7 +130,7 @@ const JOBS = {
 const WORK_FIELDS = {
   graphic: {
     name: "Graphic design",
-    jobs: ["menu", "logo", "social", "poster", "custom"],
+    jobs: ["menu", "logo", "social", "poster", "website", "custom"],
     expensesHint: "Money you spend on this job, like fonts, stock photos, or printed proofs.",
   },
   illustration: {

@@ -338,9 +338,19 @@ h3 {
 
 .wordmark {
   font-size: 20px;
-  font-weight: 500;
-  letter-spacing: -0.02em;
+  font-weight: 400;
+  letter-spacing: -0.035em;
   text-transform: lowercase;
+}
+
+/* The mark, left of the wordmark, sized from the type: as tall as the "t",
+   on the baseline with the round letters' overshoot, and as far from the "c"
+   as the ring's thick side. */
+.wordmark-mark {
+  width: 0.666em;
+  height: 0.666em;
+  vertical-align: -0.012em;
+  margin-right: 0.166em;
 }
 
 /* Screen 2: the header is the first of two sticky rows. */
@@ -3723,6 +3733,12 @@ textarea {
   /* Screen 2: "Edit" sits where the wordmark is. */
   .on-results .topbar .wordmark {
     visibility: hidden;
+  }
+
+  /* The hidden wordmark still holds its space; without the mark it holds
+     only the word's, so the buttons on the right fit as before. */
+  .on-results .topbar .wordmark-mark {
+    display: none;
   }
 
   #edit-details {
