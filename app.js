@@ -1524,6 +1524,12 @@ function renderJob() {
     button.setAttribute("aria-label",
       (button.dataset.step === "1" ? "One more " : "One less ") + j.item);
   });
+  // The hours arrows name their row: "Add half an hour, Layout, per page".
+  document.querySelectorAll(".hour-arrow").forEach(function (button) {
+    const label = document.querySelector('label[for="' + button.dataset.target + '"]').textContent;
+    button.setAttribute("aria-label",
+      (Number(button.dataset.step) > 0 ? "Add half an hour, " : "Remove half an hour, ") + label);
+  });
 
   showSelectedJobPill();
 
@@ -1846,12 +1852,18 @@ function onLeaveField() {
   update(true);
 }
 
-// Steppers: add or remove one, never below 0. Text that isn't a whole number counts as 0.
+// The five hours boxes with up and down arrows.
+const HOURS_ARROW_FIELDS = ["setup-hours", "item-hours", "communication-hours", "round-hours", "delivery-hours"];
+
+// Steppers: add or remove one (the hours arrows: half an hour), never below 0.
+// Text that isn't a number counts as 0. Rounded to 2 decimals, so 2.3 - 0.5
+// shows 1.8; whole numbers come out exactly as before.
 function stepField(button) {
   const input = byId(button.dataset.target);
   const parsed = calc.parseNumber(input.value, calc.FIELDS[input.name]);
   const current = parsed.value == null ? 0 : parsed.value;
-  input.value = String(Math.max(0, current + Number(button.dataset.step)));
+  const next = Math.max(0, current + Number(button.dataset.step));
+  input.value = String(Math.round(next * 100) / 100);
   clearTimeout(commitTimer);
   update(true);
 }
@@ -4125,6 +4137,22 @@ byId("counter-form").addEventListener("submit", function (event) {
 
 document.querySelectorAll("button[data-step]").forEach(function (button) {
   button.addEventListener("click", function () { stepField(button); });
+});
+
+// The hours arrows never take focus, so tapping one doesn't open the phone
+// keyboard or pull focus out of the box being edited.
+document.querySelectorAll(".hour-arrow").forEach(function (button) {
+  button.addEventListener("mousedown", function (event) { event.preventDefault(); });
+});
+
+// In the five hours boxes, Up and Down add or remove half an hour.
+HOURS_ARROW_FIELDS.forEach(function (id) {
+  byId(id).addEventListener("keydown", function (event) {
+    if (event.key !== "ArrowUp" && event.key !== "ArrowDown") return;
+    if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
+    event.preventDefault();
+    stepField({ dataset: { target: id, step: event.key === "ArrowUp" ? "0.5" : "-0.5" } });
+  });
 });
 
 Object.keys(FIELD_IDS).forEach(function (name) {

@@ -936,7 +936,7 @@ legend {
 /* Label, then a small bar of that row's hours, then the input. */
 .work-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 150px 90px;
+  grid-template-columns: minmax(0, 1fr) 150px 112px;
   column-gap: 20px;
   align-items: center;
   padding: 12px 0 14px;
@@ -998,6 +998,50 @@ legend {
 .unit {
   font-size: 12px;
   color: var(--muted);
+}
+
+/* Hours arrows, after "hrs": quiet ink-2 chevrons, up over down, so the
+   number reads as something you can change. Each 24 by 24 tap area is
+   placed over the box without taking space, so rows keep their height. */
+.hour-arrows {
+  position: relative;
+  flex: none;
+  align-self: stretch;
+  width: 16px;
+}
+
+/* 16px plus the 6px gap is what the column grew by (90px to 112px), so the
+   input, and the numbers in it, stay as wide as before. */
+.hour-arrow {
+  position: absolute;
+  left: -4px;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink-2);
+  touch-action: manipulation;
+}
+
+.hour-arrow[data-step^="-"] {
+  top: 50%;
+}
+
+.hour-arrow:not([data-step^="-"]) {
+  bottom: 50%;
+}
+
+.hour-arrow:active {
+  color: var(--ink);
+}
+
+@media (hover: hover) {
+  .hour-arrow:hover {
+    color: var(--ink);
+  }
 }
 
 /* The box shows focus, so the field itself doesn't need its own outline. */
@@ -4014,9 +4058,19 @@ textarea {
     padding: 0;
   }
 
+  /* Hours arrows: 40 by 30 tap areas, as big as fit. 12px past each side of
+     the arrows (over the gap and the edge of "hrs", never the input), and 8px
+     past the box above and below (the row gap above, the row's own padding
+     below, never the next row). */
+  .hour-arrow {
+    left: -12px;
+    width: 40px;
+    height: 30px;
+  }
+
   /* Work rows: the label on top, then the bar and the hours input on one line. */
   .work-row {
-    grid-template-columns: minmax(0, 1fr) 90px;
+    grid-template-columns: minmax(0, 1fr) 112px;
     row-gap: 8px;
   }
 

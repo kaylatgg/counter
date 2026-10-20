@@ -124,4 +124,71 @@ await forEachConfig(async (ctx) => {
     }
   }
 });
+// Hours arrows: half an hour up or down in the five work rows.
+await forEachConfig(async (ctx) => {
+  const p = ctx.page;
+  const IDS = ["setup-hours", "item-hours", "communication-hours", "round-hours", "delivery-hours"];
+  const val = (id) => p.inputValue("#" + id);
+  const arrow = (id, dir) => `.hour-arrow[data-target="${id}"][data-step="${dir === "up" ? "0.5" : "-0.5"}"]`;
+  await fresh(ctx);
+  for (const id of IDS) {
+    const start = Number(await val(id));
+    await tap(ctx, arrow(id, "up")); await p.waitForTimeout(60);
+    const up = Number(await val(id));
+    await tap(ctx, arrow(id, "down")); await tap(ctx, arrow(id, "down")); await p.waitForTimeout(60);
+    const down = Number(await val(id));
+    if (up !== start + 0.5 || down !== Math.max(0, start - 0.5)) note(ctx, "arrows " + id, `${start} up ${up}, down twice ${down}`, "high");
+  }
+  // Never below 0.
+  await p.fill("#delivery-hours", "0.5"); await tap(ctx, arrow("delivery-hours", "down")); await tap(ctx, arrow("delivery-hours", "down")); await p.waitForTimeout(60);
+  if (await val("delivery-hours") !== "0") note(ctx, "arrows at 0", "delivery " + await val("delivery-hours"), "high");
+  // 2.3 down is 1.8, not 1.7999999999999998.
+  await p.fill("#setup-hours", "2.3"); await tap(ctx, arrow("setup-hours", "down")); await p.waitForTimeout(60);
+  if (await val("setup-hours") !== "1.8") note(ctx, "arrows rounding", "2.3 down gave " + await val("setup-hours"), "high");
+  // Not a number counts as 0.
+  await p.fill("#round-hours", "abc"); await tap(ctx, arrow("round-hours", "up")); await p.waitForTimeout(60);
+  if (await val("round-hours") !== "0.5") note(ctx, "arrows on text", "abc up gave " + await val("round-hours"), "high");
+  // A focused box keeps focus; an arrow never takes it.
+  await p.focus("#item-hours"); await tap(ctx, arrow("item-hours", "up")); await p.waitForTimeout(60);
+  let focus = await p.evaluate(() => document.activeElement.id);
+  if (focus !== "item-hours") note(ctx, "arrows keep focus", "focus moved to " + (focus || "body"), "high");
+  await p.evaluate(() => document.activeElement.blur()); await tap(ctx, arrow("item-hours", "down"));
+  if (await p.evaluate(() => document.activeElement.classList.contains("hour-arrow"))) note(ctx, "arrows take no focus", "arrow focused", "high");
+  // Up and Down keys in the box, caret and focus stay.
+  await fresh(ctx);
+  await p.focus("#communication-hours"); await p.keyboard.press("ArrowUp"); await p.keyboard.press("ArrowUp"); await p.keyboard.press("ArrowDown"); await p.waitForTimeout(60);
+  focus = await p.evaluate(() => document.activeElement.id);
+  if (await val("communication-hours") !== "2" || focus !== "communication-hours") note(ctx, "arrow keys", `1.5 up up down gave ${await val("communication-hours")}, focus ${focus}`, "high");
+  // Arrow changes count as edits: totals, autosave, and the unsaved-changes question.
+  const total = await p.textContent("#total-communication");
+  const draft = await p.evaluate(() => JSON.parse(localStorage.getItem("counter.draft")).inputs.communicationHours);
+  if (total.trim() !== "2 hrs" || draft !== "2") note(ctx, "arrow edits", `total ${total.trim()}, draft ${draft}`, "high");
+  await tap(ctx, "#projects-link"); await p.waitForTimeout(200); await tap(ctx, "#new-calc"); await p.waitForTimeout(200);
+  if (!(await p.evaluate(() => document.getElementById("start-over").open))) note(ctx, "arrow edits", "New calculation didn't ask first", "high");
+  // The Tab order skips the arrows: the five boxes follow each other as before.
+  await fresh(ctx);
+  await p.focus("#setup-hours");
+  const order = ["setup-hours"];
+  for (let i = 0; i < 4; i++) { await p.keyboard.press("Tab"); order.push(await p.evaluate(() => document.activeElement.id || document.activeElement.className)); }
+  if (order.join() !== IDS.join()) note(ctx, "arrows tab order", order.join(" > "), "high");
+  // Names follow the row label, also after a job change.
+  await tap(ctx, "label[for=job-logo]"); await p.waitForTimeout(100);
+  const names = await p.evaluate(() => [...document.querySelectorAll('.hour-arrow[data-target="setup-hours"], .hour-arrow[data-target="item-hours"], .hour-arrow[data-target="delivery-hours"]')].map((b) => b.getAttribute("aria-label")));
+  const want = ["Add half an hour, Research and sketches", "Remove half an hour, Research and sketches", "Add half an hour, Design, per concept", "Remove half an hour, Design, per concept", "Add half an hour, Formats and color versions", "Remove half an hour, Formats and color versions"];
+  if (names.join("|") !== want.join("|")) note(ctx, "arrow names after Logo", names.join(" | "), "high");
+  if (await p.getByRole("button", { name: "Add half an hour, Emails, calls, and meetings", exact: true }).count() !== 1) note(ctx, "arrow names", "communication up arrow not found by name", "high");
+  // Tap areas at least 24 by 24, and the arrows add no height to the rows.
+  const sizes = await p.evaluate(() => {
+    const small = [...document.querySelectorAll(".hour-arrow")].map((b) => b.getBoundingClientRect()).filter((r) => r.width < 24 || r.height < 24).length;
+    const rows = () => [...document.querySelectorAll(".work-row")].map((r) => r.getBoundingClientRect().height);
+    const withArrows = rows();
+    document.querySelectorAll(".hour-arrows").forEach((a) => { a.style.display = "none"; });
+    const without = rows();
+    document.querySelectorAll(".hour-arrows").forEach((a) => { a.style.display = ""; });
+    return { small, same: withArrows.every((h, i) => Math.abs(h - without[i]) < 0.5), withArrows, without };
+  });
+  if (sizes.small) note(ctx, "arrow tap areas", sizes.small + " under 24 by 24", "high");
+  if (!sizes.same) note(ctx, "arrow row heights", JSON.stringify(sizes), "high");
+  await sideways(ctx, "hours arrows");
+}, { widths: [320, 390, 1440] });
 report("inputs"); await closeAll();
