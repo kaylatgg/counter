@@ -66,6 +66,8 @@ Self-hosted since October 17, 2026: Geist 300, 400, and 500 and Geist Mono 400 a
 
 Reason: built from the type's own measurements, so the mark and the word read as one lockup. The wordmark's line box is unchanged (30px tall, 17px from the top), so nothing moves when a project opens. On phones, screen 2 hides the wordmark for "Edit", and the mark hides with it.
 
+**Favicon (October 20, 2026).** `favicon.svg` and `favicon.ico` (16, 32, 48px) are the ink ring on a rounded `#ECECEA` tile (the page color, 22% corner radius), the same in light and dark mode; `apple-touch-icon.png` keeps its sunset tile. Reason: the ring alone, on a transparent background, disappeared on dark tab bars, and a version that switched with dark mode still vanished when the browser's theme didn't match the Mac's.
+
 ## Layout grid
 
 Decided with Kayla, October 13, 2026.
