@@ -360,6 +360,21 @@ function pricingSummary(list) {
   };
 }
 
+// The line under the unpaid hours. A quarter or less reads as "1 of every
+// N hours": rounding to tenths would call 10.1 of 69.5 hours (about 1 in 7)
+// "1 of every 10". More than a quarter reads as "N of every 10 hours".
+function unpaidLine(unpaidHours, hours) {
+  const lead = "Hours the offers did not cover. ";
+  if (unpaidHours <= 1e-9) return "Every hour was covered.";
+  if (Math.abs(unpaidHours - hours) <= 1e-9) return "None of your hours were covered.";
+  const share = unpaidHours / hours;
+  if (share < 0.05) return lead + "Less than 1 of every 20 hours.";
+  if (share <= 0.25) return lead + "About 1 of every " + Math.round(1 / share) + " hours.";
+  const tens = Math.round(share * 10);
+  if (tens === 10) return lead + "Almost every hour.";
+  return lead + "About " + tens + " of every 10 hours.";
+}
+
 // A new id: random where the browser can, otherwise time plus randomness.
 function newProjectId() {
   if (typeof crypto !== "undefined" && crypto.randomUUID) return crypto.randomUUID();
@@ -395,6 +410,7 @@ const projectStore = {
   formatEdited,
   newProjectId,
   pricingSummary,
+  unpaidLine,
 };
 
 if (typeof module !== "undefined") module.exports = projectStore;

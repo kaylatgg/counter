@@ -507,5 +507,27 @@ test("ties keep the list's order; more than 6 jobs group the rest as Other jobs"
   assert.deepStrictEqual(s.other, { count: 3, step: -6 });
 });
 
+group("unpaidLine");
+
+test("a small share reads as 1 of every N hours, not rounded to tenths", function () {
+  // 10.1 of 69.5 hours is 14.5%: about 1 in 7, which tenths would call 1 in 10.
+  assert.strictEqual(store.unpaidLine(10.1, 69.5), "Hours the offers did not cover. About 1 of every 7 hours.");
+  assert.strictEqual(store.unpaidLine(5, 25), "Hours the offers did not cover. About 1 of every 5 hours.");
+  assert.strictEqual(store.unpaidLine(25, 100), "Hours the offers did not cover. About 1 of every 4 hours.");
+  assert.strictEqual(store.unpaidLine(1, 20), "Hours the offers did not cover. About 1 of every 20 hours.");
+  assert.strictEqual(store.unpaidLine(1, 50), "Hours the offers did not cover. Less than 1 of every 20 hours.");
+});
+
+test("a larger share reads as N of every 10 hours", function () {
+  assert.strictEqual(store.unpaidLine(28.4, 69.5), "Hours the offers did not cover. About 4 of every 10 hours.");
+  assert.strictEqual(store.unpaidLine(26, 100), "Hours the offers did not cover. About 3 of every 10 hours.");
+  assert.strictEqual(store.unpaidLine(96, 100), "Hours the offers did not cover. Almost every hour.");
+});
+
+test("none or all unpaid", function () {
+  assert.strictEqual(store.unpaidLine(0, 40), "Every hour was covered.");
+  assert.strictEqual(store.unpaidLine(40, 40), "None of your hours were covered.");
+});
+
 console.log("\n" + passed + " passed, " + failed + " failed");
 if (failed > 0) process.exitCode = 1;

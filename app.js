@@ -2800,14 +2800,7 @@ function renderUnpaid(s) {
   const unpaid = tenths(s.unpaidHours);
   const paid = tenths(s.hours) - unpaid;
   byId("dash-unpaid").textContent = calc.formatNumber(unpaid);
-  const tens = Math.round(s.unpaidHours / s.hours * 10);
-  let line;
-  if (s.unpaidHours <= 1e-9) line = "Every hour was covered.";
-  else if (Math.abs(s.unpaidHours - s.hours) <= 1e-9) line = "None of your hours were covered.";
-  else if (tens === 0) line = "Hours the offers did not cover. Less than 1 of every 10 hours.";
-  else if (tens === 10) line = "Hours the offers did not cover. Almost every hour.";
-  else line = "Hours the offers did not cover. About " + tens + " of every 10 hours.";
-  byId("dash-unpaid-line").textContent = line;
+  byId("dash-unpaid-line").textContent = projectStore.unpaidLine(s.unpaidHours, s.hours);
   setBar(byId("dash-paid-bar"), paid);
   setBar(byId("dash-unpaid-bar"), unpaid);
   byId("dash-paid-hours").textContent = calc.formatHours(paid);
