@@ -145,9 +145,10 @@ function renderStatNumbers() {
   });
 }
 
-// Stats: 4 columns. Each is { label, value, unit, note, number, format }.
+// Stats: 4 columns. Each is { label, value, unit, note, number, format, key }.
 // number and format let it count: format(number) gives value.
-// morph: numbers tween from the old ones (same label, same place), 250ms.
+// morph: numbers tween from the old ones (same key or label, same place), 250ms.
+// key: for a label that changes with the numbers ("Hours $180 covers at $25/hr").
 function renderStats(items, morph) {
   const previous = shownStats;
   shownStats = items;
@@ -182,7 +183,7 @@ function renderStats(items, morph) {
   list.querySelectorAll(".stat-number").forEach(function (number, i) {
     const item = items[i];
     const old = previous[i];
-    if (!old || old.label !== item.label || typeof old.number !== "number" || old.number === item.number) return;
+    if (!old || (old.key || old.label) !== (item.key || item.label) || typeof old.number !== "number" || old.number === item.number) return;
     tween(MORPH_MS, function (t) { number.textContent = item.format(mix(old.number, item.number, t)); },
       function () { number.textContent = item.value; });
   });
@@ -287,7 +288,7 @@ function renderHero(r, values, morph) {
         format: priceFormat(r.estimate) },
       comparison,
       { label: "Hours " + calc.formatPrice(r.offer.amount - r.expenses) + " covers at " +
-        calc.formatPrice(r.rate) + "/hr", value: calc.formatNumber(covered), number: covered,
+        calc.formatPrice(r.rate) + "/hr", key: "covered", value: calc.formatNumber(covered), number: covered,
         format: calc.formatNumber,
         unit: "of " + calc.formatHours(r.hours.total), unitLine: true },
       { label: "Before expenses", value: calc.formatMoney(r.offer.hourlyBefore), unit: "/hr",
