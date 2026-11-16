@@ -95,7 +95,7 @@ Nothing loses points: the favicon and the meta description are in.
 
 Plain HTML, CSS, and JavaScript, with no build step and no frameworks. The fonts are stored in the repo.
 
-151 unit tests (97 for the math, 10 for share links, 44 for projects) run on every push. 18 browser tests run locally in Chromium and WebKit, at widths from 320 to 1440px.
+154 unit tests (97 for the math, 10 for share links, 47 for projects) run on every push. 18 browser tests run locally in Chromium and WebKit, at widths from 320 to 1440px.
 
 In a production fintech build, I'd use TypeScript and store money in whole cents.
 
