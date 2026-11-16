@@ -87,6 +87,16 @@
   /* The side margin. Percent is measured from the window, so this works as
      padding or margin on any full-width row. */
   --page-margin: max(var(--edge), calc((100% - var(--frame)) / 2));
+
+  /* The top of the result (hero, stats, summary sentence, the two charts). */
+  --charcoal: #232220;     /* precise lines, labels, target markers, rate curve. 13.4:1 */
+  --ink-quiet: #5F5C57;    /* supporting text in the chart sections. 5.6:1 */
+  --ink-3: #88847E;        /* gray part of the summary sentence, large text only. 3.1:1 */
+  --rule-warm: #DDD8CF;    /* hairlines in the chart sections, decorative */
+  --beyond: #ECE7DE;       /* hours past what the budget covers */
+  --beyond-line: #89847B;  /* their outline. 3.1:1 on --bg, 3.0:1 on --beyond */
+  --short: #F3E3D3;        /* area below target on the rate curve */
+  --select: #FBEBDF;       /* halo behind the current point on the rate curve */
 }
 
 /* Tablet: 760 to 1023px. */
