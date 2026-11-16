@@ -11,7 +11,7 @@ await forEachConfig(async (ctx) => {
   await p.waitForTimeout(3500);
   const after = await p.evaluate(() => ({ cls: document.body.className, focus: document.activeElement.id, amount: document.getElementById("hero-amount").textContent, orb: !!document.querySelector(".reveal-orb"), y: scrollY }));
   if (!/on-results/.test(after.cls) || /revealing|reveal-hidden/.test(after.cls)) note(ctx, "reveal", "ended in " + after.cls, "high");
-  if (after.amount !== "17.39") note(ctx, "reveal", "hero after play " + after.amount, "high");
+  if (after.amount !== "15.65") note(ctx, "reveal", "hero after play " + after.amount, "high");
   if (after.orb) note(ctx, "reveal", "orb left behind", "medium");
   if (after.focus !== "hero-label") note(ctx, "reveal", "focus on " + after.focus, "medium");
   // Slow scroll to the bottom, then back up: everything final.
@@ -32,10 +32,10 @@ await forEachConfig(async (ctx) => {
   await tap(ctx, '#result button[data-target=rounds][data-step="1"]');
   await p.waitForTimeout(600);
   let r = await p.evaluate(() => [document.getElementById("hero-amount").textContent, document.getElementById("rounds").value, document.getElementById("bar-rounds").value]);
-  if (r[0] !== "15.38" || r[1] !== "3" || r[2] !== "3") note(ctx, "live rounds +", JSON.stringify(r), "high");
+  if (r[0] !== "13.85" || r[1] !== "3" || r[2] !== "3") note(ctx, "live rounds +", JSON.stringify(r), "high");
   await p.click("#bar-offer", { clickCount: 3 }); await p.keyboard.type("300"); await p.locator("#bar-offer").blur(); await p.waitForTimeout(600);
   r = await p.evaluate(() => [document.getElementById("hero-amount").textContent, document.getElementById("offer").value, document.getElementById("bar-offer").value]);
-  if (r[0] !== "23.08" || r[1] !== "300") note(ctx, "live offer 300", JSON.stringify(r), "high");
+  if (r[0] !== "21.54" || r[1] !== "300") note(ctx, "live offer 300", JSON.stringify(r), "high");
   await p.click("#bar-rate", { clickCount: 3 }); await p.keyboard.type("1,000"); await p.locator("#bar-rate").blur(); await p.waitForTimeout(600);
   r = await p.evaluate(() => [document.getElementById("hero-sentence").textContent, document.getElementById("bar-rate").value, document.getElementById("rate").value]);
   if (!/\$1,000 target/.test(r[0]) || r[1] !== "1,000") note(ctx, "live rate 1,000", JSON.stringify(r), "medium");

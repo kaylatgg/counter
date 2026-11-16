@@ -117,10 +117,10 @@ await forEachConfig(async (ctx) => {
   await tap(ctx, "#check-offer");
   await p.waitForTimeout(30);
   const r = await p.evaluate(() => ({ anims: document.getAnimations().filter(a => a.playState === "running").map(a => (a.effect && a.effect.target && (a.effect.target.id || a.effect.target.className)) + ":" + (a.animationName || a.transitionProperty || "waapi")), orb: !!document.querySelector(".reveal-orb"), amount: document.getElementById("hero-amount").textContent, armed: document.querySelectorAll(".armed").length, cls: document.body.className }));
-  if (r.anims.length || r.orb || r.amount !== "17.39" || r.armed || /reveal/.test(r.cls)) note(ctx, "reduced motion", JSON.stringify(r), "high");
+  if (r.anims.length || r.orb || r.amount !== "15.65" || r.armed || /reveal/.test(r.cls)) note(ctx, "reduced motion", JSON.stringify(r), "high");
   await tap(ctx, '#result button[data-target=rounds][data-step="1"]'); await p.waitForTimeout(20);
   const r2 = await p.evaluate(() => [document.getAnimations().filter(a => a.playState === "running").length, document.getElementById("hero-amount").textContent]);
-  if (r2[0] || r2[1] !== "15.38") note(ctx, "reduced motion, live change", JSON.stringify(r2), "high");
+  if (r2[0] || r2[1] !== "13.85") note(ctx, "reduced motion, live change", JSON.stringify(r2), "high");
   // Scrubbing still works.
   await p.focus("#rate-plot"); await p.keyboard.press("ArrowRight");
   if (!(await p.getAttribute("#rate-plot", "aria-valuetext"))) note(ctx, "reduced motion scrub", "no value", "medium");

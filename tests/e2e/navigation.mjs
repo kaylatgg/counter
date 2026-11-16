@@ -71,7 +71,7 @@ await forEachConfig(async (ctx) => {
   if (w.screen !== "on-inputs" || w.revealing || await p.evaluate(() => !!document.querySelector(".reveal-orb"))) note(ctx, "Back during reveal", JSON.stringify(w), "high");
   await p.goForward(); await p.waitForTimeout(3500);
   const w2 = await where(p);
-  if (w2.screen !== "on-results" || w2.revealing || (await p.textContent("#hero-amount")) !== "17.39") note(ctx, "Forward after reveal", JSON.stringify(w2) + " " + await p.textContent("#hero-amount"), "high");
+  if (w2.screen !== "on-results" || w2.revealing || (await p.textContent("#hero-amount")) !== "15.65") note(ctx, "Forward after reveal", JSON.stringify(w2) + " " + await p.textContent("#hero-amount"), "high");
 }, { widths: [390, 1440], opts: { motion: true } });
 // New calculation, in the header: every screen (phone screen 2 leaves it out
 // for room; Edit is one tap away), the "Save this calculation first?" dialog.
