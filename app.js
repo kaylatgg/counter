@@ -240,7 +240,8 @@ function renderHero(r, values, morph) {
   }
 
   if (r.offer) {
-    const money = calc.formatMoney(r.offer.hourlyBefore);
+    // The headline rate is after expenses, the same rate the target is compared with.
+    const money = calc.formatMoney(r.offer.hourlyAfter);
     const target = calc.formatPrice(r.rate);
     if (r.offer.belowExpenses) {
       // Set above.
@@ -256,7 +257,7 @@ function renderHero(r, values, morph) {
     }
 
     if (!r.offer.belowExpenses) {
-      byId("hero-label").textContent = "This offer pays";
+      byId("hero-label").textContent = "This offer pays, after expenses";
       byId("hero-amount").textContent = money.slice(1);
       byId("hero-unit").textContent = "/hr";
       byId("hero-spoken").textContent = money + " per hour";
@@ -285,11 +286,12 @@ function renderHero(r, values, morph) {
       { label: "Your estimate", value: calc.formatWholeMoney(r.estimate), number: r.estimate,
         format: priceFormat(r.estimate) },
       comparison,
-      { label: "Hours the offer pays for", value: calc.formatNumber(covered), number: covered,
+      { label: "Hours " + calc.formatPrice(r.offer.amount - r.expenses) + " covers at " +
+        calc.formatPrice(r.rate) + "/hr", value: calc.formatNumber(covered), number: covered,
         format: calc.formatNumber,
         unit: "of " + calc.formatHours(r.hours.total), unitLine: true },
-      { label: "After expenses", value: calc.formatMoney(r.offer.hourlyAfter), unit: "/hr",
-        number: r.offer.hourlyAfter, format: calc.formatMoney },
+      { label: "Before expenses", value: calc.formatMoney(r.offer.hourlyBefore), unit: "/hr",
+        number: r.offer.hourlyBefore, format: calc.formatMoney },
     ], morph);
   } else {
     const estimate = calc.formatWholeMoney(r.estimate);
@@ -1897,9 +1899,9 @@ function paintHeroNumber(r, value) {
   byId("hero-amount").textContent = heroText(r, value);
 }
 
-// The number the hero shows: the estimate, the loss, or the offer per hour.
+// The number the hero shows: the estimate, the loss, or the offer per hour after expenses.
 function heroValue(r) {
-  return !r.offer ? r.estimate : (r.offer.belowExpenses ? r.offer.shortfall : r.offer.hourlyBefore);
+  return !r.offer ? r.estimate : (r.offer.belowExpenses ? r.offer.shortfall : r.offer.hourlyAfter);
 }
 
 // Which kind of number that is. A live change only tweens within the same kind.
