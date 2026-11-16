@@ -402,13 +402,13 @@ function calculate(values) {
       // Only when the offer covers expenses. Never negative hours.
       hoursCovered: belowExpenses ? null : (offer - values.expenses) / values.rate,
     };
-    // How far the offer's hourly pay (before expenses) is under the target.
+    // How far the offer's hourly pay after expenses is under the target.
     // Compared to the cent, so $24.999 doesn't read as "under your target."
-    const shortCents = Math.round((values.rate - hourly.before) * 100);
+    const shortCents = Math.round((values.rate - hourly.after) * 100);
     result.offer.meetsTarget = shortCents <= 0;
-    result.offer.shortPerHour = Math.max(0, values.rate - hourly.before);
+    result.offer.shortPerHour = Math.max(0, values.rate - hourly.after);
     result.offer.aboveTarget = shortCents < 0;
-    result.offer.overPerHour = Math.max(0, hourly.before - values.rate);
+    result.offer.overPerHour = Math.max(0, hourly.after - values.rate);
     // True when the offer pays for every hour of the job at the target rate.
     // The tolerance stops floating point noise from deciding an exact match.
     result.offer.coversAllHours =
