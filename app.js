@@ -351,16 +351,14 @@ const GROUP_NAMES = {
   delivery: "Delivery",
 };
 
-// The three groups people usually forget.
-const FORGOTTEN_GROUPS = ["communication", "revisions", "delivery"];
-
 // Chart sizes from docs/DESIGN.md, in px.
-const BAR_GAP = 4;
 const LABEL_SPACE = 8;
-// The runs-out label may come this close to its line, to fit.
+// The split label may come this close to its line, to fit.
 const MIN_LABEL_SPACE = 6;
 // Minimum space between two labels, in px.
 const LABEL_GAP = 8;
+// Room between a budget bar label and the edges of its part of the bar.
+const BUDGET_LABEL_PAD = 16;
 
 // A label's width, rounded up. offsetWidth rounds, so a 172.8px label read as
 // 172 could end 0.8px past the chart's edge.
@@ -403,10 +401,22 @@ function placeLabels(items, width) {
 
 // Chart 1: Where your hours go
 
+// The offer's budget, when there's one to show: an offer that covers expenses.
+function budgetFor(r) {
+  return r.offer && !r.offer.belowExpenses ? r.offer : null;
+}
+
 function renderHoursChart(r) {
   const total = r.hours.total;
-  const offer = r.offer;
+  const budget = budgetFor(r);
   byId("hours-title").textContent = "Where your " + hoursInWords(total) + " go";
+  const sub = byId("hours-sub");
+  show(sub, Boolean(budget));
+  show(byId("budget"), Boolean(budget));
+  if (budget) {
+    sub.textContent = "How far " + calc.formatPrice(budget.amount - r.expenses) + " goes at your " +
+      calc.formatPrice(r.rate) + " target";
+  }
 
   // What screen readers get instead of the bars.
   const items = ensureChildren(byId("hours-list"), WORK_GROUPS.length, function () {
@@ -416,183 +426,110 @@ function renderHoursChart(r) {
     items[i].textContent = GROUP_NAMES[group] + ": " + calc.formatHours(r.hours[group]);
   });
 
-  // With an offer: gradient = paid, stripes = unpaid.
-  // Without one: solid = design work, stripes = usually forgotten.
-  byId("legend-first").textContent = offer ? "paid by the offer" : "design work";
-  byId("legend-second").textContent = offer ? "unpaid" : "usually forgotten";
-  byId("legend-first-swatch").className = "legend-swatch " + (offer ? "paid" : "solid");
+  // By task: every group, even at 0 hrs. Widths follow hours (CSS flex-grow),
+  // but never get narrower than the label.
+  const tasks = ensureChildren(byId("group-legend"), WORK_GROUPS.length, function () {
+    const item = document.createElement("li");
+    item.innerHTML = '<span class="task-hours"><b></b><span class="unit"></span></span><span class="task-name"></span>';
+    return item;
+  });
+  WORK_GROUPS.forEach(function (group, i) {
+    const hours = r.hours[group];
+    tasks[i].dataset.group = group;
+    tasks[i].style.flexGrow = hours;
+    tasks[i].querySelector("b").textContent = calc.formatNumber(hours);
+    tasks[i].querySelector(".unit").textContent = isOne(hours) ? "hr" : "hrs";
+    tasks[i].querySelector(".task-name").textContent = GROUP_NAMES[group];
+  });
 
-  const parts = [];
-  const unpaid = offer ? offer.unpaidHours : 0;
-  if (unpaid > 1e-9) {
-    parts.push([hoursInWords(unpaid)], isOne(unpaid) ? " goes unpaid, and " : " go unpaid, and ");
-  }
-  if (r.outsideProduction > 0) {
-    parts.push([hoursInWords(r.outsideProduction)],
-      isOne(r.outsideProduction) ? " is work outside production." : " are work outside production.");
+  const outside = r.outsideProduction;
+  if (outside > 0) {
+    setRichText(byId("hours-summary"), [[calc.formatHours(outside)],
+      (isOne(outside) ? " is" : " are") + " outside production, the easiest to forget."]);
   } else {
-    parts.push(parts.length ? "all " : "All ", [hoursInWords(total)], " are production.");
+    setRichText(byId("hours-summary"), ["All ", [calc.formatHours(total)], " are production."]);
   }
-  setRichText(byId("hours-summary"), parts);
 
   layoutHoursChart(r);
 }
 
-// One bar per group, widths by hours. Paid hours share one continuous gradient
-// across the groups; unpaid hours are stripes. A dashed line marks where the money runs out.
+// The budget bar: the hours the offer covers at the target (the gradient), then
+// the rest. A charcoal line at the split, labeled. Labels that don't fit inside
+// their part of the bar go under it.
 function layoutHoursChart(r) {
-  const row = byId("bar-row");
-  const width = row.clientWidth;
-  if (!width) return;
+  const budget = budgetFor(r);
+  const bar = byId("budget-bar");
+  const width = bar.clientWidth;
+  if (!budget || !width) return;
 
   const total = r.hours.total;
-  const offer = r.offer;
-  const groups = WORK_GROUPS.filter(function (group) { return r.hours[group] > 1e-9; });
-  const usable = width - (groups.length - 1) * BAR_GAP;
+  const all = budget.coversAllHours;
+  const covered = all ? total : Math.max(0, budget.hoursCovered);
+  const coveredWidth = (covered / total) * width;
+  byId("budget-covered").style.width = coveredWidth + "px";
+  bar.classList.toggle("all", all);
 
-  // Hours the offer pays for, from the start. null means no offer.
-  let covered = null;
-  if (offer && offer.belowExpenses) covered = 0;
-  else if (offer && offer.coversAllHours) covered = Infinity;
-  else if (offer) covered = offer.hoursCovered;
-  const showLine = Boolean(offer) && !offer.belowExpenses && !offer.coversAllHours;
+  const coveredLabel = byId("covered-label");
+  const beyondLabel = byId("beyond-label");
+  coveredLabel.textContent = all ? "All " + calc.formatHours(total) + " at your target"
+    : calc.formatHours(covered) + " at your target";
+  beyondLabel.textContent = calc.formatHours(total - covered) + " more than it covers";
+  show(beyondLabel, !all);
 
-  const bars = ensureChildren(row, groups.length, function () {
-    const bar = document.createElement("div");
-    bar.className = "bar-group";
-    bar.innerHTML = '<span class="bar-paid"></span><span class="bar-unpaid"></span>';
-    return bar;
-  });
-
-  let x = 0;
-  let start = 0;
-  let lineX = null;
-  const spans = [];
-  groups.forEach(function (group, i) {
-    const hours = r.hours[group];
-    const w = (hours / total) * usable;
-    const bar = bars[i];
-    bar.dataset.group = group;
-    bar.style.width = w + "px";
-    bar.classList.toggle("no-offer", covered === null);
-
-    let share;
-    if (covered === null) share = group === "production" ? 1 : 0;
-    else share = Math.max(0, Math.min(1, (covered - start) / hours));
-    const paid = bar.firstElementChild;
-    paid.style.width = (share * 100) + "%";
-    paid.style.backgroundSize = width + "px 100%";
-    paid.style.backgroundPosition = (-x) + "px 0";
-    bar.lastElementChild.style.width = ((1 - share) * 100) + "%";
-
-    if (showLine && lineX === null && covered <= start + hours + 1e-9) {
-      lineX = x + share * w;
+  // Inside its part of the bar if it fits, otherwise under the bar, at the
+  // part's left edge. Labels under the bar never overlap.
+  const under = byId("budget-under");
+  const parts = [
+    { label: coveredLabel, inside: byId("budget-covered"), left: 0, width: coveredWidth },
+  ];
+  if (!all) parts.push({ label: beyondLabel, inside: byId("budget-beyond"), left: coveredWidth, width: width - coveredWidth });
+  const moved = [];
+  parts.forEach(function (part) {
+    if (part.label.parentElement !== part.inside) part.inside.appendChild(part.label);
+    part.label.style.left = "";
+    if (labelWidth(part.label) + 2 * BUDGET_LABEL_PAD > part.width) {
+      under.appendChild(part.label);
+      moved.push({ element: part.label, left: part.left });
     }
-    spans.push({ group: group, left: x, right: x + w });
-    x += w + BAR_GAP;
-    start += hours;
   });
+  under.classList.toggle("two-rows", moved.length ? placeLabels(moved, width) : false);
+  show(under, moved.length > 0);
 
-  // The runs-out line and its label. With no line, the label row says why.
-  const line = byId("runs-out");
-  const lineLabel = byId("runs-out-label");
-  let flag = "";
-  if (offer && offer.belowExpenses) {
-    flag = calc.formatPrice(offer.amount) + " doesn't cover your expenses";
-  } else if (offer && offer.coversAllHours) {
-    flag = calc.formatPrice(offer.amount) + " covers all " + calc.formatHours(total);
-  }
-  show(line, Boolean(flag) || lineX !== null);
-  line.classList.toggle("flag", Boolean(flag));
+  // The split line and its label: left of the line, then right of it, 8px
+  // away, then 6px. If neither fits, the label is centered on the line, inside
+  // the chart, and the line starts 4px below it so it never runs through the text.
+  const line = byId("budget-split");
+  const lineLabel = byId("budget-split-label");
+  show(line, !all);
+  if (all) return;
+  lineLabel.textContent = calc.formatPrice(budget.amount - r.expenses) + " covers up to here at " +
+    calc.formatPrice(r.rate) + "/hr";
+  line.style.left = coveredWidth + "px";
   line.style.top = "";
   line.style.height = "";
   lineLabel.style.left = "";
   lineLabel.style.right = "";
   lineLabel.style.top = "";
-  if (flag) {
-    lineLabel.textContent = flag;
-    line.style.left = "0px";
-  } else if (lineX !== null) {
-    lineLabel.textContent = calc.formatPrice(offer.amount) + " runs out at " +
-      calc.formatHours(offer.hoursCovered);
-    line.style.left = lineX + "px";
-    // Left of the line, then right of it, 8px away, then 6px. If neither fits,
-    // the label is centered on the line, inside the chart, and the line starts
-    // 4px below it so it never runs through the text. The label is placed from
-    // just inside the line's 1px border.
-    const from = lineX + line.clientLeft;
-    const w = labelWidth(lineLabel);
-    let side = null;
-    [LABEL_SPACE, MIN_LABEL_SPACE].forEach(function (gap) {
-      if (side) return;
-      if (from - gap - w >= 0) side = { right: gap };
-      else if (from + gap + w <= width) side = { left: gap };
-    });
-    if (side) {
-      lineLabel.style.left = side.left !== undefined ? side.left + "px" : "auto";
-      lineLabel.style.right = side.right !== undefined ? side.right + "px" : "auto";
-    } else {
-      lineLabel.style.left = (Math.max(0, Math.min(width - w, from - w / 2)) - from) + "px";
-      lineLabel.style.right = "auto";
-      const drop = lineLabel.offsetTop + lineLabel.offsetHeight + 4;
-      const lineStyle = getComputedStyle(line);
-      line.style.top = (parseFloat(lineStyle.top) + drop) + "px";
-      line.style.height = (parseFloat(lineStyle.height) - drop) + "px";
-      lineLabel.style.top = (lineLabel.offsetTop - drop) + "px";
-    }
+  const from = coveredWidth;
+  const w = labelWidth(lineLabel);
+  let side = null;
+  [LABEL_SPACE, MIN_LABEL_SPACE].forEach(function (gap) {
+    if (side) return;
+    if (from - gap - w >= 0) side = { right: gap };
+    else if (from + gap + w <= width) side = { left: gap };
+  });
+  if (side) {
+    lineLabel.style.left = side.left !== undefined ? side.left + "px" : "auto";
+    lineLabel.style.right = side.right !== undefined ? side.right + "px" : "auto";
+  } else {
+    lineLabel.style.left = (Math.max(0, Math.min(width - w, from - w / 2)) - from) + "px";
+    lineLabel.style.right = "auto";
+    const drop = lineLabel.offsetTop + lineLabel.offsetHeight + 4;
+    const lineStyle = getComputedStyle(line);
+    line.style.top = (parseFloat(lineStyle.top) + drop) + "px";
+    line.style.height = (parseFloat(lineStyle.height) - drop) + "px";
+    lineLabel.style.top = (lineLabel.offsetTop - drop) + "px";
   }
-
-  // A bracket over the forgotten groups.
-  const forgotten = spans.filter(function (span) { return FORGOTTEN_GROUPS.indexOf(span.group) !== -1; });
-  const bracket = byId("bracket");
-  show(bracket, forgotten.length > 0);
-  if (forgotten.length) {
-    const left = forgotten[0].left;
-    const right = forgotten[forgotten.length - 1].right;
-    bracket.style.left = left + "px";
-    bracket.style.width = (right - left) + "px";
-    const label = byId("bracket-label");
-    label.textContent = calc.formatHours(r.outsideProduction) + " usually forgotten";
-    // Keep the label inside the chart.
-    // It's placed from just inside the bracket's 1px border.
-    label.style.left = Math.min(0, width - (left + bracket.clientLeft + labelWidth(label))) + "px";
-  }
-
-  // Phone: group names and hours in a 2-column legend under the bar, each with
-  // a swatch of how it's drawn (paid, unpaid, or with no offer, solid or striped).
-  const legend = ensureChildren(byId("group-legend"), groups.length, function () {
-    const item = document.createElement("li");
-    item.innerHTML = '<span class="legend-swatch"></span><span class="group-name"></span><span class="group-hours"></span>';
-    return item;
-  });
-  let legendStart = 0;
-  groups.forEach(function (group, i) {
-    let drawn;
-    if (covered === null) drawn = group === "production" ? "solid" : "striped";
-    else drawn = covered > legendStart + 1e-9 ? "paid" : "striped";
-    legendStart += r.hours[group];
-    legend[i].firstElementChild.className = "legend-swatch " + drawn;
-    legend[i].querySelector(".group-name").textContent = GROUP_NAMES[group];
-    legend[i].querySelector(".group-hours").textContent = calc.formatNumber(r.hours[group]) + "h";
-  });
-
-  // Under each group: hours and name. Labels never overlap.
-  const labels = ensureChildren(byId("bar-labels"), groups.length, function () {
-    const label = document.createElement("span");
-    label.className = "bar-label";
-    label.innerHTML = '<span class="bar-hours"><b></b><span class="unit"></span></span><span class="bar-name"></span>';
-    return label;
-  });
-  groups.forEach(function (group, i) {
-    const hours = r.hours[group];
-    labels[i].querySelector("b").textContent = calc.formatNumber(hours);
-    labels[i].querySelector(".unit").textContent = isOne(hours) ? "hr" : "hrs";
-    labels[i].querySelector(".bar-name").textContent = GROUP_NAMES[group];
-  });
-  const twoRows = placeLabels(spans.map(function (span, i) {
-    return { element: labels[i], left: span.left };
-  }), width);
-  byId("bar-labels").classList.toggle("two-rows", twoRows);
 }
 
 // Chart 2: Your rate drops as hours grow
@@ -3283,7 +3220,6 @@ function finishPlays() {
   stopCountUp();
   if (lastResult && byId("hero-amount")) paintHeroNumber(lastResult, heroValue(lastResult));
   byId("result").getAnimations({ subtree: true }).forEach(function (animation) { animation.finish(); });
-  endHoursPlay();
   byId("metrics").classList.remove("play");
   disarm();
   renderStatNumbers();
@@ -3302,7 +3238,7 @@ function armStats() {
   });
 }
 
-// No bars yet (the stripes wipe in), and the line, bracket, and labels wait.
+// No bar yet (it wipes in, then fills), and the line and labels wait.
 function armHours() {
   byId("hours-chart").classList.add("armed");
 }
@@ -3334,63 +3270,41 @@ function playStats() {
 }
 
 // The hours chart acts out the finding, one step after another (DESIGN.md):
-// stripes wipe in (400ms), the paid fill runs from the left and stops where the
-// money runs out (700ms), the runs-out line drops in (200ms), the bracket draws
-// (300ms), then the group labels rise in, 60ms apart. Only clip-path, opacity,
-// and transform move.
+// the bar wipes in (400ms) as all hours past the budget, the gradient fills
+// from the left and stops where the budget runs out (700ms), the split line
+// drops in (200ms), then the labels and By task rise in, 60ms apart. Only
+// clip-path, opacity, and transform move. With no budget bar, only By task plays.
 const HOURS_WIPE_MS = 400;
 const HOURS_FILL_MS = 700;
 const HOURS_LINE_MS = 200;
-const HOURS_BRACKET_MS = 300;
 const HOURS_LABEL_MS = 300;
 const HOURS_LABEL_GAP_MS = 60;
 
 function playHours() {
   const chart = byId("hours-chart");
-  const row = byId("bar-row");
-  const lineAt = HOURS_WIPE_MS + HOURS_FILL_MS;
-  const bracketAt = lineAt + HOURS_LINE_MS;
-  const labelsAt = bracketAt + HOURS_BRACKET_MS;
-
-  // The paid fill: one front moving left to right across the groups (with the
-  // shared ease), drawn as a clip on each paid part. Sampled into keyframes so
-  // the browser runs it, not a script on every frame.
-  const paid = Array.prototype.slice.call(row.querySelectorAll(".bar-paid")).map(function (span) {
-    return { span: span, left: span.parentElement.offsetLeft - row.offsetLeft, width: span.offsetWidth };
-  });
-  const fillTo = paid.reduce(function (most, part) { return Math.max(most, part.left + part.width); }, 0);
-  const STEPS = 24;
+  const hasBudget = !byId("budget").hidden;
+  const lineAt = hasBudget ? HOURS_WIPE_MS + HOURS_FILL_MS : 0;
+  const labelsAt = hasBudget ? lineAt + HOURS_LINE_MS : 0;
 
   // From armed to playing in one frame: every animation starts in the armed look.
-  chart.classList.add("hours-playing");
   chart.classList.remove("armed");
-  animate(row, [{ clipPath: "inset(0 100% 0 0)" }, { clipPath: "inset(0 0 0 0)" }], { duration: HOURS_WIPE_MS });
-  paid.forEach(function (part) {
-    const frames = [];
-    for (let i = 0; i <= STEPS; i++) {
-      const front = fillTo * ease(i / STEPS);
-      const hidden = Math.max(0, Math.min(part.width, part.left + part.width - front));
-      frames.push({ offset: i / STEPS, clipPath: "inset(0 " + hidden + "px 0 0)" });
-    }
-    animate(part.span, frames, { duration: HOURS_FILL_MS, delay: HOURS_WIPE_MS, easing: "linear" });
-  });
-  animate(byId("runs-out"), [{ opacity: 0, transform: "translateY(-8px)" }, { opacity: 1, transform: "none" }],
-    { duration: HOURS_LINE_MS, delay: lineAt });
-  animate(byId("bracket"), [{ clipPath: "inset(0 100% 0 0)" }, { clipPath: "inset(0 0 0 0)" }],
-    { duration: HOURS_BRACKET_MS, delay: bracketAt });
-  animate(byId("bracket-label"), [{ opacity: 0 }, { opacity: 1 }], { duration: HOURS_BRACKET_MS, delay: bracketAt });
-  const labels = Array.prototype.slice.call(document.querySelectorAll("#bar-labels .bar-label, #group-legend li"))
+  if (hasBudget) {
+    animate(byId("budget-bar"), [{ clipPath: "inset(0 100% 0 0)" }, { clipPath: "inset(0 0 0 0)" }],
+      { duration: HOURS_WIPE_MS });
+    animate(byId("budget-covered"), [{ clipPath: "inset(0 100% 0 0)" }, { clipPath: "inset(0 0 0 0)" }],
+      { duration: HOURS_FILL_MS, delay: HOURS_WIPE_MS });
+    animate(byId("budget-split"), [{ opacity: 0, transform: "translateY(-8px)" }, { opacity: 1, transform: "none" }],
+      { duration: HOURS_LINE_MS, delay: lineAt });
+  }
+  const labels = Array.prototype.slice.call(chart.querySelectorAll(".budget-label, .by-task-title, #group-legend li"))
     .filter(function (label) { return label.offsetParent; });
   labels.forEach(function (label, i) {
-    animate(label, [{ opacity: 0, transform: "translateY(6px)" }, { opacity: 1, transform: "none" }],
-      { duration: HOURS_LABEL_MS, delay: labelsAt + i * HOURS_LABEL_GAP_MS });
+    // Labels inside the bar are centered with a transform, so they only fade.
+    const inBar = label.classList.contains("budget-label") && !label.closest("#budget-under");
+    const frames = inBar ? [{ opacity: 0 }, { opacity: 1 }]
+      : [{ opacity: 0, transform: "translateY(6px)" }, { opacity: 1, transform: "none" }];
+    animate(label, frames, { duration: HOURS_LABEL_MS, delay: labelsAt + i * HOURS_LABEL_GAP_MS });
   });
-  // The stripes under the paid parts are only needed until the fill is done.
-  later(lineAt, endHoursPlay);
-}
-
-function endHoursPlay() {
-  byId("hours-chart").classList.remove("hours-playing");
 }
 
 // The rate chart: the grid fades in (200ms), the target line draws (300ms), the

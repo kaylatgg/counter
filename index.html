@@ -555,19 +555,28 @@
         <p class="budget-sentence" id="budget-sentence">After expenses, $200 leaves <strong>$180 for your time:</strong> enough for <strong>7.2 of your 11.5 hours</strong> at your $25 target.</p>
 
         <div class="charts-row">
-          <!-- Chart 1: Where your hours go -->
+          <!-- Chart 1: Where your hours go. With an offer, how far it goes at your
+               target; then every task, by hours. -->
           <section class="chart" id="hours-chart" aria-labelledby="hours-title">
-            <h2 id="hours-title">Where your 11.5 hours go</h2>
-
-            <div class="bars" id="bars" aria-hidden="true">
-              <div class="bracket" id="bracket"><span class="bracket-label" id="bracket-label"></span></div>
-              <div class="runs-out" id="runs-out"><span class="runs-out-label" id="runs-out-label"></span></div>
-              <div class="bar-row" id="bar-row"></div>
-              <div class="bar-labels" id="bar-labels"></div>
+            <div class="chart-head">
+              <h2 id="hours-title">Where your 11.5 hours go</h2>
+              <p class="chart-sub" id="hours-sub">How far $180 goes at your $25 target</p>
             </div>
 
-            <!-- Phone only: the group names and hours, in two columns under the bar. -->
-            <ul class="group-legend" id="group-legend" aria-hidden="true"></ul>
+            <div class="bars" id="bars" aria-hidden="true">
+              <div class="budget" id="budget">
+                <div class="budget-split" id="budget-split"><span class="budget-split-label" id="budget-split-label">$180 covers up to here at $25/hr</span></div>
+                <div class="budget-bar" id="budget-bar">
+                  <div class="budget-covered" id="budget-covered"><span class="budget-label" id="covered-label">7.2 hrs at your target</span></div>
+                  <div class="budget-beyond" id="budget-beyond"><span class="budget-label" id="beyond-label">4.3 hrs more than it covers</span></div>
+                </div>
+                <!-- Labels that don't fit inside their part of the bar move here. -->
+                <div class="budget-under" id="budget-under"></div>
+              </div>
+
+              <p class="by-task-title">By task</p>
+              <ul class="group-legend" id="group-legend"></ul>
+            </div>
 
             <ul class="visually-hidden" id="hours-list">
               <li>Production: 6 hrs</li>
@@ -576,12 +585,7 @@
               <li>Delivery: 1 hr</li>
             </ul>
 
-            <ul class="legend" id="hours-legend">
-              <li><span class="legend-swatch paid" id="legend-first-swatch" aria-hidden="true"></span><span id="legend-first">paid by the offer</span></li>
-              <li><span class="legend-swatch striped" aria-hidden="true"></span><span id="legend-second">unpaid</span></li>
-            </ul>
-
-            <p class="chart-summary" id="hours-summary">4.3 hours go unpaid, and 5.5 hours are work outside production.</p>
+            <p class="chart-summary" id="hours-summary"><strong>5.5 hrs</strong> are outside production, the easiest to forget.</p>
           </section>
 
           <!-- Chart 2: Your rate drops as hours grow -->

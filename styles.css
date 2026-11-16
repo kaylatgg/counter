@@ -2730,158 +2730,164 @@ legend {
   color: var(--ink);
 }
 
-/* Chart 1: the bracket at the top, the runs-out label at 48px, bars from 76px. */
+/* Chart 1. The subtitle sits right of the title (phones: under it). */
+.chart-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 6px 32px;
+}
+
+.chart-head .chart-sub {
+  margin-top: 0;
+  color: var(--ink-quiet);
+}
+
 .bars {
-  position: relative;
   margin-top: 24px;
-  padding-top: 76px;
 }
 
-.bracket {
-  position: absolute;
-  top: 26px;
-  height: 10px;
-  border: 1px solid var(--ink);
-  border-bottom: 0;
+/* The budget bar: 36px above it for the split line's label, then 72px of bar.
+   The bar's own fill is the hours past the budget; the gradient covers the rest. */
+.budget {
+  position: relative;
+  padding-top: 36px;
+  margin-bottom: 48px;
 }
 
-.bracket-label {
+.budget-bar {
+  position: relative;
+  display: flex;
+  height: 72px;
+  background: var(--beyond);
+  box-shadow: inset 0 0 0 1px var(--beyond-line);
+}
+
+.budget-covered {
+  position: relative;
+  flex: none;
+  height: 100%;
+  background: var(--paid);
+}
+
+.budget-beyond {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+}
+
+.budget-label {
   position: absolute;
-  bottom: 16px;
-  left: 0;
-  font-family: var(--mono);
-  font-size: 12px;
+  top: 50%;
+  left: 16px;
+  transform: translateY(-50%);
+  font-size: 15px;
+  line-height: 1.2;
+  color: var(--charcoal);
   white-space: nowrap;
 }
 
-/* A dashed line from the label row down through the bars. */
-.runs-out {
+/* app.js moves a label here when it doesn't fit inside its part of the bar. */
+.budget-under {
+  position: relative;
+  height: 20px;
+  margin-top: 10px;
+}
+
+.budget-under.two-rows {
+  height: 44px;
+}
+
+.budget-under .budget-label {
+  top: 0;
+  transform: none;
+}
+
+.budget-under .budget-label.second-row {
+  top: 24px;
+}
+
+/* The 2px line where the budget runs out, from 36px above the bar through it. */
+.budget-split {
   position: absolute;
-  top: 48px;
+  top: 0;
   z-index: 1;
   width: 0;
-  height: calc(28px + 96px);
-  border-left: 1px dashed var(--ink);
+  height: calc(36px + 72px);
+}
+
+.budget-split::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -1px;
+  width: 2px;
+  background: var(--charcoal);
 }
 
 /* app.js places it beside the line, or centered above it when tight. */
-.runs-out-label {
+.budget-split-label {
   position: absolute;
   top: -2px;
   left: 8px;
   font-family: var(--mono);
   font-size: 12px;
   line-height: 1.2;
+  color: var(--charcoal);
   white-space: nowrap;
 }
 
-/* With no line, the label row says why: "covers all", "doesn't cover your expenses". */
-.runs-out.flag {
-  border-left: 0;
+/* By task: one row, widths by hours (app.js sets flex-grow), never narrower
+   than the label. */
+.by-task-title {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--ink-quiet);
 }
 
-.runs-out.flag .runs-out-label {
-  left: 0;
-}
-
-.bar-row {
+.group-legend {
   display: flex;
   gap: 4px;
-  height: 96px;
+  margin-top: 12px;
 }
 
-.bar-group {
-  display: flex;
-  flex: none;
-  height: 100%;
-}
-
-.bar-paid {
-  height: 100%;
-  background: var(--paid);
-  background-repeat: no-repeat;
-}
-
-.bar-unpaid {
-  height: 100%;
-  background: var(--stripe);
-  outline: 1px solid var(--ink);
-  outline-offset: -1px;
-}
-
-/* No offer: solid is design work, stripes are the hours people forget. */
-.bar-group.no-offer .bar-paid {
-  background: var(--ink);
-}
-
-.bar-labels {
-  position: relative;
-  height: 52px;
-  margin-top: 14px;
-}
-
-.bar-labels.two-rows {
-  height: 104px;
-}
-
-.bar-label {
-  position: absolute;
-  top: 0;
+.group-legend li {
+  flex: 0 1 0;
+  padding: 12px 16px 0 0;
+  border-top: 2px solid var(--ink-quiet);
   white-space: nowrap;
 }
 
-.bar-label.second-row {
-  top: 52px;
+.group-legend li[data-group="production"] {
+  border-top-color: var(--charcoal);
 }
 
-.bar-hours b {
-  font-size: 24px;
+.task-hours b {
+  font-size: 32px;
   font-weight: 300;
   letter-spacing: -0.02em;
+  color: var(--charcoal);
 }
 
-.bar-hours .unit {
+.task-hours .unit {
   margin-left: 4px;
-  font-size: 11px;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--ink-quiet);
 }
 
-.bar-name {
+.task-name {
   display: block;
-  font-size: 13px;
-  color: var(--ink-2);
+  margin-top: 2px;
+  font-size: 14px;
+  color: var(--ink-quiet);
 }
 
-.legend {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px 24px;
+#hours-summary {
   margin-top: 20px;
-  font-size: 13px;
-}
-
-.legend li {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.legend-swatch {
-  width: 22px;
-  height: 10px;
-}
-
-.legend-swatch.paid {
-  background: var(--paid);
-}
-
-.legend-swatch.solid {
-  background: var(--ink);
-}
-
-.legend-swatch.striped {
-  background: var(--stripe);
-  outline: 1px solid var(--ink);
-  outline-offset: -1px;
 }
 
 /* Chart 2: the rate curve. Mono labels, dashed grid, solid target. */
@@ -3518,19 +3524,20 @@ textarea {
 }
 
 /* Live changes morph in 250ms, only after the first render. Off for reduced motion (below). */
-.charts-ready .bar-group,
-.charts-ready .bar-paid,
-.charts-ready .bar-unpaid,
+.charts-ready .budget-covered,
 .charts-ready .row-bar,
 .charts-ready .tally-segment {
   transition: width 250ms var(--ease);
 }
 
-.charts-ready .runs-out,
-.charts-ready .bracket,
-.charts-ready .bar-label,
+.charts-ready .budget-split,
+.charts-ready .budget-under .budget-label,
 .charts-ready .tally-label {
   transition: left 250ms var(--ease), width 250ms var(--ease);
+}
+
+.charts-ready .group-legend li {
+  transition: flex-grow 250ms var(--ease);
 }
 
 /* Armed: a block's starting state, set by script while it's still below the
@@ -3540,14 +3547,15 @@ textarea {
   transform: scaleX(0);
 }
 
-/* Hours chart: no bars yet; the stripes wipe in when it plays. */
-#hours-chart.armed .bar-row {
+/* Hours chart: no bar yet; it wipes in, then the gradient fills it. */
+#hours-chart.armed .budget-bar,
+#hours-chart.armed .budget-covered {
   clip-path: inset(0 100% 0 0);
 }
 
-#hours-chart.armed .runs-out,
-#hours-chart.armed .bracket,
-#hours-chart.armed .bar-label,
+#hours-chart.armed .budget-split,
+#hours-chart.armed .budget-label,
+#hours-chart.armed .by-task-title,
 #hours-chart.armed .group-legend li {
   opacity: 0;
 }
@@ -3564,21 +3572,6 @@ textarea {
 #offer-chart.armed .rate-now,
 #offer-chart.armed .rate-now-label {
   opacity: 0;
-}
-
-/* The hours chart playing: every hour is stripes, under the paid fill. */
-.hours-playing .bar-group {
-  position: relative;
-  isolation: isolate;
-}
-
-.hours-playing .bar-group::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  background: var(--stripe);
-  box-shadow: inset 0 0 0 1px var(--ink);
 }
 
 /* Rate chart dots scale from their centers. */
@@ -3634,8 +3627,8 @@ textarea {
   }
 }
 
-/* Desktop (12 columns): inputs 7 + 5, stats 3 each, charts 6 + 6, price and
-   reply 6 + 6. */
+/* Desktop (12 columns): inputs 7 + 5, stats 3 each, the charts stacked at 12,
+   price and reply 6 + 6. */
 @media (min-width: 1024px) {
   .inputs-columns > .inputs-column:first-child {
     grid-column: span 7;
@@ -3654,14 +3647,8 @@ textarea {
     grid-column: span 3;
   }
 
-  .charts-row > *,
   .results-pair > * {
     grid-column: span 6;
-  }
-
-  /* No offer, or one at or below expenses: the hours chart takes the full row. */
-  .charts-row.single > * {
-    grid-column: 1 / -1;
   }
 }
 
@@ -3702,8 +3689,7 @@ textarea {
 .preview-short,
 .check-hours,
 .save-short,
-.edit-short,
-.group-legend {
+.edit-short {
   display: none;
 }
 
@@ -4366,50 +4352,29 @@ textarea {
     font-size: 20px;
   }
 
-  /* Hours chart: 64px bars; group names move into a legend under the bar. */
+  /* Hours chart: the subtitle under the title; By task in a 2 by 2 grid. */
+  .chart-head {
+    display: block;
+  }
+
+  .chart-head .chart-sub {
+    margin-top: 6px;
+  }
+
   .bars {
     margin-top: 16px;
-    padding-top: 28px;
-  }
-
-  .bracket,
-  .bar-labels {
-    display: none;
-  }
-
-  .bar-row {
-    height: 64px;
-  }
-
-  .runs-out {
-    top: 0;
-    height: calc(28px + 64px);
   }
 
   .group-legend {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 8px 16px;
-    margin-top: 16px;
-    font-size: 13px;
+    gap: 24px 16px;
   }
 
   .group-legend li {
-    display: flex;
-    align-items: center;
-    gap: 8px;
     min-width: 0;
-  }
-
-  .group-legend .legend-swatch {
-    flex: none;
-    width: 14px;
-  }
-
-  .group-hours {
-    font-family: var(--mono);
-    font-size: 12px;
-    color: var(--ink-2);
+    padding-right: 0;
+    white-space: normal;
   }
 
   .rate-plot {
@@ -4600,12 +4565,6 @@ textarea {
 
   .on-results .edit-button {
     padding: 0 12px;
-  }
-
-  /* The hours chart legend in one column, so "Communication 1h" fits
-     inside the grid lines. */
-  .group-legend {
-    grid-template-columns: minmax(0, 1fr);
   }
 }
 
