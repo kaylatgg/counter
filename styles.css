@@ -54,17 +54,18 @@
   --muted: #6B6B67;   /* small labels, 4.5:1 on --bg. Never on the gradient */
   --line: #CFCFCB;    /* hairlines, decorative */
   --error: #B42318;
-  --red: #E8432E;     /* the "now" dot on the rate chart, from the sunset */
+  --red: #E5603F;     /* coral: the "now" dot on the rate chart, from the sunset */
 
   /* The answer. Only in four places: the screen 1 corner glow, the button's
      circle, the screen 2 hero panel, and paid hours in the chart. */
-  --sunset: radial-gradient(55% 95% at 88% 100%, #E8432E 0%, rgba(232, 67, 46, 0) 70%),
-            radial-gradient(50% 80% at 70% 80%, #FF8A3D 0%, rgba(255, 138, 61, 0) 70%),
-            radial-gradient(40% 60% at 55% 55%, #F7B98F 0%, rgba(247, 185, 143, 0) 75%),
-            linear-gradient(160deg, #C9D6EA 0%, #D9CDE6 40%, #EBC7B5 100%);
+  /* Cool gray-blue to warm sand underneath, coral to apricot on top. No lavender. */
+  --sunset: radial-gradient(55% 95% at 88% 100%, #E5603F 0%, rgba(229, 96, 63, 0) 70%),
+            radial-gradient(50% 80% at 70% 80%, #F59A62 0%, rgba(245, 154, 98, 0) 70%),
+            radial-gradient(40% 60% at 55% 55%, #F4B48E 0%, rgba(244, 180, 142, 0) 75%),
+            linear-gradient(160deg, #C9D3DC 0%, #DCD9D2 42%, #EBCDB8 100%);
   /* The corner glow: the same colors, hottest at the center. */
-  --glow: radial-gradient(circle, #E8432E 0%, #FF8A3D 24%, #F7B98F 44%, rgba(247, 185, 143, 0.35) 57%, rgba(235, 199, 181, 0) 71%);
-  --paid: linear-gradient(90deg, #C9D6EA 0%, #EBC7B5 30%, #FF8A3D 70%, #E8432E 100%);
+  --glow: radial-gradient(circle, #E5603F 0%, #F59A62 24%, #F4B48E 44%, rgba(244, 180, 142, 0.35) 57%, rgba(235, 205, 184, 0) 71%);
+  --paid: linear-gradient(90deg, #C9D3DC 0%, #E9D7C6 30%, #F59A62 70%, #E5603F 100%);
   /* Stripes always mean unpaid or forgotten hours. */
   --stripe: repeating-linear-gradient(90deg, var(--ink) 0 1px, transparent 1px 4px);
   /* Light grain over the gradients, about 8%. */
@@ -3647,7 +3648,7 @@ textarea {
 }
 
 .grid-overlay > span {
-  background: rgba(232, 67, 46, 0.06);
+  background: rgba(229, 96, 63, 0.06);
 }
 
 .grid-overlay > span:nth-child(n + 13) {

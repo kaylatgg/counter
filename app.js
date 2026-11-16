@@ -3712,16 +3712,16 @@ function drawSunset(ctx, x, y, w, h) {
   const cx = x + w / 2;
   const cy = y + h / 2;
   const base = ctx.createLinearGradient(cx - dx * half, cy - dy * half, cx + dx * half, cy + dy * half);
-  base.addColorStop(0, "#C9D6EA");
-  base.addColorStop(0.4, "#D9CDE6");
-  base.addColorStop(1, "#EBC7B5");
+  base.addColorStop(0, "#C9D3DC");
+  base.addColorStop(0.42, "#DCD9D2");
+  base.addColorStop(1, "#EBCDB8");
   ctx.fillStyle = base;
   ctx.fillRect(x, y, w, h);
   // [radius x, radius y, center x, center y, color rgb, where it fades out]
   [
-    [0.40, 0.60, 0.55, 0.55, "247,185,143", 0.75],
-    [0.50, 0.80, 0.70, 0.80, "255,138,61", 0.70],
-    [0.55, 0.95, 0.88, 1.00, "232,67,46", 0.70],
+    [0.40, 0.60, 0.55, 0.55, "244,180,142", 0.75],
+    [0.50, 0.80, 0.70, 0.80, "245,154,98", 0.70],
+    [0.55, 0.95, 0.88, 1.00, "229,96,63", 0.70],
   ].forEach(function (blob) {
     ctx.save();
     ctx.translate(x + blob[2] * w, y + blob[3] * h);
@@ -3871,10 +3871,10 @@ function drawShareImage(canvas, r, values) {
   const coverX = xAt(covered);
 
   const paid = ctx.createLinearGradient(IMAGE_X, 0, IMAGE_RIGHT, 0);
-  paid.addColorStop(0, "#C9D6EA");
-  paid.addColorStop(0.3, "#EBC7B5");
-  paid.addColorStop(0.7, "#FF8A3D");
-  paid.addColorStop(1, "#E8432E");
+  paid.addColorStop(0, "#C9D3DC");
+  paid.addColorStop(0.3, "#E9D7C6");
+  paid.addColorStop(0.7, "#F59A62");
+  paid.addColorStop(1, "#E5603F");
   segments.forEach(function (s) {
     const paidEnd = Math.max(s.x, Math.min(s.x + s.w, coverX));
     if (paidEnd > s.x) {
@@ -3986,8 +3986,8 @@ function drawShareImage(canvas, r, values) {
     let legendX = IMAGE_X;
     if (mode === "part") {
       const swatch = ctx.createLinearGradient(legendX, 0, legendX + 30, 0);
-      swatch.addColorStop(0, "#EBC7B5");
-      swatch.addColorStop(1, "#E8432E");
+      swatch.addColorStop(0, "#E9D7C6");
+      swatch.addColorStop(1, "#E5603F");
       ctx.fillStyle = swatch;
       ctx.fillRect(legendX, 1015, 30, 16);
       ctx.fillStyle = ink;
