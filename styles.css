@@ -2677,6 +2677,27 @@ legend {
   color: var(--muted);
 }
 
+/* Under the stats, with an offer: what's left for your time. Gray, with the
+   key parts in charcoal. --ink-3 is 3.1:1, so it's for large text only. */
+.budget-sentence {
+  max-width: 980px;
+  margin-top: 88px;
+  font-size: 40px;
+  font-weight: 400;
+  letter-spacing: -0.025em;
+  line-height: 1.18;
+  color: var(--ink-3);
+}
+
+.budget-sentence strong {
+  font-weight: 400;
+  color: var(--charcoal);
+}
+
+.budget-sentence:not([hidden]) + .charts-row {
+  margin-top: 72px;
+}
+
 /* The two charts side by side. */
 .charts-row {
   display: grid;
@@ -4334,6 +4355,10 @@ textarea {
   .charts-row {
     row-gap: 48px;
     margin-top: 44px;
+  }
+
+  .budget-sentence {
+    font-size: 26px;
   }
 
   .chart h2,

@@ -263,6 +263,7 @@ function renderHero(r, values, morph) {
       byId("hero-unit").textContent = "/hr";
       byId("hero-spoken").textContent = money + " per hour";
     }
+    renderBudgetSentence(r);
     // The hero itself says what a loss costs, so the warning isn't needed too.
     show(sentence, true);
     show(warning, false);
@@ -307,6 +308,7 @@ function renderHero(r, values, morph) {
     sentence.textContent = text;
     show(sentence, true);
     show(warning, false);
+    show(byId("budget-sentence"), false);
     fitHeroNumber();
 
     const forgotten = r.outsideProduction;
@@ -323,6 +325,23 @@ function renderHero(r, values, morph) {
         note: "worth " + calc.formatMoney(forgotten * r.rate) + " at your rate" },
     ], morph);
   }
+}
+
+// Under the stats, with an offer that covers expenses: "After expenses, $200
+// leaves $180 for your time: enough for 7.2 of your 11.5 hours at your $25 target."
+function renderBudgetSentence(r) {
+  const element = byId("budget-sentence");
+  const offer = r.offer;
+  show(element, !offer.belowExpenses);
+  if (offer.belowExpenses) return;
+  const hours = offer.coversAllHours
+    ? "all " + hoursInWords(r.hours.total)
+    : calc.formatNumber(offer.hoursCovered) + " of your " + hoursInWords(r.hours.total);
+  setRichText(element, [
+    "After expenses, " + calc.formatPrice(offer.amount) + " leaves ",
+    [calc.formatPrice(offer.amount - r.expenses) + " for your time:"],
+    " enough for ", [hours], " at your " + calc.formatPrice(r.rate) + " target.",
+  ]);
 }
 
 const GROUP_NAMES = {
@@ -1466,6 +1485,7 @@ function showResultState(state) {
     show(byId("offer-chart"), false);
     show(byId("quote-result"), false);
     show(byId("gap-section"), false);
+    show(byId("budget-sentence"), false);
   }
 }
 
