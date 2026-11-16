@@ -553,10 +553,9 @@ function renderOfferChart(r) {
     calc.formatMoney(offer.hourlyAfter) + "/hr";
   items[2].textContent = "Your target rate: " + calc.formatMoney(r.rate) + "/hr";
 
-  const amount = calc.formatPrice(offer.amount);
-  byId("rate-sub").textContent = (r.expenses > 0
-    ? "After your " + calc.formatPrice(r.expenses) + " in expenses, " + amount
-    : upperFirst(amount)) + " spread over more hours pays less per hour.";
+  byId("rate-sub").textContent = r.expenses > 0
+    ? "After " + calc.formatPrice(r.expenses) + " in expenses, more hours means less per hour."
+    : "More hours means less per hour.";
 
   // Under 1 hour, "only up to 0.04 hrs" is exact but hard to read.
   const target = calc.formatPrice(r.rate);
@@ -665,7 +664,8 @@ function layoutRateChart(r, morph) {
   const targetY = py(r.rate);
   svgElement(svg, "line", { class: "rate-target", x1: pad.left, x2: width - pad.right, y1: targetY, y2: targetY });
 
-  // The curve.
+  // The curve, and the area between it and the target where it's below the
+  // target (drawn first, so the lines sit on top of it).
   const points = [];
   const samples = [];
   for (let i = 0; i <= 80; i++) {
@@ -673,6 +673,8 @@ function layoutRateChart(r, morph) {
     samples.push({ x: px(h), y: py(value(h)) });
     points.push((i ? "L" : "M") + px(h).toFixed(1) + " " + py(value(h)).toFixed(1));
   }
+  const short = svgElement(svg, "path", { class: "rate-short", d: shortArea(samples, targetY) });
+  svg.insertBefore(short, svg.querySelector(".rate-target"));
   const curve = svgElement(svg, "path", { class: "rate-curve", d: points.join(" ") });
 
   // Labels never overlap each other. They're placed in priority order: the
@@ -740,20 +742,20 @@ function layoutRateChart(r, morph) {
     return true;
   }
 
-  // Now: a glowing red dot at the current hours.
+  // Now: a coral dot with a soft halo at the current hours.
   const dotX = px(total);
   const dotY = py(value(total));
   const dot = svgElement(svg, "g", { class: "rate-now" });
-  svgElement(dot, "circle", { class: "rate-halo", cx: dotX, cy: dotY, r: 14 });
-  svgElement(dot, "circle", { class: "rate-dot", cx: dotX, cy: dotY, r: 7 });
-  marks.push({ x: dotX - 14, y: dotY - 14, width: 28, height: 28 });
+  svgElement(dot, "circle", { class: "rate-halo", cx: dotX, cy: dotY, r: 12 });
+  svgElement(dot, "circle", { class: "rate-dot", cx: dotX, cy: dotY, r: 6 });
+  marks.push({ x: dotX - 12, y: dotY - 12, width: 24, height: 24 });
 
   // Where the curve meets the target: the same hours as "runs out".
   let cross = null;
   if (net > 0 && offer.hoursCovered >= x0 && offer.hoursCovered <= x1) {
     cross = px(offer.hoursCovered);
-    svgElement(svg, "circle", { class: "rate-cross", cx: cross, cy: targetY, r: 3.5 });
-    marks.push({ x: cross - 4, y: targetY - 4, width: 8, height: 8 });
+    svgElement(svg, "circle", { class: "rate-cross", cx: cross, cy: targetY, r: 4.5 });
+    marks.push({ x: cross - 5, y: targetY - 5, width: 10, height: 10 });
   }
 
   const nowLabel = svgElement(svg, "text", { class: "rate-label rate-now-label" },
@@ -818,16 +820,20 @@ function layoutRateChart(r, morph) {
   });
 
   // Live change: the curve and dots move from their old places to the new ones.
-  const geometry = { samples: samples, dot: { x: dotX, y: dotY }, cross: cross };
+  const geometry = { samples: samples, dot: { x: dotX, y: dotY }, cross: cross, targetY: targetY };
   if (morph && rateGeometry && canMove()) {
     const from = rateGeometry;
     const dotParts = dot.querySelectorAll("circle");
     const crossDot = svg.querySelector(".rate-cross");
     tween(MORPH_MS, function (t) {
-      curve.setAttribute("d", samples.map(function (point, i) {
+      const moving = samples.map(function (point, i) {
         const old = from.samples[i] || point;
-        return (i ? "L" : "M") + mix(old.x, point.x, t).toFixed(1) + " " + mix(old.y, point.y, t).toFixed(1);
+        return { x: mix(old.x, point.x, t), y: mix(old.y, point.y, t) };
+      });
+      curve.setAttribute("d", moving.map(function (point, i) {
+        return (i ? "L" : "M") + point.x.toFixed(1) + " " + point.y.toFixed(1);
       }).join(" "));
+      short.setAttribute("d", shortArea(moving, mix(from.targetY, targetY, t)));
       dotParts.forEach(function (circle) {
         circle.setAttribute("cx", mix(from.dot.x, dotX, t));
         circle.setAttribute("cy", mix(from.dot.y, dotY, t));
@@ -845,6 +851,16 @@ function layoutRateChart(r, morph) {
   if (scrubHours === null || scrubHours < x0 || scrubHours > x1) scrubHours = Math.round(total * 2) / 2;
   if (scrubShown) drawScrub();
   else setScrubValue();
+}
+
+// The area between the target line and the curve, where the curve is below
+// the target (larger y in the drawing). Above it, the area has no height.
+function shortArea(samples, targetY) {
+  const last = samples[samples.length - 1];
+  return samples.map(function (point, i) {
+    return (i ? "L" : "M") + point.x.toFixed(1) + " " + Math.max(point.y, targetY).toFixed(1);
+  }).join(" ") + " L" + last.x.toFixed(1) + " " + targetY.toFixed(1) +
+    " L" + samples[0].x.toFixed(1) + " " + targetY.toFixed(1) + " Z";
 }
 
 // Scrubbing the rate chart: a line, a dot on the curve, and "14h → $12.86/hr",
@@ -1456,10 +1472,6 @@ function currentJob() {
 
 function job() {
   return calc.JOBS[currentJob()];
-}
-
-function upperFirst(text) {
-  return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
 // Puts the job's names on every label, button, and header that mentions it.
@@ -3308,8 +3320,9 @@ function playHours() {
 }
 
 // The rate chart: the grid fades in (200ms), the target line draws (300ms), the
-// curve draws left to right (900ms) so you watch the rate fall, the black dot
-// pops as the curve reaches it, and the red dot lands last with one halo pulse.
+// curve draws left to right (900ms) so you watch the rate fall while the area
+// below the target fades in, the charcoal dot pops as the curve reaches it, and
+// the coral dot lands last with one halo pulse.
 const RATE_GRID_MS = 200;
 const RATE_TARGET_MS = 300;
 const RATE_CURVE_MS = 900;
@@ -3335,6 +3348,7 @@ function playRate() {
   const length = curve.getTotalLength();
   animate(curve, [{ strokeDasharray: length + " " + length, strokeDashoffset: length },
     { strokeDasharray: length + " " + length, strokeDashoffset: 0 }], { duration: RATE_CURVE_MS, delay: curveAt });
+  animate(svg.querySelector(".rate-short"), [{ opacity: 0 }, { opacity: 1 }], { duration: RATE_CURVE_MS, delay: curveAt });
 
   const cross = svg.querySelector(".rate-cross");
   if (cross && rateView) {
@@ -3350,7 +3364,7 @@ function playRate() {
     { duration: 260, delay: dotAt });
   animate(svg.querySelector(".rate-halo"),
     [{ transform: "scale(0.4)", opacity: 0 }, { transform: "scale(0.4)", opacity: 0.5, offset: 0.05 },
-      { transform: "scale(1.6)", opacity: 0, offset: 0.6 }, { transform: "scale(1)", opacity: 0.25 }],
+      { transform: "scale(1.6)", opacity: 0, offset: 0.6 }, { transform: "scale(1)", opacity: 1 }],
     { duration: 900, delay: dotAt + 120, easing: "ease-out" });
   animate(svg.querySelector(".rate-now-label"), [{ opacity: 0 }, { opacity: 1 }], { duration: 250, delay: dotAt + 260 });
 }

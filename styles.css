@@ -2901,26 +2901,30 @@ legend {
 }
 
 .rate-grid {
-  stroke: var(--muted);
+  stroke: var(--rule-warm);
   stroke-width: 1;
   stroke-dasharray: 3 4;
-  opacity: 0.6;
 }
 
 .rate-zero {
-  stroke: var(--line);
+  stroke: var(--rule-warm);
   stroke-width: 1;
 }
 
+/* Below the target: the area between the target line and the curve. */
+.rate-short {
+  fill: var(--short);
+}
+
 .rate-target {
-  stroke: var(--ink);
-  stroke-width: 1;
+  stroke: var(--charcoal);
+  stroke-width: 1.5;
 }
 
 .rate-curve {
   fill: none;
-  stroke: var(--ink);
-  stroke-width: 1.5;
+  stroke: var(--charcoal);
+  stroke-width: 2.5;
 }
 
 .rate-tick,
@@ -2938,24 +2942,26 @@ legend {
 }
 
 .rate-tick {
-  fill: var(--muted);
+  fill: var(--ink-quiet);
 }
 
 .rate-label {
-  fill: var(--ink);
+  fill: var(--charcoal);
 }
 
 .rate-cross {
-  fill: var(--ink);
+  fill: var(--charcoal);
 }
 
+/* Now: coral with a thin charcoal outline, so it reads at 3:1 on the page. */
 .rate-dot {
   fill: var(--red);
+  stroke: var(--charcoal);
+  stroke-width: 1.25;
 }
 
 .rate-halo {
-  fill: var(--red);
-  opacity: 0.25;
+  fill: var(--select);
 }
 
 /* Show the math, ways to close the gap, then your price and your reply. */
@@ -3567,6 +3573,7 @@ textarea {
 #offer-chart.armed .rate-target,
 #offer-chart.armed .rate-target-label,
 #offer-chart.armed .rate-curve,
+#offer-chart.armed .rate-short,
 #offer-chart.armed .rate-cross,
 #offer-chart.armed .rate-cross-label,
 #offer-chart.armed .rate-now,
@@ -3649,6 +3656,31 @@ textarea {
 
   .results-pair > * {
     grid-column: span 6;
+  }
+
+  /* The rate chart: its title and text in the first 4 columns, the plot from
+     column 6 to the end. */
+  #offer-chart {
+    display: grid;
+    grid-template-columns: repeat(var(--columns), minmax(0, 1fr));
+    grid-template-rows: auto auto 1fr;
+    column-gap: var(--column-gap);
+  }
+
+  #rate-title,
+  #rate-sub,
+  #offer-summary {
+    grid-column: 1 / 5;
+  }
+
+  #offer-summary {
+    align-self: start;
+  }
+
+  #rate-plot {
+    grid-column: 6 / -1;
+    grid-row: 1 / 4;
+    margin-top: 0;
   }
 }
 
