@@ -25,15 +25,15 @@ Each visual answers one question a student has while pricing a job.
 | Visual | The question it answers | Why this form |
 |---|---|---|
 | Your work so far (screen 1) | Did I count everything? | A running total and one bar by type of work, updating as you type, so forgotten hours show up before you price. |
-| Where your 11.5 hours go | Which hours does the offer pay for? | A bar per type of work: paid hours in the gradient, unpaid in stripes, a line where the money runs out, and a bracket over the usually forgotten work. |
+| Where your 11.5 hours go | How far does the offer go at my target? | One bar split where the offer, after expenses, stops covering your target rate, then the hours by task, so the work outside production is easy to see. |
 | Your rate drops as hours grow | When does this job stop paying my target? | A line chart of pay per hour against hours, crossing the target line. Drag or use arrow keys to scrub any number of hours. |
 | Ways to close the gap | What can I change? | Up to three cards, side by side on desktop, each with its option's work on one shared scale, so price and scope trade-offs compare at a glance. |
 | Your pricing so far (waterfall) | Where did my money go across every job? | The bridge chart finance teams use in earnings reports, turned into rows on smaller screens: from target pay, each job's shortfall or gain, to what you kept. Every step adds up to the dollar. |
 | Each job vs your target | Which jobs are underpriced? | A bullet chart: each job as a share of its own target, lowest first, so different targets compare on one scale. |
 
-![Counter's result screen on desktop: "This offer pays $17.39/hr" on a sunset gradient, then the estimate, the gap, and the hours the offer pays for](docs/screenshot-result-desktop.png)
+![Counter's result screen on desktop: "This offer pays, after expenses, $15.65/hr" on a sunset gradient, then the estimate, the gap, the hours $180 covers at $25/hr, and the rate before expenses](docs/screenshot-result-desktop.png)
 
-![The two result charts: "Where your 11.5 hours go", with paid hours in the gradient, unpaid hours in stripes, and "$200 runs out at 7.2 hrs"; and "Your rate drops as hours grow", a curve crossing the $25 target at 7.2 hours](docs/screenshot-charts.png)
+![The two result charts: "Where your 11.5 hours go", a bar split at "$180 covers up to here at $25/hr" into 7.2 hrs at your target and 4.3 hrs more than it covers, then the hours by task; and "Your rate drops as hours grow", a curve crossing the $25 target at 7.2 hours](docs/screenshot-charts.png)
 
 ![The Projects dashboard: "You kept 55% of your target pay" with a waterfall from $2,508 target pay to $1,370 kept, cards for unpaid hours, jobs at your target, and the biggest fix, then a bullet chart of each job against its target](docs/screenshot-dashboard.png)
 
@@ -65,7 +65,7 @@ Change: nothing to install and no account. Plain files load fast, and the fonts 
 **Chaotic real-world user:** on a phone in a hallway between classes, 17 tabs open, no patience.
 Change: the calculation autosaves, so closing the tab loses nothing. One-tap + and − buttons change the job's size (pages, posts, or seconds) and its rounds of changes without typing, and a bottom bar keeps the answer one tap away while scrolling.
 
-<img src="docs/screenshot-result-phone.png" alt="Counter's result screen on a phone: the $17.39/hr hero, one-tap steppers for pages and rounds, and the stats" width="390">
+<img src="docs/screenshot-result-phone.png" alt="Counter's result screen on a phone: the $15.65/hr after-expenses hero, one-tap steppers for pages and rounds, and the stats" width="390">
 
 ## What else it does
 
