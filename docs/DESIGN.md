@@ -267,10 +267,10 @@ Sizes:
 - Add bottom padding to the page so the bar never covers the last field.
 
 **Screen 2: result**
-- Hero: on the grid lines (20px from the sides), 28px radius. "This offer pays, after expenses" and the mono job summary on top, the number, then the sentence under it in ink.
+- Hero: on the grid lines (20px from the sides), 28px radius. "This offer pays, after expenses" on one line, the mono job summary on its own line under it (left aligned), the number, then the sentence under it in ink.
 - Live controls in a `--paper` panel (20px radius, outer edge on the grid lines) right under the hero, not sticky: the item stepper, the rounds stepper, then Offer and Target on one row.
   Reason: the desktop bar doesn't fit a phone. Right under the answer is where people try "what if".
-- Stats in a 2x2 grid.
+- Stats in a 2x2 grid (below 960px). The two labels in a row share one height, the taller one's, so the two numbers sit on one line when a label wraps.
 - The summary sentence at 26px.
 - Hours chart full width: the subtitle under the title, the 72px budget bar (labels that don't fit go under it), and By task in a 2 by 2 grid. The split label is placed as on desktop (see Chart 1).
   Reason: four tasks in one row don't fit a phone.
