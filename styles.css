@@ -54,17 +54,18 @@
   --muted: #6B6B67;   /* small labels, 4.5:1 on --bg. Never on the gradient */
   --line: #CFCFCB;    /* hairlines, decorative */
   --error: #B42318;
-  --red: #E8432E;     /* the "now" dot on the rate chart, from the sunset */
+  --red: #E5603F;     /* coral: the "now" dot on the rate chart, from the sunset */
 
   /* The answer. Only in four places: the screen 1 corner glow, the button's
      circle, the screen 2 hero panel, and paid hours in the chart. */
-  --sunset: radial-gradient(55% 95% at 88% 100%, #E8432E 0%, rgba(232, 67, 46, 0) 70%),
-            radial-gradient(50% 80% at 70% 80%, #FF8A3D 0%, rgba(255, 138, 61, 0) 70%),
-            radial-gradient(40% 60% at 55% 55%, #F7B98F 0%, rgba(247, 185, 143, 0) 75%),
-            linear-gradient(160deg, #C9D6EA 0%, #D9CDE6 40%, #EBC7B5 100%);
+  /* Cool gray-blue to warm sand underneath, coral to apricot on top. No lavender. */
+  --sunset: radial-gradient(55% 95% at 88% 100%, #E5603F 0%, rgba(229, 96, 63, 0) 70%),
+            radial-gradient(50% 80% at 70% 80%, #F59A62 0%, rgba(245, 154, 98, 0) 70%),
+            radial-gradient(40% 60% at 55% 55%, #F4B48E 0%, rgba(244, 180, 142, 0) 75%),
+            linear-gradient(160deg, #C9D3DC 0%, #DCD9D2 42%, #EBCDB8 100%);
   /* The corner glow: the same colors, hottest at the center. */
-  --glow: radial-gradient(circle, #E8432E 0%, #FF8A3D 24%, #F7B98F 44%, rgba(247, 185, 143, 0.35) 57%, rgba(235, 199, 181, 0) 71%);
-  --paid: linear-gradient(90deg, #C9D6EA 0%, #EBC7B5 30%, #FF8A3D 70%, #E8432E 100%);
+  --glow: radial-gradient(circle, #E5603F 0%, #F59A62 24%, #F4B48E 44%, rgba(244, 180, 142, 0.35) 57%, rgba(235, 205, 184, 0) 71%);
+  --paid: linear-gradient(90deg, #C9D3DC 0%, #E9D7C6 30%, #F59A62 70%, #E5603F 100%);
   /* Stripes always mean unpaid or forgotten hours. */
   --stripe: repeating-linear-gradient(90deg, var(--ink) 0 1px, transparent 1px 4px);
   /* Light grain over the gradients, about 8%. */
@@ -86,6 +87,16 @@
   /* The side margin. Percent is measured from the window, so this works as
      padding or margin on any full-width row. */
   --page-margin: max(var(--edge), calc((100% - var(--frame)) / 2));
+
+  /* The top of the result (hero, stats, summary sentence, the two charts). */
+  --charcoal: #232220;     /* precise lines, labels, target markers, rate curve. 13.4:1 */
+  --ink-quiet: #5F5C57;    /* supporting text in the chart sections. 5.6:1 */
+  --ink-3: #88847E;        /* gray part of the summary sentence, large text only. 3.1:1 */
+  --rule-warm: #DDD8CF;    /* hairlines in the chart sections, decorative */
+  --beyond: #ECE7DE;       /* hours past what the budget covers */
+  --beyond-line: #89847B;  /* their outline. 3.1:1 on --bg, 3.0:1 on --beyond */
+  --short: #F3E3D3;        /* area below target on the rate curve */
+  --select: #FBEBDF;       /* halo behind the current point on the rate curve */
 }
 
 /* Tablet: 760 to 1023px. */
@@ -2666,6 +2677,27 @@ legend {
   color: var(--muted);
 }
 
+/* Under the stats, with an offer: what's left for your time. Gray, with the
+   key parts in charcoal. --ink-3 is 3.1:1, so it's for large text only. */
+.budget-sentence {
+  max-width: 980px;
+  margin-top: 88px;
+  font-size: 40px;
+  font-weight: 400;
+  letter-spacing: -0.025em;
+  line-height: 1.18;
+  color: var(--ink-3);
+}
+
+.budget-sentence strong {
+  font-weight: 400;
+  color: var(--charcoal);
+}
+
+.budget-sentence:not([hidden]) + .charts-row {
+  margin-top: 72px;
+}
+
 /* The two charts side by side. */
 .charts-row {
   display: grid;
@@ -2698,158 +2730,164 @@ legend {
   color: var(--ink);
 }
 
-/* Chart 1: the bracket at the top, the runs-out label at 48px, bars from 76px. */
+/* Chart 1. The subtitle sits right of the title (phones: under it). */
+.chart-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 6px 32px;
+}
+
+.chart-head .chart-sub {
+  margin-top: 0;
+  color: var(--ink-quiet);
+}
+
 .bars {
-  position: relative;
   margin-top: 24px;
-  padding-top: 76px;
 }
 
-.bracket {
-  position: absolute;
-  top: 26px;
-  height: 10px;
-  border: 1px solid var(--ink);
-  border-bottom: 0;
+/* The budget bar: 36px above it for the split line's label, then 72px of bar.
+   The bar's own fill is the hours past the budget; the gradient covers the rest. */
+.budget {
+  position: relative;
+  padding-top: 36px;
+  margin-bottom: 48px;
 }
 
-.bracket-label {
+.budget-bar {
+  position: relative;
+  display: flex;
+  height: 72px;
+  background: var(--beyond);
+  box-shadow: inset 0 0 0 1px var(--beyond-line);
+}
+
+.budget-covered {
+  position: relative;
+  flex: none;
+  height: 100%;
+  background: var(--paid);
+}
+
+.budget-beyond {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+}
+
+.budget-label {
   position: absolute;
-  bottom: 16px;
-  left: 0;
-  font-family: var(--mono);
-  font-size: 12px;
+  top: 50%;
+  left: 16px;
+  transform: translateY(-50%);
+  font-size: 15px;
+  line-height: 1.2;
+  color: var(--charcoal);
   white-space: nowrap;
 }
 
-/* A dashed line from the label row down through the bars. */
-.runs-out {
+/* app.js moves a label here when it doesn't fit inside its part of the bar. */
+.budget-under {
+  position: relative;
+  height: 20px;
+  margin-top: 10px;
+}
+
+.budget-under.two-rows {
+  height: 44px;
+}
+
+.budget-under .budget-label {
+  top: 0;
+  transform: none;
+}
+
+.budget-under .budget-label.second-row {
+  top: 24px;
+}
+
+/* The 2px line where the budget runs out, from 36px above the bar through it. */
+.budget-split {
   position: absolute;
-  top: 48px;
+  top: 0;
   z-index: 1;
   width: 0;
-  height: calc(28px + 96px);
-  border-left: 1px dashed var(--ink);
+  height: calc(36px + 72px);
+}
+
+.budget-split::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -1px;
+  width: 2px;
+  background: var(--charcoal);
 }
 
 /* app.js places it beside the line, or centered above it when tight. */
-.runs-out-label {
+.budget-split-label {
   position: absolute;
   top: -2px;
   left: 8px;
   font-family: var(--mono);
   font-size: 12px;
   line-height: 1.2;
+  color: var(--charcoal);
   white-space: nowrap;
 }
 
-/* With no line, the label row says why: "covers all", "doesn't cover your expenses". */
-.runs-out.flag {
-  border-left: 0;
+/* By task: one row, widths by hours (app.js sets flex-grow), never narrower
+   than the label. */
+.by-task-title {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--ink-quiet);
 }
 
-.runs-out.flag .runs-out-label {
-  left: 0;
-}
-
-.bar-row {
+.group-legend {
   display: flex;
   gap: 4px;
-  height: 96px;
+  margin-top: 12px;
 }
 
-.bar-group {
-  display: flex;
-  flex: none;
-  height: 100%;
-}
-
-.bar-paid {
-  height: 100%;
-  background: var(--paid);
-  background-repeat: no-repeat;
-}
-
-.bar-unpaid {
-  height: 100%;
-  background: var(--stripe);
-  outline: 1px solid var(--ink);
-  outline-offset: -1px;
-}
-
-/* No offer: solid is design work, stripes are the hours people forget. */
-.bar-group.no-offer .bar-paid {
-  background: var(--ink);
-}
-
-.bar-labels {
-  position: relative;
-  height: 52px;
-  margin-top: 14px;
-}
-
-.bar-labels.two-rows {
-  height: 104px;
-}
-
-.bar-label {
-  position: absolute;
-  top: 0;
+.group-legend li {
+  flex: 0 1 0;
+  padding: 12px 16px 0 0;
+  border-top: 2px solid var(--ink-quiet);
   white-space: nowrap;
 }
 
-.bar-label.second-row {
-  top: 52px;
+.group-legend li[data-group="production"] {
+  border-top-color: var(--charcoal);
 }
 
-.bar-hours b {
-  font-size: 24px;
+.task-hours b {
+  font-size: 32px;
   font-weight: 300;
   letter-spacing: -0.02em;
+  color: var(--charcoal);
 }
 
-.bar-hours .unit {
+.task-hours .unit {
   margin-left: 4px;
-  font-size: 11px;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--ink-quiet);
 }
 
-.bar-name {
+.task-name {
   display: block;
-  font-size: 13px;
-  color: var(--ink-2);
+  margin-top: 2px;
+  font-size: 14px;
+  color: var(--ink-quiet);
 }
 
-.legend {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px 24px;
+#hours-summary {
   margin-top: 20px;
-  font-size: 13px;
-}
-
-.legend li {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.legend-swatch {
-  width: 22px;
-  height: 10px;
-}
-
-.legend-swatch.paid {
-  background: var(--paid);
-}
-
-.legend-swatch.solid {
-  background: var(--ink);
-}
-
-.legend-swatch.striped {
-  background: var(--stripe);
-  outline: 1px solid var(--ink);
-  outline-offset: -1px;
 }
 
 /* Chart 2: the rate curve. Mono labels, dashed grid, solid target. */
@@ -2863,26 +2901,30 @@ legend {
 }
 
 .rate-grid {
-  stroke: var(--muted);
+  stroke: var(--rule-warm);
   stroke-width: 1;
   stroke-dasharray: 3 4;
-  opacity: 0.6;
 }
 
 .rate-zero {
-  stroke: var(--line);
+  stroke: var(--rule-warm);
   stroke-width: 1;
 }
 
+/* Below the target: the area between the target line and the curve. */
+.rate-short {
+  fill: var(--short);
+}
+
 .rate-target {
-  stroke: var(--ink);
-  stroke-width: 1;
+  stroke: var(--charcoal);
+  stroke-width: 1.5;
 }
 
 .rate-curve {
   fill: none;
-  stroke: var(--ink);
-  stroke-width: 1.5;
+  stroke: var(--charcoal);
+  stroke-width: 2.5;
 }
 
 .rate-tick,
@@ -2900,24 +2942,26 @@ legend {
 }
 
 .rate-tick {
-  fill: var(--muted);
+  fill: var(--ink-quiet);
 }
 
 .rate-label {
-  fill: var(--ink);
+  fill: var(--charcoal);
 }
 
 .rate-cross {
-  fill: var(--ink);
+  fill: var(--charcoal);
 }
 
+/* Now: coral with a thin charcoal outline, so it reads at 3:1 on the page. */
 .rate-dot {
   fill: var(--red);
+  stroke: var(--charcoal);
+  stroke-width: 1.25;
 }
 
 .rate-halo {
-  fill: var(--red);
-  opacity: 0.25;
+  fill: var(--select);
 }
 
 /* Show the math, ways to close the gap, then your price and your reply. */
@@ -3486,19 +3530,20 @@ textarea {
 }
 
 /* Live changes morph in 250ms, only after the first render. Off for reduced motion (below). */
-.charts-ready .bar-group,
-.charts-ready .bar-paid,
-.charts-ready .bar-unpaid,
+.charts-ready .budget-covered,
 .charts-ready .row-bar,
 .charts-ready .tally-segment {
   transition: width 250ms var(--ease);
 }
 
-.charts-ready .runs-out,
-.charts-ready .bracket,
-.charts-ready .bar-label,
+.charts-ready .budget-split,
+.charts-ready .budget-under .budget-label,
 .charts-ready .tally-label {
   transition: left 250ms var(--ease), width 250ms var(--ease);
+}
+
+.charts-ready .group-legend li {
+  transition: flex-grow 250ms var(--ease);
 }
 
 /* Armed: a block's starting state, set by script while it's still below the
@@ -3508,14 +3553,15 @@ textarea {
   transform: scaleX(0);
 }
 
-/* Hours chart: no bars yet; the stripes wipe in when it plays. */
-#hours-chart.armed .bar-row {
+/* Hours chart: no bar yet; it wipes in, then the gradient fills it. */
+#hours-chart.armed .budget-bar,
+#hours-chart.armed .budget-covered {
   clip-path: inset(0 100% 0 0);
 }
 
-#hours-chart.armed .runs-out,
-#hours-chart.armed .bracket,
-#hours-chart.armed .bar-label,
+#hours-chart.armed .budget-split,
+#hours-chart.armed .budget-label,
+#hours-chart.armed .by-task-title,
 #hours-chart.armed .group-legend li {
   opacity: 0;
 }
@@ -3527,26 +3573,12 @@ textarea {
 #offer-chart.armed .rate-target,
 #offer-chart.armed .rate-target-label,
 #offer-chart.armed .rate-curve,
+#offer-chart.armed .rate-short,
 #offer-chart.armed .rate-cross,
 #offer-chart.armed .rate-cross-label,
 #offer-chart.armed .rate-now,
 #offer-chart.armed .rate-now-label {
   opacity: 0;
-}
-
-/* The hours chart playing: every hour is stripes, under the paid fill. */
-.hours-playing .bar-group {
-  position: relative;
-  isolation: isolate;
-}
-
-.hours-playing .bar-group::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  background: var(--stripe);
-  box-shadow: inset 0 0 0 1px var(--ink);
 }
 
 /* Rate chart dots scale from their centers. */
@@ -3593,6 +3625,31 @@ textarea {
   grid-column: span 2;
 }
 
+/* Stats 2 by 2 (under 960px): each pair shares its label row, as tall as the
+   longer label, so the two numbers sit on one line even when a label wraps. */
+@media (max-width: 959px) {
+  .stats {
+    row-gap: 0;
+  }
+
+  .stats > div {
+    display: grid;
+    grid-row: span 2;
+    grid-template-rows: subgrid;
+    /* One column as wide as the stat, so big numbers still shrink to fit. */
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: 0;
+  }
+
+  .stats > div:nth-child(-n + 2) {
+    margin-bottom: 28px;
+  }
+
+  .stats dd {
+    align-self: start;
+  }
+}
+
 /* Tablet (8 columns): the inputs and charts stack; stats 2 by 2; price and
    reply side by side, 4 + 4. */
 @media (min-width: 760px) {
@@ -3602,8 +3659,8 @@ textarea {
   }
 }
 
-/* Desktop (12 columns): inputs 7 + 5, stats 3 each, charts 6 + 6, price and
-   reply 6 + 6. */
+/* Desktop (12 columns): inputs 7 + 5, stats 3 each, the charts stacked at 12,
+   price and reply 6 + 6. */
 @media (min-width: 1024px) {
   .inputs-columns > .inputs-column:first-child {
     grid-column: span 7;
@@ -3622,14 +3679,33 @@ textarea {
     grid-column: span 3;
   }
 
-  .charts-row > *,
   .results-pair > * {
     grid-column: span 6;
   }
 
-  /* No offer, or one at or below expenses: the hours chart takes the full row. */
-  .charts-row.single > * {
-    grid-column: 1 / -1;
+  /* The rate chart: its title and text in the first 4 columns, the plot from
+     column 6 to the end. */
+  #offer-chart {
+    display: grid;
+    grid-template-columns: repeat(var(--columns), minmax(0, 1fr));
+    grid-template-rows: auto auto 1fr;
+    column-gap: var(--column-gap);
+  }
+
+  #rate-title,
+  #rate-sub,
+  #offer-summary {
+    grid-column: 1 / 5;
+  }
+
+  #offer-summary {
+    align-self: start;
+  }
+
+  #rate-plot {
+    grid-column: 6 / -1;
+    grid-row: 1 / 4;
+    margin-top: 0;
   }
 }
 
@@ -3647,7 +3723,7 @@ textarea {
 }
 
 .grid-overlay > span {
-  background: rgba(232, 67, 46, 0.06);
+  background: rgba(229, 96, 63, 0.06);
 }
 
 .grid-overlay > span:nth-child(n + 13) {
@@ -3670,8 +3746,7 @@ textarea {
 .preview-short,
 .check-hours,
 .save-short,
-.edit-short,
-.group-legend {
+.edit-short {
   display: none;
 }
 
@@ -4209,11 +4284,11 @@ textarea {
     padding: 20px;
   }
 
-  /* "This offer pays" and the job summary on top, the number, then the sentence. */
+  /* "This offer pays", the job summary on its own line under it, the number,
+     then the sentence. The label gets the whole row so it fits on one line. */
   .hero-content {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    column-gap: 12px;
+    grid-template-columns: minmax(0, 1fr);
     min-height: 0;
   }
 
@@ -4229,14 +4304,15 @@ textarea {
   }
 
   .hero-job {
-    grid-row: 1;
-    grid-column: 2;
-    align-self: center;
+    grid-row: 2;
+    grid-column: 1;
+    margin-top: 4px;
     font-size: 11px;
+    text-align: left;
   }
 
   .hero-number {
-    grid-row: 2;
+    grid-row: 3;
     grid-column: 1 / -1;
     margin-top: 20px;
     white-space: nowrap;
@@ -4252,7 +4328,7 @@ textarea {
 
   .hero-sentence,
   .warning {
-    grid-row: 3;
+    grid-row: 4;
     grid-column: 1 / -1;
     margin-top: 16px;
     font-size: 16px;
@@ -4298,12 +4374,15 @@ textarea {
   }
 
   .stats {
-    row-gap: 20px;
     margin-top: 12px;
   }
 
   .stats > div {
     padding-top: 20px;
+  }
+
+  .stats > div:nth-child(-n + 2) {
+    margin-bottom: 20px;
   }
 
   .stats dt {
@@ -4325,55 +4404,38 @@ textarea {
     margin-top: 44px;
   }
 
+  .budget-sentence {
+    font-size: 26px;
+  }
+
   .chart h2,
   .result-block > legend {
     font-size: 20px;
   }
 
-  /* Hours chart: 64px bars; group names move into a legend under the bar. */
+  /* Hours chart: the subtitle under the title; By task in a 2 by 2 grid. */
+  .chart-head {
+    display: block;
+  }
+
+  .chart-head .chart-sub {
+    margin-top: 6px;
+  }
+
   .bars {
     margin-top: 16px;
-    padding-top: 28px;
-  }
-
-  .bracket,
-  .bar-labels {
-    display: none;
-  }
-
-  .bar-row {
-    height: 64px;
-  }
-
-  .runs-out {
-    top: 0;
-    height: calc(28px + 64px);
   }
 
   .group-legend {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 8px 16px;
-    margin-top: 16px;
-    font-size: 13px;
+    gap: 24px 16px;
   }
 
   .group-legend li {
-    display: flex;
-    align-items: center;
-    gap: 8px;
     min-width: 0;
-  }
-
-  .group-legend .legend-swatch {
-    flex: none;
-    width: 14px;
-  }
-
-  .group-hours {
-    font-family: var(--mono);
-    font-size: 12px;
-    color: var(--ink-2);
+    padding-right: 0;
+    white-space: normal;
   }
 
   .rate-plot {
@@ -4564,12 +4626,6 @@ textarea {
 
   .on-results .edit-button {
     padding: 0 12px;
-  }
-
-  /* The hours chart legend in one column, so "Communication 1h" fits
-     inside the grid lines. */
-  .group-legend {
-    grid-template-columns: minmax(0, 1fr);
   }
 }
 

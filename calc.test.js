@@ -103,19 +103,19 @@ test("covers 7.2 hrs at the target rate", function () {
   assert.strictEqual(calc.formatNumber(r.offer.hoursCovered), "7.2");
 });
 
-test("is $7.61 an hour under the $25 target", function () {
+test("is $9.35 an hour under the $25 target, after expenses", function () {
   const r = run();
   assert.strictEqual(r.offer.meetsTarget, false);
-  assert.strictEqual(calc.formatMoney(r.offer.shortPerHour), "$7.61");
+  assert.strictEqual(calc.formatMoney(r.offer.shortPerHour), "$9.35");
 });
 
 test("an hourly within half a cent of the target meets it", function () {
-  // 1 page, 1 round: $200 / 8 hrs = exactly $25.00/hr.
-  const exact = run({ count: "1", rounds: "1" });
+  // 1 page, 1 round: ($220 - $20) / 8 hrs = exactly $25.00/hr after expenses.
+  const exact = run({ count: "1", rounds: "1", offer: "220" });
   assert.strictEqual(exact.offer.meetsTarget, true);
-  // $287.49 / 11.5 hrs = $24.9991/hr, which displays as $25.00.
-  assert.strictEqual(run({ offer: "287.49" }).offer.meetsTarget, true);
-  assert.strictEqual(run({ offer: "287.30" }).offer.meetsTarget, false);
+  // ($307.49 - $20) / 11.5 hrs = $24.9991/hr, which displays as $25.00.
+  assert.strictEqual(run({ offer: "307.49" }).offer.meetsTarget, true);
+  assert.strictEqual(run({ offer: "307.30" }).offer.meetsTarget, false);
 });
 
 test("does not cover all the hours", function () {
@@ -715,7 +715,7 @@ test("an offer at or above the estimate: the price defaults to the offer", funct
   assert.strictEqual(r.quote.isCustom, false);
   assert.strictEqual(r.quote.defaultsTo, "offer");
   assert.strictEqual(r.offer.aboveTarget, true);
-  assert.strictEqual(calc.formatMoney(r.offer.overPerHour), "$61.96");
+  assert.strictEqual(calc.formatMoney(r.offer.overPerHour), "$60.22");
   closeTo(r.offer.gap, -690);
   assert.strictEqual(run({ offer: "310" }).quote.amount, 310);
   assert.strictEqual(run({ offer: "310" }).quote.defaultsTo, "offer");

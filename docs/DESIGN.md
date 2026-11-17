@@ -21,19 +21,35 @@ The gradient means "the answer": it glows quietly on screen 1, then opens into t
   --line:   #CFCFCB;  /* hairlines, decorative */
   --error:  #B42318;
 
-  --sunset: radial-gradient(55% 95% at 88% 100%, #E8432E 0%, rgba(232,67,46,0) 70%),
-            radial-gradient(50% 80% at 70% 80%, #FF8A3D 0%, rgba(255,138,61,0) 70%),
-            radial-gradient(40% 60% at 55% 55%, #F7B98F 0%, rgba(247,185,143,0) 75%),
-            linear-gradient(160deg, #C9D6EA 0%, #D9CDE6 40%, #EBC7B5 100%);
-  --paid:   linear-gradient(90deg, #C9D6EA 0%, #EBC7B5 30%, #FF8A3D 70%, #E8432E 100%);
+  --red:    #E5603F;  /* coral: the "now" dot on the rate chart */
+
+  /* Retuned November 16, 2026: gray-blue to warm sand, then apricot and coral. No lavender. */
+  --sunset: radial-gradient(55% 95% at 88% 100%, #E5603F 0%, rgba(229,96,63,0) 70%),
+            radial-gradient(50% 80% at 70% 80%, #F59A62 0%, rgba(245,154,98,0) 70%),
+            radial-gradient(40% 60% at 55% 55%, #F4B48E 0%, rgba(244,180,142,0) 75%),
+            linear-gradient(160deg, #C9D3DC 0%, #DCD9D2 42%, #EBCDB8 100%);
+  --glow:   radial-gradient(circle, #E5603F 0%, #F59A62 24%, #F4B48E 44%, rgba(244,180,142,0.35) 57%, rgba(235,205,184,0) 71%);
+  --paid:   linear-gradient(90deg, #C9D3DC 0%, #E9D7C6 30%, #F59A62 70%, #E5603F 100%);
   --stripe: repeating-linear-gradient(90deg, var(--ink) 0 1px, transparent 1px 4px);
+
+  /* The top of the result (November 16, 2026). */
+  --charcoal:    #232220;  /* precise lines, labels, target markers, rate curve. 13.4:1 */
+  --ink-quiet:   #5F5C57;  /* supporting text in the chart sections. 5.6:1 */
+  --ink-3:       #88847E;  /* gray part of the summary sentence, large text only. 3.1:1 */
+  --rule-warm:   #DDD8CF;  /* hairlines in the chart sections, decorative */
+  --beyond:      #ECE7DE;  /* hours past what the budget covers */
+  --beyond-line: #89847B;  /* their outline. 3.1:1 on --bg, 3.0:1 on --beyond */
+  --short:       #F3E3D3;  /* area below the target on the rate curve */
+  --select:      #FBEBDF;  /* halo behind the current point on the rate curve */
 }
 ```
 
+The saved image draws the same gradient on its canvas with the same hex values (`drawSunset` and the paid bar in app.js).
+
 Rules:
-- The gradient is only used for: the screen 1 corner glow, the button's arrow circle, the screen 2 hero panel, paid hours in the chart, the picked card in "Ways to close the gap" (with a 35% `--paper` wash, added October 15, 2026), and, since October 16, 2026, paid money in the Projects dashboard charts and its summary card (`--paid`) and the dashboard's Biggest fix card (the sunset with a 35% `--paper` wash). Reason: it always means "the answer."
+- The gradient is only used for: the screen 1 corner glow, the button's arrow circle, the screen 2 hero panel, the hours the budget covers in the hours chart, the wordmark's ring (since November 16, 2026), the picked card in "Ways to close the gap" (with a 35% `--paper` wash, added October 15, 2026), and, since October 16, 2026, paid money in the Projects dashboard charts and its summary card (`--paid`) and the dashboard's Biggest fix card (the sunset with a 35% `--paper` wash). Reason: it always means "the answer."
 - Text on the gradient is `--ink` or `--ink-2` only, and only over the cool left and top parts. Reason: `--muted` fails on the gradient, and warm red is too close to ink for small text.
-- Stripes always mean unpaid or forgotten hours. Solid ink means design work.
+- Stripes always mean unpaid or forgotten hours. Solid ink means design work. Since November 16, 2026, the top of screen 2 doesn't use stripes: hours past the budget are `--beyond`, not "unpaid".
 - Add a light grain over gradients (SVG `feTurbulence` noise, about 8% opacity). Optional, drop it if it hurts performance.
 
 ## Type
@@ -59,7 +75,7 @@ Self-hosted since October 17, 2026: Geist 300, 400, and 500 and Geist Mono 400 a
 | Small labels | Geist 400, 13px, `--muted` |
 | Mono notes, units, ticks | Geist Mono 11 to 13px |
 
-**The logo lockup (October 18, 2026).** The header shows the mark, a ring with an off-center hole (the same shape as `favicon.svg`), just left of the wordmark "counter". The wordmark is Geist 400, 20px, -0.035em, lowercase. The mark is an inline SVG in `currentColor`, hidden from screen readers (the text "Counter" stays the name), cropped to the ring with no padding. Its sizes are in em, so it scales with the wordmark:
+**The logo lockup (October 18, 2026).** The header shows the mark, a ring with an off-center hole (the same shape as `favicon.svg`), just left of the wordmark "counter". The wordmark is Geist 400, 20px, -0.035em, lowercase. The mark is an inline SVG, hidden from screen readers (the text "Counter" stays the name), cropped to the ring with no padding. Since November 16, 2026 the ring is filled with a diagonal gradient, top left to bottom right: #C9D3DC at 0, #F4B48E at 45%, #E5603F at 100%. The word stays ink. Its sizes are in em, so it scales with the wordmark:
 - 0.666em tall and wide, the height of the "t".
 - Sits 0.012em below the baseline, the same overshoot as the round letters.
 - 0.166em from the "c", the width of the ring's thick side, so the gap matches the ring.
@@ -113,23 +129,31 @@ Decided with Kayla, October 13, 2026.
 ## Screen 2: result
 
 - Header row: "counter", "Edit details" pill, then the live controls on the right (item stepper, rounds stepper, offer, target).
-- **Hero panel:** `--sunset`, its outer edge on the grid lines (no bleed past the text), 28px radius, about 380px tall. Top left: "This offer pays". Top right: mono job summary and the sentence ("for 11.5 hours of real work. That's $7.61 an hour under your $25 target.") in ink. Bottom left: the hero number.
-- **Stats row:** 4 columns with a hairline above each: Your estimate, More than they offered, Hours the offer pays for (7.2 of 11.5 hrs), After expenses.
-- **Chart 1, "Where your 11.5 hours go"** (left, 6 of 12 columns):
-  - One bar per group, 96px tall, 4px gaps, widths by hours.
-  - Paid hours filled with `--paid` as one continuous gradient across groups. Unpaid hours in `--stripe`, 1px ink outline.
-  - Dashed line at the runs-out point with mono "$200 runs out at 7.2 hrs", always the full label. At every width it sits left of the line, then right of it, 8px away, then 6px. If it fits on neither side, it stays in its row, centered on the line and kept inside the chart, and the line starts 4px below it so it never crosses the text. It never touches the "usually forgotten" bracket. Decided with Kayla, October 15, 2026.
-  - A bracket over the three forgotten groups: mono "5.5 hrs usually forgotten".
-  - Under each group: hours (Geist 300, 24px) and name. Labels never overlap.
-  - Legend: "paid by the offer" and "unpaid".
-  - No offer: everything solid or striped, no gradient, no runs-out line.
-- **Chart 2, "Your rate drops as hours grow"** (right, SVG):
-  - Subtitle: "$200 spread over more hours pays less per hour."
-  - Line: offer ÷ hours, from about 1/3 to 1.4x the current hours.
-  - Dashed vertical grid lines with mono hour labels, y labels $0, target, and a top value.
-  - Solid line at the target with mono "your target $25/hr".
-  - Small ink dot where the curve meets the target, labeled "at 8h you hit $25".
-  - Glowing red dot (#E8432E, soft halo) at the current hours, labeled "11.5h → $17.39/hr".
+- **Hero panel:** `--sunset`, its outer edge on the grid lines (no bleed past the text), 28px radius, about 380px tall. Top left: "This offer pays, after expenses". Top right: mono job summary and the sentence ("for 11.5 hours of real work. That's $9.35 an hour under your $25 target.") in ink. Bottom left: the hero number, the offer per hour after expenses ($15.65). Since November 16, 2026 (see DECISIONS.md).
+- **Stats row:** 4 columns with a hairline above each: Your estimate, More than they offered, "Hours $180 covers at $25/hr" (7.2 of 11.5 hrs; the dollars are the offer minus expenses), Before expenses ($17.39/hr).
+- **Summary sentence** (offer that covers expenses only), 88px under the stats and 72px above the charts: "After expenses, $200 leaves **$180 for your time:** enough for **7.2 of your 11.5 hours** at your $25 target." When the offer covers every hour: "...enough for **all 11.5 hours**...". Geist 400, 40px (26px on phones), -0.025em, line-height 1.18, at most 980px wide. `--ink-3`, the bold parts `--charcoal` at the same weight. `--ink-3` is 3.1:1, so it's only for this large text.
+- **The two charts are stacked**, each the full 12 columns: the hours chart, then the rate chart.
+- **Chart 1, "Where your 11.5 hours go":**
+  - Subtitle "How far $180 goes at your $25 target", 14px `--ink-quiet`, right of the title on 760px and up, under it on phones. Only with the budget bar.
+  - **The budget bar** (an offer that covers expenses): one bar, 72px tall, with 36px above it for the split label.
+    - Left: the hours the budget covers at the target (hours covered ÷ total hours of the width), `--paid` spanning its own width, label inside "7.2 hrs at your target".
+    - Right: the rest, `--beyond` with a 1px `--beyond-line` inset outline, label inside "4.3 hrs more than it covers".
+    - Labels: 15px `--charcoal`, 16px from the left of their part. A label that doesn't fit inside its part (with 16px each side) goes under the bar at its part's left edge; two under the bar never overlap.
+    - At the split: a 2px `--charcoal` line from 36px above the bar through it, with mono 12px "$180 covers up to here at $25/hr". The label sits left of the line, then right of it, 8px away, then 6px; if neither fits, it's centered on the line inside the chart and the line starts 4px below it.
+    - The offer covers every hour: one gradient bar, "All 11.5 hrs at your target", no split line.
+  - **By task**, 48px under the bar: mono 12px "By task" in `--ink-quiet`, then one row, one item per group (Production, Communication, Revisions, Delivery), even at 0 hrs. Widths follow hours, but an item is never narrower than its label (decided with Kayla). Each item: a 2px top border (`--charcoal` for Production, `--ink-quiet` for the others), the hours in Geist 300, 32px, `--charcoal` with mono "hrs", and the name in 14px `--ink-quiet`. Phones: a 2 by 2 grid.
+  - Summary: "5.5 hrs are outside production, the easiest to forget." or "All 11.5 hrs are production."
+  - No offer, or one below expenses: no budget bar and no subtitle, only By task and the summary.
+  - The top of the page never calls these hours "unpaid" or "paid at a lower rate".
+- **Chart 2, "Your rate drops as hours grow"** (SVG):
+  - Desktop: the title, subtitle, and summary in the first 4 columns; the plot from column 6 to the end. Tablet and phone: the plot under the text.
+  - Subtitle: "After $20 in expenses, more hours means less per hour." ("More hours means less per hour." with no expenses.)
+  - Line: (offer - expenses) ÷ hours, from about 1/3 to 1.4x the current hours. 2.5px `--charcoal`.
+  - Dashed vertical grid lines in `--rule-warm` with mono hour labels in `--ink-quiet`; y labels $0, target, and a top value.
+  - Target: a 1.5px `--charcoal` line with mono "your target $25/hr".
+  - Where the curve is below the target, the area between them is `--short`.
+  - A 4.5px-radius `--charcoal` dot where the curve meets the target, labeled "at 7.2h you hit $25".
+  - The current hours: a 6px-radius `--red` (coral) dot with a 1.25px `--charcoal` outline and a 12px-radius `--select` halo, labeled "11.5h → $15.65/hr after expenses".
   - Hidden with no offer. If the offer is below expenses, show the curve without the target crossing.
   - `aria-hidden` with a text summary for screen readers.
   - The y labels get exactly the room they need: the widest one plus 8px, so "$1,250" is never cut off.
@@ -151,23 +175,24 @@ Easing for everything: `cubic-bezier(.2,.7,.2,1)` (ease-out). Under reduced moti
 **Plays once, when it scrolls into view** (35% visible, once per result, never again until the next "Check the offer"):
 - **Hero:** the number counts up from 0, 700ms. Tabular digits, so the width never jumps.
 - **Stats:** each hairline draws left to right, 500ms. Each number counts up, 700ms, 80ms after the one before.
-- **Hours chart:**
-  1. Bars wipe in from the left as stripes, 400ms. All work starts unpaid.
-  2. The paid gradient fills from the left, 700ms, and stops where the money runs out.
-  3. The dashed runs-out line drops in with its label, 200ms.
-  4. The bracket draws over the forgotten groups, 300ms. Group labels rise 6px and fade in, 60ms apart.
+- **Hours chart** (since November 16, 2026, decided with Kayla):
+  1. The budget bar wipes in from the left, 400ms, all of it in `--beyond`.
+  2. The gradient fills from the left, 700ms, and stops at the split.
+  3. The split line drops in with its label, 200ms.
+  4. The bar's labels fade in, then "By task" and each task rise 6px and fade in, 60ms apart.
+  With no budget bar, only step 4 plays.
   Reason: the fill stopping short is the moment people understand the problem.
 - **Rate chart:**
   1. Grid fades in, 200ms. The target line draws left to right, 300ms.
-  2. The curve draws left to right, 900ms, so you watch the rate fall.
-  3. The black dot pops (scale 0 to 1.4 to 1, 260ms) as the curve reaches it.
-  4. The red dot lands last, with one soft halo pulse, then its label.
+  2. The curve draws left to right, 900ms, so you watch the rate fall, while the `--short` area fades in.
+  3. The charcoal dot pops (scale 0 to 1.4 to 1, 260ms) as the curve reaches it.
+  4. The coral dot lands last, with one soft halo pulse, then its label.
 - Arm before screen 2 appears: every time screen 2 is shown (Check the offer, a shared link, a saved project, Back), all blocks switch to their starting state before screen 2's first frame. Each then plays when it reaches 35% visible. A block that is 35% visible when screen 2 appears plays right away (after the reveal, if there is one).
 - A block the person scrolls past (it leaves the top of the screen before playing) jumps to its final state.
 - Never reset or replay a block that has been seen in its final state.
 - If scripts fail, everything is visible in its final state.
 
-**Live changes morph, never replay:** when a control or input changes the result, numbers, bar fills, the runs-out line, and the curve tween from old to new in 250ms.
+**Live changes morph, never replay:** when a control or input changes the result, numbers, the budget bar's split and its line, the By task widths, and the curve and its shaded area tween from old to new in 250ms.
 Reason: the full show plays once. After that, motion only shows what changed.
 
 **Scrub the rate chart** (new):
@@ -185,19 +210,19 @@ Reason: the full show plays once. After that, motion only shows what changed.
 Decided with Kayla, October 11, 2026:
 - **"h" only in small mono chart labels** (axis ticks, tally bar labels, the rate chart's dot labels). Sentences, stats, inputs, and headings keep "hrs": the tally note reads "5.5 hrs usually forgotten".
   Reason: the build spec's terms stay intact; the short form only where space is tight and the context is clearly data.
-- **The rate curve is after expenses**, so "at 7.2h you hit $25" matches "$200 runs out at 7.2 hrs" in the chart beside it. Subtitle: "After your $20 in expenses, $200 spread over more hours pays less per hour." Red dot: "11.5h → $15.65/hr after expenses".
+- **The rate curve is after expenses**, so "at 7.2h you hit $25" matches the hours chart's split, "$180 covers up to here at $25/hr", at 7.2 hrs. Subtitle (since November 16, 2026): "After $20 in expenses, more hours means less per hour." Coral dot: "11.5h → $15.65/hr after expenses".
   Reason: both charts tell the same story.
 - **No offer:** stats are Total hours, Your time at $25/hr, Expenses, and Usually forgotten (5.5 hrs, mono note "worth $137.50 at your rate"). The hours chart takes the full row.
 - **Chart summaries are visible**, one 14px `--ink-2` line under each legend.
   Reason: the build spec requires a written summary under every chart.
 
 Decided while building:
-- **No offer in the hours chart:** the legend reads "design work" (solid) and "usually forgotten" (stripes).
-- **No runs-out line** when the offer covers everything or doesn't cover expenses. The label row says so instead ("$400 covers all 11.5 hrs", "$15 doesn't cover your expenses").
-- **Paid gradient** spans the whole bar width, so a color always means the same point in the hours.
+- **No offer in the hours chart:** only By task and the summary (since November 16, 2026; there was a "design work" / "usually forgotten" legend).
+- **No split line** when the offer covers everything; no budget bar when it doesn't cover expenses (the hero already says what that costs).
+- **The budget gradient** spans only the covered part of the bar (since November 16, 2026; it used to span the whole bar).
 - **Rate chart labels** take the spot with the fewest conflicts (plot edges, then other labels and dots, then the curve, then the target line). Y labels: the target always; $0, the top, and a negative bottom only when 16px or more from it. Grid steps: the smallest round step with at most 7 spaces.
 - **Below expenses**, the curve sits under $0 with a hairline at $0 and no crossing dot.
-- **Bar labels** that can't fit in one row alternate onto a second row.
+- **Budget bar labels** that go under the bar alternate onto a second row if they can't fit in one.
 - **Job pills on desktop** (760px and up) that don't fit the column wrap onto a second line, aligned left with no stretching. The `--paper` background becomes a 24px rounded rectangle around both lines, with the same 4px padding and a 4px gap; the selected pill stays a full pill. Phones keep the scrolling row, and the field tabs scroll the same way there. Decided with Kayla, October 13, 2026.
 - **Screen 2's header row is sticky** with a `--bg` background, so the live controls stay in reach. Screen 1's header scrolls away so it never cuts the glow.
 - **Row bars on screen 1** share one scale: 25px per hour, narrower when any row would pass 150px.
@@ -242,12 +267,13 @@ Sizes:
 - Add bottom padding to the page so the bar never covers the last field.
 
 **Screen 2: result**
-- Hero: on the grid lines (20px from the sides), 28px radius. "This offer pays" and the mono job summary on top, the number, then the sentence under it in ink.
+- Hero: on the grid lines (20px from the sides), 28px radius. "This offer pays, after expenses" on one line, the mono job summary on its own line under it (left aligned), the number, then the sentence under it in ink.
 - Live controls in a `--paper` panel (20px radius, outer edge on the grid lines) right under the hero, not sticky: the item stepper, the rounds stepper, then Offer and Target on one row.
   Reason: the desktop bar doesn't fit a phone. Right under the answer is where people try "what if".
-- Stats in a 2x2 grid.
-- Hours chart full width, 64px tall. Group names move into a 2-column legend under the bar (one column below 360px, so "Communication 1h" fits). The runs-out label is placed as on desktop (see Chart 1).
-  Reason: four labels under thin bars would overlap.
+- Stats in a 2x2 grid (below 960px). The two labels in a row share one height, the taller one's, so the two numbers sit on one line when a label wraps.
+- The summary sentence at 26px.
+- Hours chart full width: the subtitle under the title, the 72px budget bar (labels that don't fit go under it), and By task in a 2 by 2 grid. The split label is placed as on desktop (see Chart 1).
+  Reason: four tasks in one row don't fit a phone.
 - Rate chart full width, about 170px tall. Same label rules as desktop.
 - Then Show the math, Your price, Your reply (stacked), and the footer. "Copy reply" full width.
 

@@ -4,7 +4,7 @@
 import { forEachConfig, note, closeAll, report, BASE } from "./lib.mjs";
 
 const OFFERS = ["15", "200", "400", "1000", "5000", "10000"];
-// Cases where the runs-out label fits on neither side of its line at 320px.
+// Cases where the split label fits on neither side of its line at 320px.
 const EXTRA = { socialvideo: ["300"], explainer: ["600"] };
 
 await forEachConfig(async (ctx) => {
@@ -29,25 +29,26 @@ await forEachConfig(async (ctx) => {
           boxes.slice(i + 1).forEach(([b, B]) => { if (A.left < B.right && B.left < A.right && A.top < B.bottom && B.top < A.bottom) issues.push(`${what}: "${a}" overlaps "${b}"`); });
         });
       };
-      // Hours chart.
+      // Hours chart: the budget bar's labels and By task.
       const hc = document.getElementById("hours-chart").getBoundingClientRect();
-      overlapCheck([...document.querySelectorAll("#bar-labels > *, #runs-out-label, #bracket-label")].filter((e) => e.getClientRects().length && e.textContent.trim()).map((e) => [e.textContent.trim(), e.getBoundingClientRect()]), hc, "hours chart");
-      // The dashed runs-out line never runs through its label, and the label
-      // never touches the "usually forgotten" bracket.
-      const line = document.getElementById("runs-out");
-      const label = document.getElementById("runs-out-label");
-      if (line.getClientRects().length && !line.classList.contains("flag")) {
+      overlapCheck([...document.querySelectorAll("#budget-split-label, .budget-label, #group-legend li")].filter((e) => e.getClientRects().length && e.textContent.trim()).map((e) => [e.textContent.trim(), e.getBoundingClientRect()]), hc, "hours chart");
+      // The split line never runs through its label, and the label never
+      // touches the bar under it.
+      const line = document.getElementById("budget-split");
+      const label = document.getElementById("budget-split-label");
+      if (line.getClientRects().length && !line.hidden) {
         const L = line.getBoundingClientRect(), l = label.getBoundingClientRect();
-        if (l.left < L.left + 1 && l.right > L.left && L.top < l.bottom) issues.push(`hours chart: the runs-out line crosses "${label.textContent}"`);
+        if (l.left < L.left + 1 && l.right > L.left - 1 && L.top < l.bottom) issues.push(`hours chart: the split line crosses "${label.textContent}"`);
+        const B = document.getElementById("budget-bar").getBoundingClientRect();
+        if (l.left < B.right && B.left < l.right && l.top < B.bottom && B.top < l.bottom) issues.push(`hours chart: "${label.textContent}" overlaps the bar`);
       }
-      const bracket = document.getElementById("bracket");
-      if (label.getClientRects().length && bracket.getClientRects().length && !bracket.hidden) {
-        const l = label.getBoundingClientRect();
-        [bracket, document.getElementById("bracket-label")].forEach((e) => {
-          const B = e.getBoundingClientRect();
-          if (l.left < B.right && B.left < l.right && l.top < B.bottom && B.top < l.bottom) issues.push(`hours chart: "${label.textContent}" overlaps the bracket`);
-        });
-      }
+      // A label inside the bar stays inside its part of it.
+      ["budget-covered", "budget-beyond"].forEach((id) => {
+        const part = document.getElementById(id), inner = part.querySelector(".budget-label");
+        if (!inner || !inner.getClientRects().length) return;
+        const P = part.getBoundingClientRect(), I = inner.getBoundingClientRect();
+        if (I.left < P.left - 0.5 || I.right > P.right + 0.5) issues.push(`hours chart: "${inner.textContent}" runs out of its part of the bar`);
+      });
       // Rate chart, when it shows.
       const plot = document.getElementById("rate-plot");
       if (plot.getClientRects().length && !document.getElementById("offer-chart").hidden) {

@@ -12,7 +12,7 @@ for (const [name, init] of [["blocked", blocked], ["full", full]]) {
     if ((await p.textContent("#total-hours")).trim() !== "13") note(ctx, `storage ${name}: typing`, "total didn't update", "high");
     await tap(ctx, "#check-offer"); await p.waitForTimeout(300);
     r = await p.evaluate(() => [document.body.className, document.getElementById("hero-amount").textContent]);
-    if (!/on-results/.test(r[0]) || r[1] !== "15.38") note(ctx, `storage ${name}: result`, JSON.stringify(r), "high");
+    if (!/on-results/.test(r[0]) || r[1] !== "13.85") note(ctx, `storage ${name}: result`, JSON.stringify(r), "high");
     const errShownEarly = await p.evaluate(() => !document.getElementById("save-error").hidden);
     log("f8-notes.txt", `${ctx.browser} ${ctx.width} ${name}: save error before saving = ${errShownEarly}`);
     await tap(ctx, "#save-project"); await p.waitForTimeout(150);
@@ -22,7 +22,7 @@ for (const [name, init] of [["blocked", blocked], ["full", full]]) {
     log("f8-notes.txt", `${ctx.browser} ${ctx.width} ${name}: after save ${JSON.stringify(r.slice(2))}`);
     // Keeps working afterwards.
     await tap(ctx, '#result button[data-target=rounds][data-step="1"]'); await p.waitForTimeout(400);
-    if ((await p.textContent("#hero-amount")) !== "13.79") note(ctx, `storage ${name}: after save error`, "live change broke: " + await p.textContent("#hero-amount"), "high");
+    if ((await p.textContent("#hero-amount")) !== "12.41") note(ctx, `storage ${name}: after save error`, "live change broke: " + await p.textContent("#hero-amount"), "high");
     await tap(ctx, "#projects-link"); await p.waitForTimeout(200);
     if (!/on-projects/.test(await p.evaluate(() => document.body.className))) note(ctx, `storage ${name}: projects`, "projects page didn't open", "high");
     await sideways(ctx, `storage ${name}`); await badText(ctx, `storage ${name}`);

@@ -4,11 +4,11 @@ const expect = {
   none: { label: "Your estimate", amount: "310", unit: "", sentence: /^11\.5 hours at your \$25\.00\/hr target, plus \$20\.00 in expenses\. Rounded up from \$307\.50\.$/, chart: "hidden", stats: ["Total hours", "Your time at $25/hr", "Expenses", "Usually forgotten"], reply: /my price is \$310\./ },
   "0": { label: "This offer costs you", amount: "20.00", unit: "", sentence: /before counting any of your 11\.5 hours\./, chart: "hidden", reply: /my price is \$310\./ },
   "15": { label: "This offer costs you", amount: "5.00", unit: "", sentence: /before counting any of your 11\.5 hours\./, chart: "hidden", reply: /my price is \$310\./ },
-  "20": { label: "This offer pays", amount: "1.74", unit: "/hr", sentence: /\$23\.26 an hour under your \$25 target/, chart: "hidden", reply: /my price is \$310\./ },
-  "200": { label: "This offer pays", amount: "17.39", unit: "/hr", sentence: /^for 11\.5 hours of real work\. That's \$7\.61 an hour under your \$25 target\.$/, chart: "shown", stats: ["Your estimate", "More than they offered", "Hours the offer pays for", "After expenses"], reply: /my price is \$310\./ },
-  "310": { label: "This offer pays", amount: "26.96", unit: "/hr", sentence: /over your \$25 target/, chart: "shown", stats: ["Your estimate", "Same as their offer"], reply: /\$310 works for me/ },
-  "1000": { label: "This offer pays", amount: "86.96", unit: "/hr", sentence: /That's \$61\.96 an hour over your \$25 target\./, chart: "shown", stats: ["Your estimate", "Above your estimate"], reply: /\$1,000 works for me/ },
-  "10000": { label: "This offer pays", amount: "869.57", unit: "/hr", sentence: /over your \$25 target/, chart: "shown", reply: /\$10,000 works for me/ },
+  "20": { label: "This offer pays, after expenses", amount: "0.00", unit: "/hr", sentence: /\$25\.00 an hour under your \$25 target/, chart: "hidden", reply: /my price is \$310\./ },
+  "200": { label: "This offer pays, after expenses", amount: "15.65", unit: "/hr", sentence: /^for 11\.5 hours of real work\. That's \$9\.35 an hour under your \$25 target\.$/, chart: "shown", stats: ["Your estimate", "More than they offered", "Hours $180 covers at $25/hr", "Before expenses"], statValues: ["$310", "$110", "7.2of 11.5 hrs", "$17.39/hr"], budget: "After expenses, $200 leaves $180 for your time: enough for 7.2 of your 11.5 hours at your $25 target.", reply: /my price is \$310\./ },
+  "310": { label: "This offer pays, after expenses", amount: "25.22", unit: "/hr", sentence: /over your \$25 target/, chart: "shown", stats: ["Your estimate", "Same as their offer"], reply: /\$310 works for me/ },
+  "1000": { label: "This offer pays, after expenses", amount: "85.22", unit: "/hr", sentence: /That's \$60\.22 an hour over your \$25 target\./, chart: "shown", stats: ["Your estimate", "Above your estimate"], reply: /\$1,000 works for me/ },
+  "10000": { label: "This offer pays, after expenses", amount: "867.83", unit: "/hr", sentence: /over your \$25 target/, chart: "shown", reply: /\$10,000 works for me/ },
 };
 await forEachConfig(async (ctx) => {
   const p = ctx.page;
@@ -36,6 +36,7 @@ await forEachConfig(async (ctx) => {
       warning: (() => { const w = document.getElementById("offer-warning"); return w.hidden ? "" : w.textContent.trim(); })(),
       spoken: document.getElementById("hero-spoken").textContent.trim(),
       single: document.querySelector(".charts-row").classList.contains("single"),
+      budget: (() => { const b = document.getElementById("budget-sentence"); return b.hidden ? "" : b.textContent.trim(); })(),
     }));
     const where = "offer " + offer;
     if (!/on-results/.test(r.screen)) { note(ctx, where, "didn't reach screen 2", "high"); continue; }
@@ -44,6 +45,10 @@ await forEachConfig(async (ctx) => {
     if ((r.unitVisible ? r.unit : "") !== e.unit) note(ctx, where, `hero unit "${r.unit}" visible=${r.unitVisible}`, "medium");
     if (!e.sentence.test(r.sentence)) note(ctx, where, `sentence "${r.sentence}"`, "medium");
     if (e.stats && !e.stats.every((s, i) => r.stats[i] === s)) note(ctx, where, `stats ${JSON.stringify(r.stats)}`, "medium");
+    if (e.statValues && !e.statValues.every((s, i) => r.statValues[i] === s)) note(ctx, where, `stat values ${JSON.stringify(r.statValues)}`, "medium");
+    // The sentence under the stats: only with an offer that covers expenses.
+    if (e.budget !== undefined && r.budget !== e.budget) note(ctx, where, `budget sentence "${r.budget}"`, "medium");
+    if (["none", "0", "15"].includes(offer) && r.budget) note(ctx, where, `budget sentence shown: "${r.budget}"`, "medium");
     const hidden = r.chartHidden;
     if ((e.chart === "hidden") !== hidden) note(ctx, where, `rate chart hidden=${hidden}`, "high");
     if (e.chart === "hidden" && !r.single) note(ctx, where, "hours chart not full row", "low");

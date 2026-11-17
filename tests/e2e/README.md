@@ -54,7 +54,7 @@ Each test prints a line starting with `!!` for anything it finds, then a count. 
 | `layout-grid` | Every block starts and ends on a column edge (12/8/4 columns) |
 | `close-the-gap` | Ways to close the gap for every job, offer, and rounds: when it shows, the options, the grid, no overlaps, the keyboard, and how the pick drives the price, reply, saving, and image |
 | `dashboard` | The Projects dashboard and its summary card: the example set's numbers, the table toggles (kept after a rename), the tooltip, Fix landing on Ways to close the gap (and Back, Forward, reload not jumping), when the card shows, and the layout at 375, 768, 1024, and 1440 |
-| `chart-labels` | Hours and rate chart labels for every job and offer: no overlaps, nothing cut off, the runs-out line never through its label, the target label never hidden |
+| `chart-labels` | Hours and rate chart labels for every job and offer: no overlaps, nothing cut off, the budget split line never through its label, the target label never hidden |
 
 ## Good to know
 

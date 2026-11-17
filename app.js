@@ -145,9 +145,10 @@ function renderStatNumbers() {
   });
 }
 
-// Stats: 4 columns. Each is { label, value, unit, note, number, format }.
+// Stats: 4 columns. Each is { label, value, unit, note, number, format, key }.
 // number and format let it count: format(number) gives value.
-// morph: numbers tween from the old ones (same label, same place), 250ms.
+// morph: numbers tween from the old ones (same key or label, same place), 250ms.
+// key: for a label that changes with the numbers ("Hours $180 covers at $25/hr").
 function renderStats(items, morph) {
   const previous = shownStats;
   shownStats = items;
@@ -182,7 +183,7 @@ function renderStats(items, morph) {
   list.querySelectorAll(".stat-number").forEach(function (number, i) {
     const item = items[i];
     const old = previous[i];
-    if (!old || old.label !== item.label || typeof old.number !== "number" || old.number === item.number) return;
+    if (!old || (old.key || old.label) !== (item.key || item.label) || typeof old.number !== "number" || old.number === item.number) return;
     tween(MORPH_MS, function (t) { number.textContent = item.format(mix(old.number, item.number, t)); },
       function () { number.textContent = item.value; });
   });
@@ -240,7 +241,8 @@ function renderHero(r, values, morph) {
   }
 
   if (r.offer) {
-    const money = calc.formatMoney(r.offer.hourlyBefore);
+    // The headline rate is after expenses, the same rate the target is compared with.
+    const money = calc.formatMoney(r.offer.hourlyAfter);
     const target = calc.formatPrice(r.rate);
     if (r.offer.belowExpenses) {
       // Set above.
@@ -256,11 +258,12 @@ function renderHero(r, values, morph) {
     }
 
     if (!r.offer.belowExpenses) {
-      byId("hero-label").textContent = "This offer pays";
+      byId("hero-label").textContent = "This offer pays, after expenses";
       byId("hero-amount").textContent = money.slice(1);
       byId("hero-unit").textContent = "/hr";
       byId("hero-spoken").textContent = money + " per hour";
     }
+    renderBudgetSentence(r);
     // The hero itself says what a loss costs, so the warning isn't needed too.
     show(sentence, true);
     show(warning, false);
@@ -285,11 +288,12 @@ function renderHero(r, values, morph) {
       { label: "Your estimate", value: calc.formatWholeMoney(r.estimate), number: r.estimate,
         format: priceFormat(r.estimate) },
       comparison,
-      { label: "Hours the offer pays for", value: calc.formatNumber(covered), number: covered,
+      { label: "Hours " + calc.formatPrice(r.offer.amount - r.expenses) + " covers at " +
+        calc.formatPrice(r.rate) + "/hr", key: "covered", value: calc.formatNumber(covered), number: covered,
         format: calc.formatNumber,
         unit: "of " + calc.formatHours(r.hours.total), unitLine: true },
-      { label: "After expenses", value: calc.formatMoney(r.offer.hourlyAfter), unit: "/hr",
-        number: r.offer.hourlyAfter, format: calc.formatMoney },
+      { label: "Before expenses", value: calc.formatMoney(r.offer.hourlyBefore), unit: "/hr",
+        number: r.offer.hourlyBefore, format: calc.formatMoney },
     ], morph);
   } else {
     const estimate = calc.formatWholeMoney(r.estimate);
@@ -304,6 +308,7 @@ function renderHero(r, values, morph) {
     sentence.textContent = text;
     show(sentence, true);
     show(warning, false);
+    show(byId("budget-sentence"), false);
     fitHeroNumber();
 
     const forgotten = r.outsideProduction;
@@ -322,6 +327,23 @@ function renderHero(r, values, morph) {
   }
 }
 
+// Under the stats, with an offer that covers expenses: "After expenses, $200
+// leaves $180 for your time: enough for 7.2 of your 11.5 hours at your $25 target."
+function renderBudgetSentence(r) {
+  const element = byId("budget-sentence");
+  const offer = r.offer;
+  show(element, !offer.belowExpenses);
+  if (offer.belowExpenses) return;
+  const hours = offer.coversAllHours
+    ? "all " + hoursInWords(r.hours.total)
+    : calc.formatNumber(offer.hoursCovered) + " of your " + hoursInWords(r.hours.total);
+  setRichText(element, [
+    "After expenses, " + calc.formatPrice(offer.amount) + " leaves ",
+    [calc.formatPrice(offer.amount - r.expenses) + " for your time:"],
+    " enough for ", [hours], " at your " + calc.formatPrice(r.rate) + " target.",
+  ]);
+}
+
 const GROUP_NAMES = {
   production: "Production",
   communication: "Communication",
@@ -329,16 +351,14 @@ const GROUP_NAMES = {
   delivery: "Delivery",
 };
 
-// The three groups people usually forget.
-const FORGOTTEN_GROUPS = ["communication", "revisions", "delivery"];
-
 // Chart sizes from docs/DESIGN.md, in px.
-const BAR_GAP = 4;
 const LABEL_SPACE = 8;
-// The runs-out label may come this close to its line, to fit.
+// The split label may come this close to its line, to fit.
 const MIN_LABEL_SPACE = 6;
 // Minimum space between two labels, in px.
 const LABEL_GAP = 8;
+// Room between a budget bar label and the edges of its part of the bar.
+const BUDGET_LABEL_PAD = 16;
 
 // A label's width, rounded up. offsetWidth rounds, so a 172.8px label read as
 // 172 could end 0.8px past the chart's edge.
@@ -381,10 +401,22 @@ function placeLabels(items, width) {
 
 // Chart 1: Where your hours go
 
+// The offer's budget, when there's one to show: an offer that covers expenses.
+function budgetFor(r) {
+  return r.offer && !r.offer.belowExpenses ? r.offer : null;
+}
+
 function renderHoursChart(r) {
   const total = r.hours.total;
-  const offer = r.offer;
+  const budget = budgetFor(r);
   byId("hours-title").textContent = "Where your " + hoursInWords(total) + " go";
+  const sub = byId("hours-sub");
+  show(sub, Boolean(budget));
+  show(byId("budget"), Boolean(budget));
+  if (budget) {
+    sub.textContent = "How far " + calc.formatPrice(budget.amount - r.expenses) + " goes at your " +
+      calc.formatPrice(r.rate) + " target";
+  }
 
   // What screen readers get instead of the bars.
   const items = ensureChildren(byId("hours-list"), WORK_GROUPS.length, function () {
@@ -394,183 +426,110 @@ function renderHoursChart(r) {
     items[i].textContent = GROUP_NAMES[group] + ": " + calc.formatHours(r.hours[group]);
   });
 
-  // With an offer: gradient = paid, stripes = unpaid.
-  // Without one: solid = design work, stripes = usually forgotten.
-  byId("legend-first").textContent = offer ? "paid by the offer" : "design work";
-  byId("legend-second").textContent = offer ? "unpaid" : "usually forgotten";
-  byId("legend-first-swatch").className = "legend-swatch " + (offer ? "paid" : "solid");
+  // By task: every group, even at 0 hrs. Widths follow hours (CSS flex-grow),
+  // but never get narrower than the label.
+  const tasks = ensureChildren(byId("group-legend"), WORK_GROUPS.length, function () {
+    const item = document.createElement("li");
+    item.innerHTML = '<span class="task-hours"><b></b><span class="unit"></span></span><span class="task-name"></span>';
+    return item;
+  });
+  WORK_GROUPS.forEach(function (group, i) {
+    const hours = r.hours[group];
+    tasks[i].dataset.group = group;
+    tasks[i].style.flexGrow = hours;
+    tasks[i].querySelector("b").textContent = calc.formatNumber(hours);
+    tasks[i].querySelector(".unit").textContent = isOne(hours) ? "hr" : "hrs";
+    tasks[i].querySelector(".task-name").textContent = GROUP_NAMES[group];
+  });
 
-  const parts = [];
-  const unpaid = offer ? offer.unpaidHours : 0;
-  if (unpaid > 1e-9) {
-    parts.push([hoursInWords(unpaid)], isOne(unpaid) ? " goes unpaid, and " : " go unpaid, and ");
-  }
-  if (r.outsideProduction > 0) {
-    parts.push([hoursInWords(r.outsideProduction)],
-      isOne(r.outsideProduction) ? " is work outside production." : " are work outside production.");
+  const outside = r.outsideProduction;
+  if (outside > 0) {
+    setRichText(byId("hours-summary"), [[calc.formatHours(outside)],
+      (isOne(outside) ? " is" : " are") + " outside production, the easiest to forget."]);
   } else {
-    parts.push(parts.length ? "all " : "All ", [hoursInWords(total)], " are production.");
+    setRichText(byId("hours-summary"), ["All ", [calc.formatHours(total)], " are production."]);
   }
-  setRichText(byId("hours-summary"), parts);
 
   layoutHoursChart(r);
 }
 
-// One bar per group, widths by hours. Paid hours share one continuous gradient
-// across the groups; unpaid hours are stripes. A dashed line marks where the money runs out.
+// The budget bar: the hours the offer covers at the target (the gradient), then
+// the rest. A charcoal line at the split, labeled. Labels that don't fit inside
+// their part of the bar go under it.
 function layoutHoursChart(r) {
-  const row = byId("bar-row");
-  const width = row.clientWidth;
-  if (!width) return;
+  const budget = budgetFor(r);
+  const bar = byId("budget-bar");
+  const width = bar.clientWidth;
+  if (!budget || !width) return;
 
   const total = r.hours.total;
-  const offer = r.offer;
-  const groups = WORK_GROUPS.filter(function (group) { return r.hours[group] > 1e-9; });
-  const usable = width - (groups.length - 1) * BAR_GAP;
+  const all = budget.coversAllHours;
+  const covered = all ? total : Math.max(0, budget.hoursCovered);
+  const coveredWidth = (covered / total) * width;
+  byId("budget-covered").style.width = coveredWidth + "px";
+  bar.classList.toggle("all", all);
 
-  // Hours the offer pays for, from the start. null means no offer.
-  let covered = null;
-  if (offer && offer.belowExpenses) covered = 0;
-  else if (offer && offer.coversAllHours) covered = Infinity;
-  else if (offer) covered = offer.hoursCovered;
-  const showLine = Boolean(offer) && !offer.belowExpenses && !offer.coversAllHours;
+  const coveredLabel = byId("covered-label");
+  const beyondLabel = byId("beyond-label");
+  coveredLabel.textContent = all ? "All " + calc.formatHours(total) + " at your target"
+    : calc.formatHours(covered) + " at your target";
+  beyondLabel.textContent = calc.formatHours(total - covered) + " more than it covers";
+  show(beyondLabel, !all);
 
-  const bars = ensureChildren(row, groups.length, function () {
-    const bar = document.createElement("div");
-    bar.className = "bar-group";
-    bar.innerHTML = '<span class="bar-paid"></span><span class="bar-unpaid"></span>';
-    return bar;
-  });
-
-  let x = 0;
-  let start = 0;
-  let lineX = null;
-  const spans = [];
-  groups.forEach(function (group, i) {
-    const hours = r.hours[group];
-    const w = (hours / total) * usable;
-    const bar = bars[i];
-    bar.dataset.group = group;
-    bar.style.width = w + "px";
-    bar.classList.toggle("no-offer", covered === null);
-
-    let share;
-    if (covered === null) share = group === "production" ? 1 : 0;
-    else share = Math.max(0, Math.min(1, (covered - start) / hours));
-    const paid = bar.firstElementChild;
-    paid.style.width = (share * 100) + "%";
-    paid.style.backgroundSize = width + "px 100%";
-    paid.style.backgroundPosition = (-x) + "px 0";
-    bar.lastElementChild.style.width = ((1 - share) * 100) + "%";
-
-    if (showLine && lineX === null && covered <= start + hours + 1e-9) {
-      lineX = x + share * w;
+  // Inside its part of the bar if it fits, otherwise under the bar, at the
+  // part's left edge. Labels under the bar never overlap.
+  const under = byId("budget-under");
+  const parts = [
+    { label: coveredLabel, inside: byId("budget-covered"), left: 0, width: coveredWidth },
+  ];
+  if (!all) parts.push({ label: beyondLabel, inside: byId("budget-beyond"), left: coveredWidth, width: width - coveredWidth });
+  const moved = [];
+  parts.forEach(function (part) {
+    if (part.label.parentElement !== part.inside) part.inside.appendChild(part.label);
+    part.label.style.left = "";
+    if (labelWidth(part.label) + 2 * BUDGET_LABEL_PAD > part.width) {
+      under.appendChild(part.label);
+      moved.push({ element: part.label, left: part.left });
     }
-    spans.push({ group: group, left: x, right: x + w });
-    x += w + BAR_GAP;
-    start += hours;
   });
+  under.classList.toggle("two-rows", moved.length ? placeLabels(moved, width) : false);
+  show(under, moved.length > 0);
 
-  // The runs-out line and its label. With no line, the label row says why.
-  const line = byId("runs-out");
-  const lineLabel = byId("runs-out-label");
-  let flag = "";
-  if (offer && offer.belowExpenses) {
-    flag = calc.formatPrice(offer.amount) + " doesn't cover your expenses";
-  } else if (offer && offer.coversAllHours) {
-    flag = calc.formatPrice(offer.amount) + " covers all " + calc.formatHours(total);
-  }
-  show(line, Boolean(flag) || lineX !== null);
-  line.classList.toggle("flag", Boolean(flag));
+  // The split line and its label: left of the line, then right of it, 8px
+  // away, then 6px. If neither fits, the label is centered on the line, inside
+  // the chart, and the line starts 4px below it so it never runs through the text.
+  const line = byId("budget-split");
+  const lineLabel = byId("budget-split-label");
+  show(line, !all);
+  if (all) return;
+  lineLabel.textContent = calc.formatPrice(budget.amount - r.expenses) + " covers up to here at " +
+    calc.formatPrice(r.rate) + "/hr";
+  line.style.left = coveredWidth + "px";
   line.style.top = "";
   line.style.height = "";
   lineLabel.style.left = "";
   lineLabel.style.right = "";
   lineLabel.style.top = "";
-  if (flag) {
-    lineLabel.textContent = flag;
-    line.style.left = "0px";
-  } else if (lineX !== null) {
-    lineLabel.textContent = calc.formatPrice(offer.amount) + " runs out at " +
-      calc.formatHours(offer.hoursCovered);
-    line.style.left = lineX + "px";
-    // Left of the line, then right of it, 8px away, then 6px. If neither fits,
-    // the label is centered on the line, inside the chart, and the line starts
-    // 4px below it so it never runs through the text. The label is placed from
-    // just inside the line's 1px border.
-    const from = lineX + line.clientLeft;
-    const w = labelWidth(lineLabel);
-    let side = null;
-    [LABEL_SPACE, MIN_LABEL_SPACE].forEach(function (gap) {
-      if (side) return;
-      if (from - gap - w >= 0) side = { right: gap };
-      else if (from + gap + w <= width) side = { left: gap };
-    });
-    if (side) {
-      lineLabel.style.left = side.left !== undefined ? side.left + "px" : "auto";
-      lineLabel.style.right = side.right !== undefined ? side.right + "px" : "auto";
-    } else {
-      lineLabel.style.left = (Math.max(0, Math.min(width - w, from - w / 2)) - from) + "px";
-      lineLabel.style.right = "auto";
-      const drop = lineLabel.offsetTop + lineLabel.offsetHeight + 4;
-      const lineStyle = getComputedStyle(line);
-      line.style.top = (parseFloat(lineStyle.top) + drop) + "px";
-      line.style.height = (parseFloat(lineStyle.height) - drop) + "px";
-      lineLabel.style.top = (lineLabel.offsetTop - drop) + "px";
-    }
+  const from = coveredWidth;
+  const w = labelWidth(lineLabel);
+  let side = null;
+  [LABEL_SPACE, MIN_LABEL_SPACE].forEach(function (gap) {
+    if (side) return;
+    if (from - gap - w >= 0) side = { right: gap };
+    else if (from + gap + w <= width) side = { left: gap };
+  });
+  if (side) {
+    lineLabel.style.left = side.left !== undefined ? side.left + "px" : "auto";
+    lineLabel.style.right = side.right !== undefined ? side.right + "px" : "auto";
+  } else {
+    lineLabel.style.left = (Math.max(0, Math.min(width - w, from - w / 2)) - from) + "px";
+    lineLabel.style.right = "auto";
+    const drop = lineLabel.offsetTop + lineLabel.offsetHeight + 4;
+    const lineStyle = getComputedStyle(line);
+    line.style.top = (parseFloat(lineStyle.top) + drop) + "px";
+    line.style.height = (parseFloat(lineStyle.height) - drop) + "px";
+    lineLabel.style.top = (lineLabel.offsetTop - drop) + "px";
   }
-
-  // A bracket over the forgotten groups.
-  const forgotten = spans.filter(function (span) { return FORGOTTEN_GROUPS.indexOf(span.group) !== -1; });
-  const bracket = byId("bracket");
-  show(bracket, forgotten.length > 0);
-  if (forgotten.length) {
-    const left = forgotten[0].left;
-    const right = forgotten[forgotten.length - 1].right;
-    bracket.style.left = left + "px";
-    bracket.style.width = (right - left) + "px";
-    const label = byId("bracket-label");
-    label.textContent = calc.formatHours(r.outsideProduction) + " usually forgotten";
-    // Keep the label inside the chart.
-    // It's placed from just inside the bracket's 1px border.
-    label.style.left = Math.min(0, width - (left + bracket.clientLeft + labelWidth(label))) + "px";
-  }
-
-  // Phone: group names and hours in a 2-column legend under the bar, each with
-  // a swatch of how it's drawn (paid, unpaid, or with no offer, solid or striped).
-  const legend = ensureChildren(byId("group-legend"), groups.length, function () {
-    const item = document.createElement("li");
-    item.innerHTML = '<span class="legend-swatch"></span><span class="group-name"></span><span class="group-hours"></span>';
-    return item;
-  });
-  let legendStart = 0;
-  groups.forEach(function (group, i) {
-    let drawn;
-    if (covered === null) drawn = group === "production" ? "solid" : "striped";
-    else drawn = covered > legendStart + 1e-9 ? "paid" : "striped";
-    legendStart += r.hours[group];
-    legend[i].firstElementChild.className = "legend-swatch " + drawn;
-    legend[i].querySelector(".group-name").textContent = GROUP_NAMES[group];
-    legend[i].querySelector(".group-hours").textContent = calc.formatNumber(r.hours[group]) + "h";
-  });
-
-  // Under each group: hours and name. Labels never overlap.
-  const labels = ensureChildren(byId("bar-labels"), groups.length, function () {
-    const label = document.createElement("span");
-    label.className = "bar-label";
-    label.innerHTML = '<span class="bar-hours"><b></b><span class="unit"></span></span><span class="bar-name"></span>';
-    return label;
-  });
-  groups.forEach(function (group, i) {
-    const hours = r.hours[group];
-    labels[i].querySelector("b").textContent = calc.formatNumber(hours);
-    labels[i].querySelector(".unit").textContent = isOne(hours) ? "hr" : "hrs";
-    labels[i].querySelector(".bar-name").textContent = GROUP_NAMES[group];
-  });
-  const twoRows = placeLabels(spans.map(function (span, i) {
-    return { element: labels[i], left: span.left };
-  }), width);
-  byId("bar-labels").classList.toggle("two-rows", twoRows);
 }
 
 // Chart 2: Your rate drops as hours grow
@@ -594,10 +553,9 @@ function renderOfferChart(r) {
     calc.formatMoney(offer.hourlyAfter) + "/hr";
   items[2].textContent = "Your target rate: " + calc.formatMoney(r.rate) + "/hr";
 
-  const amount = calc.formatPrice(offer.amount);
-  byId("rate-sub").textContent = (r.expenses > 0
-    ? "After your " + calc.formatPrice(r.expenses) + " in expenses, " + amount
-    : upperFirst(amount)) + " spread over more hours pays less per hour.";
+  byId("rate-sub").textContent = r.expenses > 0
+    ? "After " + calc.formatPrice(r.expenses) + " in expenses, more hours means less per hour."
+    : "More hours means less per hour.";
 
   // Under 1 hour, "only up to 0.04 hrs" is exact but hard to read.
   const target = calc.formatPrice(r.rate);
@@ -706,7 +664,8 @@ function layoutRateChart(r, morph) {
   const targetY = py(r.rate);
   svgElement(svg, "line", { class: "rate-target", x1: pad.left, x2: width - pad.right, y1: targetY, y2: targetY });
 
-  // The curve.
+  // The curve, and the area between it and the target where it's below the
+  // target (drawn first, so the lines sit on top of it).
   const points = [];
   const samples = [];
   for (let i = 0; i <= 80; i++) {
@@ -714,6 +673,8 @@ function layoutRateChart(r, morph) {
     samples.push({ x: px(h), y: py(value(h)) });
     points.push((i ? "L" : "M") + px(h).toFixed(1) + " " + py(value(h)).toFixed(1));
   }
+  const short = svgElement(svg, "path", { class: "rate-short", d: shortArea(samples, targetY) });
+  svg.insertBefore(short, svg.querySelector(".rate-target"));
   const curve = svgElement(svg, "path", { class: "rate-curve", d: points.join(" ") });
 
   // Labels never overlap each other. They're placed in priority order: the
@@ -781,20 +742,20 @@ function layoutRateChart(r, morph) {
     return true;
   }
 
-  // Now: a glowing red dot at the current hours.
+  // Now: a coral dot with a soft halo at the current hours.
   const dotX = px(total);
   const dotY = py(value(total));
   const dot = svgElement(svg, "g", { class: "rate-now" });
-  svgElement(dot, "circle", { class: "rate-halo", cx: dotX, cy: dotY, r: 14 });
-  svgElement(dot, "circle", { class: "rate-dot", cx: dotX, cy: dotY, r: 7 });
-  marks.push({ x: dotX - 14, y: dotY - 14, width: 28, height: 28 });
+  svgElement(dot, "circle", { class: "rate-halo", cx: dotX, cy: dotY, r: 12 });
+  svgElement(dot, "circle", { class: "rate-dot", cx: dotX, cy: dotY, r: 6 });
+  marks.push({ x: dotX - 12, y: dotY - 12, width: 24, height: 24 });
 
   // Where the curve meets the target: the same hours as "runs out".
   let cross = null;
   if (net > 0 && offer.hoursCovered >= x0 && offer.hoursCovered <= x1) {
     cross = px(offer.hoursCovered);
-    svgElement(svg, "circle", { class: "rate-cross", cx: cross, cy: targetY, r: 3.5 });
-    marks.push({ x: cross - 4, y: targetY - 4, width: 8, height: 8 });
+    svgElement(svg, "circle", { class: "rate-cross", cx: cross, cy: targetY, r: 4.5 });
+    marks.push({ x: cross - 5, y: targetY - 5, width: 10, height: 10 });
   }
 
   const nowLabel = svgElement(svg, "text", { class: "rate-label rate-now-label" },
@@ -859,16 +820,20 @@ function layoutRateChart(r, morph) {
   });
 
   // Live change: the curve and dots move from their old places to the new ones.
-  const geometry = { samples: samples, dot: { x: dotX, y: dotY }, cross: cross };
+  const geometry = { samples: samples, dot: { x: dotX, y: dotY }, cross: cross, targetY: targetY };
   if (morph && rateGeometry && canMove()) {
     const from = rateGeometry;
     const dotParts = dot.querySelectorAll("circle");
     const crossDot = svg.querySelector(".rate-cross");
     tween(MORPH_MS, function (t) {
-      curve.setAttribute("d", samples.map(function (point, i) {
+      const moving = samples.map(function (point, i) {
         const old = from.samples[i] || point;
-        return (i ? "L" : "M") + mix(old.x, point.x, t).toFixed(1) + " " + mix(old.y, point.y, t).toFixed(1);
+        return { x: mix(old.x, point.x, t), y: mix(old.y, point.y, t) };
+      });
+      curve.setAttribute("d", moving.map(function (point, i) {
+        return (i ? "L" : "M") + point.x.toFixed(1) + " " + point.y.toFixed(1);
       }).join(" "));
+      short.setAttribute("d", shortArea(moving, mix(from.targetY, targetY, t)));
       dotParts.forEach(function (circle) {
         circle.setAttribute("cx", mix(from.dot.x, dotX, t));
         circle.setAttribute("cy", mix(from.dot.y, dotY, t));
@@ -886,6 +851,16 @@ function layoutRateChart(r, morph) {
   if (scrubHours === null || scrubHours < x0 || scrubHours > x1) scrubHours = Math.round(total * 2) / 2;
   if (scrubShown) drawScrub();
   else setScrubValue();
+}
+
+// The area between the target line and the curve, where the curve is below
+// the target (larger y in the drawing). Above it, the area has no height.
+function shortArea(samples, targetY) {
+  const last = samples[samples.length - 1];
+  return samples.map(function (point, i) {
+    return (i ? "L" : "M") + point.x.toFixed(1) + " " + Math.max(point.y, targetY).toFixed(1);
+  }).join(" ") + " L" + last.x.toFixed(1) + " " + targetY.toFixed(1) +
+    " L" + samples[0].x.toFixed(1) + " " + targetY.toFixed(1) + " Z";
 }
 
 // Scrubbing the rate chart: a line, a dot on the curve, and "14h → $12.86/hr",
@@ -1463,6 +1438,7 @@ function showResultState(state) {
     show(byId("offer-chart"), false);
     show(byId("quote-result"), false);
     show(byId("gap-section"), false);
+    show(byId("budget-sentence"), false);
   }
 }
 
@@ -1496,10 +1472,6 @@ function currentJob() {
 
 function job() {
   return calc.JOBS[currentJob()];
-}
-
-function upperFirst(text) {
-  return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
 // Puts the job's names on every label, button, and header that mentions it.
@@ -1897,9 +1869,9 @@ function paintHeroNumber(r, value) {
   byId("hero-amount").textContent = heroText(r, value);
 }
 
-// The number the hero shows: the estimate, the loss, or the offer per hour.
+// The number the hero shows: the estimate, the loss, or the offer per hour after expenses.
 function heroValue(r) {
-  return !r.offer ? r.estimate : (r.offer.belowExpenses ? r.offer.shortfall : r.offer.hourlyBefore);
+  return !r.offer ? r.estimate : (r.offer.belowExpenses ? r.offer.shortfall : r.offer.hourlyAfter);
 }
 
 // Which kind of number that is. A live change only tweens within the same kind.
@@ -3260,7 +3232,6 @@ function finishPlays() {
   stopCountUp();
   if (lastResult && byId("hero-amount")) paintHeroNumber(lastResult, heroValue(lastResult));
   byId("result").getAnimations({ subtree: true }).forEach(function (animation) { animation.finish(); });
-  endHoursPlay();
   byId("metrics").classList.remove("play");
   disarm();
   renderStatNumbers();
@@ -3279,7 +3250,7 @@ function armStats() {
   });
 }
 
-// No bars yet (the stripes wipe in), and the line, bracket, and labels wait.
+// No bar yet (it wipes in, then fills), and the line and labels wait.
 function armHours() {
   byId("hours-chart").classList.add("armed");
 }
@@ -3311,68 +3282,47 @@ function playStats() {
 }
 
 // The hours chart acts out the finding, one step after another (DESIGN.md):
-// stripes wipe in (400ms), the paid fill runs from the left and stops where the
-// money runs out (700ms), the runs-out line drops in (200ms), the bracket draws
-// (300ms), then the group labels rise in, 60ms apart. Only clip-path, opacity,
-// and transform move.
+// the bar wipes in (400ms) as all hours past the budget, the gradient fills
+// from the left and stops where the budget runs out (700ms), the split line
+// drops in (200ms), then the labels and By task rise in, 60ms apart. Only
+// clip-path, opacity, and transform move. With no budget bar, only By task plays.
 const HOURS_WIPE_MS = 400;
 const HOURS_FILL_MS = 700;
 const HOURS_LINE_MS = 200;
-const HOURS_BRACKET_MS = 300;
 const HOURS_LABEL_MS = 300;
 const HOURS_LABEL_GAP_MS = 60;
 
 function playHours() {
   const chart = byId("hours-chart");
-  const row = byId("bar-row");
-  const lineAt = HOURS_WIPE_MS + HOURS_FILL_MS;
-  const bracketAt = lineAt + HOURS_LINE_MS;
-  const labelsAt = bracketAt + HOURS_BRACKET_MS;
-
-  // The paid fill: one front moving left to right across the groups (with the
-  // shared ease), drawn as a clip on each paid part. Sampled into keyframes so
-  // the browser runs it, not a script on every frame.
-  const paid = Array.prototype.slice.call(row.querySelectorAll(".bar-paid")).map(function (span) {
-    return { span: span, left: span.parentElement.offsetLeft - row.offsetLeft, width: span.offsetWidth };
-  });
-  const fillTo = paid.reduce(function (most, part) { return Math.max(most, part.left + part.width); }, 0);
-  const STEPS = 24;
+  const hasBudget = !byId("budget").hidden;
+  const lineAt = hasBudget ? HOURS_WIPE_MS + HOURS_FILL_MS : 0;
+  const labelsAt = hasBudget ? lineAt + HOURS_LINE_MS : 0;
 
   // From armed to playing in one frame: every animation starts in the armed look.
-  chart.classList.add("hours-playing");
   chart.classList.remove("armed");
-  animate(row, [{ clipPath: "inset(0 100% 0 0)" }, { clipPath: "inset(0 0 0 0)" }], { duration: HOURS_WIPE_MS });
-  paid.forEach(function (part) {
-    const frames = [];
-    for (let i = 0; i <= STEPS; i++) {
-      const front = fillTo * ease(i / STEPS);
-      const hidden = Math.max(0, Math.min(part.width, part.left + part.width - front));
-      frames.push({ offset: i / STEPS, clipPath: "inset(0 " + hidden + "px 0 0)" });
-    }
-    animate(part.span, frames, { duration: HOURS_FILL_MS, delay: HOURS_WIPE_MS, easing: "linear" });
-  });
-  animate(byId("runs-out"), [{ opacity: 0, transform: "translateY(-8px)" }, { opacity: 1, transform: "none" }],
-    { duration: HOURS_LINE_MS, delay: lineAt });
-  animate(byId("bracket"), [{ clipPath: "inset(0 100% 0 0)" }, { clipPath: "inset(0 0 0 0)" }],
-    { duration: HOURS_BRACKET_MS, delay: bracketAt });
-  animate(byId("bracket-label"), [{ opacity: 0 }, { opacity: 1 }], { duration: HOURS_BRACKET_MS, delay: bracketAt });
-  const labels = Array.prototype.slice.call(document.querySelectorAll("#bar-labels .bar-label, #group-legend li"))
+  if (hasBudget) {
+    animate(byId("budget-bar"), [{ clipPath: "inset(0 100% 0 0)" }, { clipPath: "inset(0 0 0 0)" }],
+      { duration: HOURS_WIPE_MS });
+    animate(byId("budget-covered"), [{ clipPath: "inset(0 100% 0 0)" }, { clipPath: "inset(0 0 0 0)" }],
+      { duration: HOURS_FILL_MS, delay: HOURS_WIPE_MS });
+    animate(byId("budget-split"), [{ opacity: 0, transform: "translateY(-8px)" }, { opacity: 1, transform: "none" }],
+      { duration: HOURS_LINE_MS, delay: lineAt });
+  }
+  const labels = Array.prototype.slice.call(chart.querySelectorAll(".budget-label, .by-task-title, #group-legend li"))
     .filter(function (label) { return label.offsetParent; });
   labels.forEach(function (label, i) {
-    animate(label, [{ opacity: 0, transform: "translateY(6px)" }, { opacity: 1, transform: "none" }],
-      { duration: HOURS_LABEL_MS, delay: labelsAt + i * HOURS_LABEL_GAP_MS });
+    // Labels inside the bar are centered with a transform, so they only fade.
+    const inBar = label.classList.contains("budget-label") && !label.closest("#budget-under");
+    const frames = inBar ? [{ opacity: 0 }, { opacity: 1 }]
+      : [{ opacity: 0, transform: "translateY(6px)" }, { opacity: 1, transform: "none" }];
+    animate(label, frames, { duration: HOURS_LABEL_MS, delay: labelsAt + i * HOURS_LABEL_GAP_MS });
   });
-  // The stripes under the paid parts are only needed until the fill is done.
-  later(lineAt, endHoursPlay);
-}
-
-function endHoursPlay() {
-  byId("hours-chart").classList.remove("hours-playing");
 }
 
 // The rate chart: the grid fades in (200ms), the target line draws (300ms), the
-// curve draws left to right (900ms) so you watch the rate fall, the black dot
-// pops as the curve reaches it, and the red dot lands last with one halo pulse.
+// curve draws left to right (900ms) so you watch the rate fall while the area
+// below the target fades in, the charcoal dot pops as the curve reaches it, and
+// the coral dot lands last with one halo pulse.
 const RATE_GRID_MS = 200;
 const RATE_TARGET_MS = 300;
 const RATE_CURVE_MS = 900;
@@ -3398,6 +3348,7 @@ function playRate() {
   const length = curve.getTotalLength();
   animate(curve, [{ strokeDasharray: length + " " + length, strokeDashoffset: length },
     { strokeDasharray: length + " " + length, strokeDashoffset: 0 }], { duration: RATE_CURVE_MS, delay: curveAt });
+  animate(svg.querySelector(".rate-short"), [{ opacity: 0 }, { opacity: 1 }], { duration: RATE_CURVE_MS, delay: curveAt });
 
   const cross = svg.querySelector(".rate-cross");
   if (cross && rateView) {
@@ -3413,7 +3364,7 @@ function playRate() {
     { duration: 260, delay: dotAt });
   animate(svg.querySelector(".rate-halo"),
     [{ transform: "scale(0.4)", opacity: 0 }, { transform: "scale(0.4)", opacity: 0.5, offset: 0.05 },
-      { transform: "scale(1.6)", opacity: 0, offset: 0.6 }, { transform: "scale(1)", opacity: 0.25 }],
+      { transform: "scale(1.6)", opacity: 0, offset: 0.6 }, { transform: "scale(1)", opacity: 1 }],
     { duration: 900, delay: dotAt + 120, easing: "ease-out" });
   animate(svg.querySelector(".rate-now-label"), [{ opacity: 0 }, { opacity: 1 }], { duration: 250, delay: dotAt + 260 });
 }
@@ -3712,16 +3663,16 @@ function drawSunset(ctx, x, y, w, h) {
   const cx = x + w / 2;
   const cy = y + h / 2;
   const base = ctx.createLinearGradient(cx - dx * half, cy - dy * half, cx + dx * half, cy + dy * half);
-  base.addColorStop(0, "#C9D6EA");
-  base.addColorStop(0.4, "#D9CDE6");
-  base.addColorStop(1, "#EBC7B5");
+  base.addColorStop(0, "#C9D3DC");
+  base.addColorStop(0.42, "#DCD9D2");
+  base.addColorStop(1, "#EBCDB8");
   ctx.fillStyle = base;
   ctx.fillRect(x, y, w, h);
   // [radius x, radius y, center x, center y, color rgb, where it fades out]
   [
-    [0.40, 0.60, 0.55, 0.55, "247,185,143", 0.75],
-    [0.50, 0.80, 0.70, 0.80, "255,138,61", 0.70],
-    [0.55, 0.95, 0.88, 1.00, "232,67,46", 0.70],
+    [0.40, 0.60, 0.55, 0.55, "244,180,142", 0.75],
+    [0.50, 0.80, 0.70, 0.80, "245,154,98", 0.70],
+    [0.55, 0.95, 0.88, 1.00, "229,96,63", 0.70],
   ].forEach(function (blob) {
     ctx.save();
     ctx.translate(x + blob[2] * w, y + blob[3] * h);
@@ -3871,10 +3822,10 @@ function drawShareImage(canvas, r, values) {
   const coverX = xAt(covered);
 
   const paid = ctx.createLinearGradient(IMAGE_X, 0, IMAGE_RIGHT, 0);
-  paid.addColorStop(0, "#C9D6EA");
-  paid.addColorStop(0.3, "#EBC7B5");
-  paid.addColorStop(0.7, "#FF8A3D");
-  paid.addColorStop(1, "#E8432E");
+  paid.addColorStop(0, "#C9D3DC");
+  paid.addColorStop(0.3, "#E9D7C6");
+  paid.addColorStop(0.7, "#F59A62");
+  paid.addColorStop(1, "#E5603F");
   segments.forEach(function (s) {
     const paidEnd = Math.max(s.x, Math.min(s.x + s.w, coverX));
     if (paidEnd > s.x) {
@@ -3986,8 +3937,8 @@ function drawShareImage(canvas, r, values) {
     let legendX = IMAGE_X;
     if (mode === "part") {
       const swatch = ctx.createLinearGradient(legendX, 0, legendX + 30, 0);
-      swatch.addColorStop(0, "#EBC7B5");
-      swatch.addColorStop(1, "#E8432E");
+      swatch.addColorStop(0, "#E9D7C6");
+      swatch.addColorStop(1, "#E5603F");
       ctx.fillStyle = swatch;
       ctx.fillRect(legendX, 1015, 30, 16);
       ctx.fillStyle = ink;

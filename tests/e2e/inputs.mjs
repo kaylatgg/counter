@@ -119,7 +119,7 @@ await forEachConfig(async (ctx) => {
       await sideways(ctx, `huge ${id} screen 2`);
       await badText(ctx, `huge ${id} screen 2`);
       // Text overflowing its own box (cut-off numbers).
-      const clipped = await p.evaluate(() => [...document.querySelectorAll("#hero-panel .hero-amount, #metrics dd, .math-estimate, #bar-labels *")].filter(e => e.getClientRects().length && e.getBoundingClientRect().right > innerWidth + 1).map(e => e.id || e.className || e.tagName));
+      const clipped = await p.evaluate(() => [...document.querySelectorAll("#hero-panel .hero-amount, #metrics dd, .math-estimate, #group-legend li *, .budget-label")].filter(e => e.getClientRects().length && e.getBoundingClientRect().right > innerWidth + 1).map(e => e.id || e.className || e.tagName));
       if (clipped.length) note(ctx, `huge ${id} screen 2`, "text past the window: " + clipped.join(", "), "medium");
     }
   }
