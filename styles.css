@@ -769,7 +769,8 @@ legend {
 
 /* Desktop: when a field's jobs don't fit the column, the pills wrap onto a
    second line, left-aligned, and the paper becomes a 24px rounded rectangle
-   around both lines (app.js adds .wrapped). Phone keeps the scrolling row. */
+   around both lines (app/controls.js adds .wrapped). Phone keeps the
+   scrolling row. */
 @media (min-width: 760px) {
   .job-choice {
     flex-wrap: wrap;
@@ -2789,7 +2790,8 @@ legend {
   white-space: nowrap;
 }
 
-/* app.js moves a label here when it doesn't fit inside its part of the bar. */
+/* app/charts.js moves a label here when it doesn't fit inside its part of the
+   bar. */
 .budget-under {
   position: relative;
   height: 20px;
@@ -2828,7 +2830,7 @@ legend {
   background: var(--charcoal);
 }
 
-/* app.js places it beside the line, or centered above it when tight. */
+/* app/charts.js places it beside the line, or centered above it when tight. */
 .budget-split-label {
   position: absolute;
   top: -2px;
@@ -2840,8 +2842,8 @@ legend {
   white-space: nowrap;
 }
 
-/* By task: one row, widths by hours (app.js sets flex-grow), never narrower
-   than the label. */
+/* By task: one row, widths by hours (app/charts.js sets flex-grow), never
+   narrower than the label. */
 .by-task-title {
   font-family: var(--mono);
   font-size: 12px;
@@ -3710,7 +3712,7 @@ textarea {
 }
 
 /* ?grid: the columns as faint bands over everything, for checking alignment.
-   app.js adds it only when the address has ?grid. */
+   app/start.js adds it only when the address has ?grid. */
 .grid-overlay {
   position: fixed;
   inset: 0;
@@ -4742,11 +4744,12 @@ textarea {
   }
 }
 
-/* The reveal: plays once when "Check the offer" is pressed. app.js runs the
-   fades as Web Animations, each step after the last one finishes. Never under
-   reduced motion. */
+/* The reveal: plays once when "Check the offer" is pressed. app/motion.js runs
+   the fades as Web Animations, each step after the last one finishes. Never
+   under reduced motion. */
 
-/* The button's circle grows into the hero panel (app.js moves the orb). */
+/* The button's circle grows into the hero panel (app/motion.js moves the
+   orb). */
 .reveal-orb {
   position: fixed;
   z-index: 30;
@@ -4763,7 +4766,8 @@ body.reveal-hidden .glow {
   opacity: 0;
 }
 
-/* Then the blocks in view play one after another (app.js, "Plays once"). */
+/* Then the blocks in view play one after another (app/motion.js, "Plays
+   once"). */
 
 @media (prefers-reduced-motion: reduce) {
   *,
