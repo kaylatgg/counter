@@ -243,7 +243,10 @@ byId("crumb-input").addEventListener("blur", function () { finishHeaderRename(tr
 
 // Start: load saved projects and the draft, then go where the address says
 // (the calculator by default).
-projectList = projectStore.loadProjects(storage()).projects;
+const loadedStore = projectStorage.loadStore(storage());
+projectList = loadedStore.projects;
+projectsReadOnly = loadedStore.readOnly;
+show(byId("newer-version"), projectsReadOnly);
 draft = projectStore.loadDraft(storage()).draft;
 if (shareLink.isShareHash(location.hash)) {
   openShareLink(location.hash, true);
