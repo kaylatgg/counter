@@ -227,6 +227,7 @@ Decided while building:
 - **Screen 2's header row is sticky** with a `--bg` background, so the live controls stay in reach. Screen 1's header scrolls away so it never cuts the glow.
 - **Row bars on screen 1** share one scale: 25px per hour, narrower when any row would pass 150px.
 - **The reveal** fades screen 1 (200ms), grows the orb from the button's circle to the hero panel (400ms), then fades screen 2 in, counts the number up, sweeps the bars (600ms), and shows the red dot last.
+- **Saved by a newer version** (since November 17, 2026): the line "These jobs were saved by a newer version of Counter. Reload the page to keep editing." uses the "Couldn't save" box's look and place under the header, on every screen. It's the only red line then: a refused save doesn't add "Couldn't save", and a project's header shows "Not saved" with no Try again (see DECISIONS.md 52).
 - **The corner glow** uses the sunset colors as one radial gradient, hottest at the center, blurred.
 
 ## Phone layout (below 760px)
