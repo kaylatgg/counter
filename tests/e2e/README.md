@@ -54,10 +54,12 @@ Each test prints a line starting with `!!` for anything it finds, then a count. 
 | `layout-grid` | Every block starts and ends on a column edge (12/8/4 columns) |
 | `close-the-gap` | Ways to close the gap for every job, offer, and rounds: when it shows, the options, the grid, no overlaps, the keyboard, and how the pick drives the price, reply, saving, and image |
 | `dashboard` | The Projects dashboard and its summary card: the example set's numbers, the table toggles (kept after a rename), the tooltip, Fix landing on Ways to close the gap (and Back, Forward, reload not jumping), when the card shows, and the layout at 375, 768, 1024, and 1440 |
+| `upgrade` | Projects saved by version 1 (`counter.projects`) show on Projects, are copied into `counter.v2`, still open, edit, and save, and `counter.projects` never changes |
 | `chart-labels` | Hours and rate chart labels for every job and offer: no overlaps, nothing cut off, the budget split line never through its label, the target label never hidden |
 
 ## Good to know
 
 - The tests open `index.html` straight from the file, the same as double-clicking it.
 - They run with reduced motion unless a test is about motion, so results don't depend on timing.
+- Tests that need saved projects use `seedProjects` in `lib.mjs`, which writes them to `counter.v2` (or, for the upgrade test, only to `counter.projects`), and `savedProjects` to read back what the app saved.
 - On phones that can share files, "Save image" shares instead of downloading; the tests expect that.

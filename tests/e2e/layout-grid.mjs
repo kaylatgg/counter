@@ -1,6 +1,6 @@
 // The 12/8/4 column grid: every block starts and ends on a column edge
 // (read from the ?grid overlay), on screen 1, screen 2, and Projects.
-import { forEachConfig, note, closeAll, report, BASE } from "./lib.mjs";
+import { forEachConfig, note, closeAll, report, BASE, seedProjects } from "./lib.mjs";
 
 // [name, selector, every match?, only "left" or "right" edge?]
 const SCREENS = {
@@ -12,7 +12,8 @@ const SCREENS = {
 await forEachConfig(async (ctx) => {
   const p = ctx.page;
   await p.goto(BASE + "?grid"); await p.waitForTimeout(200);
-  await p.evaluate(() => { localStorage.clear(); localStorage.setItem("counter.projects", projectStore.serializeProjects([projectStore.createProject("Menu, Oct 11", projectStore.exampleDraft("menu"), "a1", new Date())])); });
+  await p.evaluate(() => localStorage.clear());
+  await seedProjects(p, await p.evaluate(() => [projectStore.createProject("Menu, Oct 11", projectStore.exampleDraft("menu"), "a1", new Date())]));
   for (const [label, [hash, rows]] of Object.entries(SCREENS)) {
     await p.goto("about:blank"); await p.goto(BASE + "?grid" + hash); await p.waitForTimeout(400);
     const out = await p.evaluate((rows) => {

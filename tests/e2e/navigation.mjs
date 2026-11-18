@@ -1,11 +1,11 @@
 // Flow 7: navigation.
-import { forEachConfig, fresh, note, tap, closeAll, report, findings, BASE, sideways, log } from "./lib.mjs";
+import { forEachConfig, fresh, note, tap, closeAll, report, findings, BASE, sideways, log, seedProjects, savedProjects } from "./lib.mjs";
 const where = (p) => p.evaluate(() => !document.getElementById("crumb") ? { hash: location.href, screen: "not counter" } : ({ hash: location.hash, screen: document.body.className.match(/on-\w+/)?.[0], crumb: document.getElementById("crumb").hidden ? "" : document.getElementById("crumb-name").textContent, count: document.getElementById("count").value, dialogs: [...document.querySelectorAll("dialog[open]")].length, armed: document.querySelectorAll(".armed").length, revealing: /revealing|reveal-hidden/.test(document.body.className) }));
 await forEachConfig(async (ctx) => {
   const p = ctx.page;
   await fresh(ctx);
   // Make a saved project to visit.
-  await p.evaluate(() => { localStorage.setItem("counter.projects", projectStore.serializeProjects([projectStore.createProject("Poster job", projectStore.exampleDraft("poster"), "pp1", new Date(2026, 9, 1))])); });
+  await seedProjects(p, await p.evaluate(() => [projectStore.createProject("Poster job", projectStore.exampleDraft("poster"), "pp1", new Date(2026, 9, 1))]));
   await p.reload(); await p.waitForTimeout(200);
   const trail = [];
   const stepTo = async (label, fn) => { await fn(); await p.waitForTimeout(350); const w = await where(p); trail.push([label, w]); };
@@ -127,7 +127,7 @@ await forEachConfig(async (ctx) => {
   if (!(await state()).save) note(ctx, "Save as project from dialog", "save dialog didn't open", "high");
   await p.keyboard.press("Enter"); await p.waitForTimeout(300);
   s = await state();
-  const saved = await p.evaluate(() => { const list = JSON.parse(localStorage.getItem("counter.projects") || "[]"); return list.map((x) => x.job + ":" + x.inputs.count).join(","); });
+  const saved = (await savedProjects(p)).map((x) => x.job + ":" + x.inputs.count).join(",");
   if (s.dialog || s.save || s.screen !== "on-inputs" || s.job !== "menu" || s.count !== "2" || s.projects !== "1" || saved !== "logo:5") note(ctx, "Save as project, then fresh", JSON.stringify(s) + " saved " + saved, "high");
 }, { widths: [390, 1440] });
 report("navigation"); await closeAll();

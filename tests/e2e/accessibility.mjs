@@ -1,5 +1,5 @@
 // Flow 9: accessibility.
-import { forEachConfig, fresh, note, tap, closeAll, report, findings, axe, BASE, log } from "./lib.mjs";
+import { forEachConfig, fresh, note, tap, closeAll, report, findings, axe, BASE, log, seedProjects } from "./lib.mjs";
 // Tab through the page; returns the sequence and problems.
 async function tabWalk(ctx, label, { within = null, max = 140 } = {}) {
   const p = ctx.page;
@@ -101,7 +101,7 @@ await forEachConfig(async (ctx) => {
   await p.keyboard.press("Escape"); await p.waitForTimeout(100);
   if ((await p.evaluate(() => document.activeElement.id)) !== "save-image") note(ctx, "image dialog Escape", "focus not returned", "medium");
   // Projects with rows.
-  await p.evaluate(() => localStorage.setItem("counter.projects", projectStore.serializeProjects([projectStore.createProject("Menu, Oct 11", projectStore.exampleDraft("menu"), "a1", new Date()), projectStore.createProject("Logo for Sam", projectStore.exampleDraft("logo"), "a2", new Date())])));
+  await seedProjects(p, await p.evaluate(() => [projectStore.createProject("Menu, Oct 11", projectStore.exampleDraft("menu"), "a1", new Date()), projectStore.createProject("Logo for Sam", projectStore.exampleDraft("logo"), "a2", new Date())]));
   await p.goto("about:blank"); await p.goto(BASE + "#projects"); await p.waitForTimeout(300);
   await axe(ctx, "projects list");
   const sp = await tabWalk(ctx, "projects list");
@@ -180,7 +180,7 @@ await forEachConfig(async (ctx) => {
   await p.focus("#delivery-hours"); await p.locator("#delivery-hours").blur();
   await expectSaid("0 hours", null);
   // A saved project opening (from the list, and by address), and a share link.
-  await p.evaluate(() => localStorage.setItem("counter.projects", projectStore.serializeProjects([projectStore.createProject("Logo for Sam", projectStore.exampleDraft("logo"), "a1", new Date())])));
+  await seedProjects(p, await p.evaluate(() => [projectStore.createProject("Logo for Sam", projectStore.exampleDraft("logo"), "a1", new Date())]));
   await p.goto("about:blank"); await p.goto(BASE + "#projects"); await p.waitForTimeout(300);
   await tap(ctx, '[data-action="open"]');
   await expectSaid("saved project opens", null);
