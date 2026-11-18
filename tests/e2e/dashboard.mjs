@@ -2,7 +2,7 @@
 // saved result. Uses the example set from projects.test.js: the numbers, the
 // table toggles (and that a rename keeps them), the tooltip, the Fix button
 // landing on Ways to close the gap, and the layout at 375, 768, 1024, and 1440.
-import { forEachConfig, note, closeAll, report, BASE, axe, sideways, badText } from "./lib.mjs";
+import { forEachConfig, note, closeAll, report, BASE, axe, sideways, badText, seedProjects } from "./lib.mjs";
 
 function project(name, rate, hours, offer, expenses, day, offerStatus = "amount") {
   const date = new Date(2026, 9, day, 12).toISOString();
@@ -24,7 +24,8 @@ const EXAMPLE = [
 
 async function seed(p, list, hash) {
   await p.goto(BASE);
-  await p.evaluate((data) => { localStorage.clear(); localStorage.setItem("counter.projects", JSON.stringify(data)); }, list);
+  await p.evaluate(() => localStorage.clear());
+  await seedProjects(p, list);
   await p.goto("about:blank");
   await p.goto(BASE + hash);
   await p.evaluate(() => document.fonts.ready);

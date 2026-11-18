@@ -1,4 +1,4 @@
-import { forEachConfig, fresh, note, closeAll, report, axe, BASE, log } from "./lib.mjs";
+import { forEachConfig, fresh, note, closeAll, report, axe, BASE, log, savedProjects } from "./lib.mjs";
 const init = () => {
   window.__fail = null;
   if (location.protocol !== "file:") return;
@@ -48,7 +48,7 @@ for (const mode of ["blocked", "full"]) {
     await p.click("#save-project"); await p.waitForTimeout(150);
     h = await hdr(p); logState(ctx, mode + " try again works", h);
     if (h.button !== "Saved" || !h.disabled || h.status !== "Saved" || h.error) note(ctx, mode + " try again works", JSON.stringify(h), "high");
-    const stored = await p.evaluate(() => JSON.parse(localStorage.getItem("counter.projects"))[0].inputs.rounds);
+    const stored = (await savedProjects(p))[0].inputs.rounds;
     if (stored !== "3") note(ctx, mode + " try again works", "stored rounds " + stored, "high");
     // Fail again, then a normal change once storage is back also returns to Saved.
     await p.evaluate((m) => { window.__fail = m; }, mode);

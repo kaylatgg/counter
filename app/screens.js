@@ -133,6 +133,9 @@ function storage() {
 // If saving fails, the page keeps working and says so: "Couldn't save" under
 // the header, and in a project "Not saved" with a "Try again" button.
 let projectsUnsaved = false;
+// True when a newer version of Counter saved the projects: they show, but saving
+// them is refused until a reload (store.js). The draft still saves.
+let projectsReadOnly = false;
 
 function showSaveResult(ok) {
   show(byId("save-error"), !ok);
@@ -140,7 +143,12 @@ function showSaveResult(ok) {
 }
 
 function persist() {
-  const ok = showSaveResult(projectStore.saveProjects(storage(), projectList).ok);
+  const result = projectStorage.saveStore(storage(), projectList);
+  // A refused save says so in the newer-version line, not "Couldn't save".
+  if (result.readOnly) projectsReadOnly = true;
+  else showSaveResult(result.ok);
+  show(byId("newer-version"), projectsReadOnly);
+  const ok = result.ok;
   projectsUnsaved = !ok;
   renderHeader();
   return ok;
@@ -309,7 +317,8 @@ function renderHeader() {
   byId("save-status").textContent = projectsUnsaved ? "Not saved" : "Saved";
 
   const button = byId("save-project");
-  button.hidden = !inCalculator;
+  // Read only: "Not saved" stays, but Try again can't work until a reload.
+  button.hidden = !inCalculator || (Boolean(project) && projectsUnsaved && projectsReadOnly);
   button.disabled = Boolean(project) && !projectsUnsaved;
   if (project && projectsUnsaved) {
     // On a phone only "Retry" fits; its name there is "Retry saving", so it

@@ -1,6 +1,6 @@
 // Flow 6: projects.
-import { forEachConfig, fresh, note, tap, closeAll, report, findings, sideways, badText, axe } from "./lib.mjs";
-const stored = (p) => p.evaluate(() => JSON.parse(localStorage.getItem("counter.projects") || "[]"));
+import { forEachConfig, fresh, note, tap, closeAll, report, findings, sideways, badText, axe, savedProjects } from "./lib.mjs";
+const stored = (p) => savedProjects(p);
 const rows = (p) => p.evaluate(() => [...document.querySelectorAll("#project-rows tr")].map(r => r.innerText.replace(/\s+/g, " ").trim()));
 await forEachConfig(async (ctx) => {
   const p = ctx.page;
