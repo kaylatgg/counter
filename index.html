@@ -36,9 +36,9 @@
     }
   </script>
   <link rel="stylesheet" href="styles.css">
-  <!-- Opening an address like #result or #projects: hide the page until app.js
-       shows the right screen, so screen 1 never flashes first. If app.js
-       doesn't run, the page shows when it finishes loading. -->
+  <!-- Opening an address like #result or #projects: hide the page until the app
+       scripts show the right screen, so screen 1 never flashes first. If they
+       don't run, the page shows when it finishes loading. -->
   <script>
     if (location.hash.length > 1) {
       document.documentElement.classList.add("routing");
@@ -48,7 +48,16 @@
   <script src="calc.js" defer></script>
   <script src="projects.js" defer></script>
   <script src="share.js" defer></script>
-  <script src="app.js" defer></script>
+  <script src="app/core.js" defer></script>
+  <script src="app/result.js" defer></script>
+  <script src="app/charts.js" defer></script>
+  <script src="app/gap-and-reply.js" defer></script>
+  <script src="app/controls.js" defer></script>
+  <script src="app/screens.js" defer></script>
+  <script src="app/projects-view.js" defer></script>
+  <script src="app/motion.js" defer></script>
+  <script src="app/share-and-image.js" defer></script>
+  <script src="app/start.js" defer></script>
 </head>
 <body class="on-inputs">
   <a href="#result" class="skip-link" id="skip-link">Skip to your result</a>
@@ -107,7 +116,7 @@
       </div>
 
       <!-- Your pricing so far: only when at least one project has an offer and
-           hours. All after expenses. app.js fills it in renderProjects. -->
+           hours. All after expenses. app/projects-view.js fills it in renderProjects. -->
       <p class="dashboard-empty" id="dashboard-empty" hidden>Add an offer to a project to see your pricing so far.</p>
 
       <div class="dashboard" id="dashboard" hidden>
@@ -638,7 +647,7 @@
           </section>
 
           <!-- 5 Ways to close the gap: only with an offer below the estimate.
-               The cards are a radio group; app.js builds them. -->
+               The cards are a radio group; app/gap-and-reply.js builds them. -->
           <section class="gap-section" id="gap-section" aria-labelledby="gap-title" hidden>
             <h2 class="gap-heading" id="gap-heading" tabindex="-1"><span class="step">05.</span> <span id="gap-title">Ways to close the gap</span></h2>
             <p class="gap-intro">Change the price, the work, or both. Pick one to put it in your reply. All rates are after expenses.</p>

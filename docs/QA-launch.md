@@ -72,7 +72,7 @@ The favicon (`favicon.ico`, `favicon.svg`, `apple-touch-icon.png`) and the heade
 
 - **Nothing loses points.** Best Practices 100: the favicon 404 is gone. SEO 100: the meta description is in.
 - **Mobile Performance 100 is partly the server.** GitHub Pages compresses and caches files; the local Python server didn't, so these aren't a like-for-like comparison with the earlier local runs. Mobile: first paint 1.1s, largest paint 1.6 to 1.7s, layout shift 0.05 on screen 1 (item 4 below, still open), 0.001 on screen 2, 0 on Projects.
-- **Still listed, but costing no points:** Lighthouse's diagnostics suggest minifying and trimming `styles.css` and `app.js`, and longer cache times. Not done: there's no build step, on purpose.
+- **Still listed, but costing no points:** Lighthouse's diagnostics suggest minifying and trimming `styles.css` and `app.js` (since November 2026, the files in `app/`), and longer cache times. Not done: there's no build step, on purpose.
 
 ## 1. Tests
 

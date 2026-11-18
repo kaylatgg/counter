@@ -44,7 +44,7 @@ The gradient means "the answer": it glows quietly on screen 1, then opens into t
 }
 ```
 
-The saved image draws the same gradient on its canvas with the same hex values (`drawSunset` and the paid bar in app.js).
+The saved image draws the same gradient on its canvas with the same hex values (`drawSunset` and the paid bar in app/share-and-image.js).
 
 Rules:
 - The gradient is only used for: the screen 1 corner glow, the button's arrow circle, the screen 2 hero panel, the hours the budget covers in the hours chart, the wordmark's ring (since November 16, 2026), the picked card in "Ways to close the gap" (with a 35% `--paper` wash, added October 15, 2026), and, since October 16, 2026, paid money in the Projects dashboard charts and its summary card (`--paid`) and the dashboard's Biggest fix card (the sunset with a 35% `--paper` wash). Reason: it always means "the answer."
