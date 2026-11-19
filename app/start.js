@@ -194,6 +194,13 @@ PANEL_DIALOGS.forEach(function (id) {
   });
 });
 byId("project-rows").addEventListener("click", onRowClick);
+byId("backup-download").addEventListener("click", downloadBackup);
+byId("backup-restore").addEventListener("click", startRestore);
+byId("backup-restore-empty").addEventListener("click", startRestore);
+byId("backup-file").addEventListener("change", onBackupFile);
+byId("restore-yes").addEventListener("click", confirmRestore);
+byId("restore-cancel").addEventListener("click", dismissDialog);
+byId("restore-close").addEventListener("click", dismissDialog);
 byId("waterfall-toggle").addEventListener("click", function () {
   waterfallAsTable = !waterfallAsTable;
   applyTableToggle("waterfall-toggle", byId("waterfall"), byId("waterfall-table"), waterfallAsTable);
