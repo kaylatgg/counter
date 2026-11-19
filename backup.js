@@ -12,6 +12,8 @@ const backupProjects = typeof projectStore !== "undefined" ? projectStore : requ
 const backupStorage = typeof projectStorage !== "undefined" ? projectStorage : require("./store.js");
 
 const BACKUP_VERSION = backupStorage.STORE_VERSION;
+// { "at": "ISO date" }: when a backup was last downloaded.
+const BACKUP_KEY = "counter.v2.backup";
 // A real backup is far smaller; a bigger file is something else.
 const BACKUP_MAX_LENGTH = 5 * 1024 * 1024;
 const REMINDER_PROJECTS = 5;
@@ -137,8 +139,48 @@ function needsBackupReminder(projects, lastBackupAt, now) {
   return editedSince && (now || new Date()).getTime() - last >= REMINDER_DAYS * DAY_MS;
 }
 
+// When the last backup was downloaded, or null.
+function loadLastBackup(storage) {
+  try {
+    const data = JSON.parse(storage.getItem(BACKUP_KEY));
+    return data && typeof data.at === "string" && !isNaN(Date.parse(data.at)) ? data.at : null;
+  } catch (error) {
+    return null;
+  }
+}
+
+// Records a backup download. Touches only counter.v2.backup. Returns { ok }.
+function saveLastBackup(storage, now) {
+  try {
+    storage.setItem(BACKUP_KEY, JSON.stringify({ at: (now || new Date()).toISOString() }));
+    return { ok: true };
+  } catch (error) {
+    return { ok: false };
+  }
+}
+
+// Restores a checked backup (from readBackup) into storage. The projects go
+// through saveStore, so a newer version's save is never overwritten: then it's
+// refused ({ ok: false, readOnly: true }) and nothing is written. The file's
+// unreadable items are added to counter.v2.unreadable without repeats.
+// Returns { ok, readOnly, projects, counts, unreadableKept }. Never throws.
+function restoreBackup(storage, current, backup, now) {
+  const counts = previewRestore(current, backup.projects);
+  const projects = mergeRestore(current, backup.projects);
+  const saved = backupStorage.saveStore(storage, projects, now);
+  if (!saved.ok) return { ok: false, readOnly: Boolean(saved.readOnly), projects: current, counts: counts, unreadableKept: false };
+  let kept = { ok: true };
+  try {
+    kept = backupStorage.keepUnreadable(storage, backup.unreadable);
+  } catch (error) {
+    kept = { ok: false };
+  }
+  return { ok: true, readOnly: false, projects: projects, counts: counts, unreadableKept: kept.ok };
+}
+
 const projectBackup = {
   BACKUP_VERSION,
+  BACKUP_KEY,
   BACKUP_MAX_LENGTH,
   buildBackup,
   backupFileName,
@@ -146,6 +188,9 @@ const projectBackup = {
   previewRestore,
   mergeRestore,
   needsBackupReminder,
+  loadLastBackup,
+  saveLastBackup,
+  restoreBackup,
 };
 
 if (typeof module !== "undefined") module.exports = projectBackup;

@@ -281,5 +281,65 @@ test("nothing edited since the last backup: no reminder, however old", () => {
   assert.strictEqual(projectBackup.needsBackupReminder(longAgo, daysBefore(400), NOW), false);
 });
 
+group("Storage");
+
+test("the last backup date lives in counter.v2.backup and never touches counter.v2", () => {
+  const storage = fakeStorage({ "counter.v2": "unchanged" });
+  assert.strictEqual(projectBackup.loadLastBackup(storage), null);
+  assert.deepStrictEqual(projectBackup.saveLastBackup(storage, NOW), { ok: true });
+  assert.deepStrictEqual(JSON.parse(storage.data["counter.v2.backup"]), { at: NOW.toISOString() });
+  assert.strictEqual(projectBackup.loadLastBackup(storage), NOW.toISOString());
+  assert.deepStrictEqual(storage.writes, ["counter.v2.backup"]);
+  assert.strictEqual(storage.data["counter.v2"], "unchanged");
+});
+
+test("a broken or blocked backup date reads as never; a full storage gives ok false", () => {
+  assert.strictEqual(projectBackup.loadLastBackup(fakeStorage({ "counter.v2.backup": "{oops" })), null);
+  assert.strictEqual(projectBackup.loadLastBackup(fakeStorage({ "counter.v2.backup": "{\"at\":\"soon\"}" })), null);
+  assert.strictEqual(projectBackup.loadLastBackup({ getItem: () => { throw new Error("blocked"); } }), null);
+  assert.deepStrictEqual(projectBackup.saveLastBackup(fakeStorage({}, { full: true }), NOW), { ok: false });
+});
+
+test("restore saves the merged list to counter.v2 and keeps the file's unreadable items once", () => {
+  const storage = fakeStorage({ "counter.v2": JSON.stringify({ version: 2, projects: HERE }) });
+  const current = projectStorage.loadStore(storage, NOW).projects;
+  const old = { raw: "{oops", reason: "not valid JSON", at: "2026-11-01T00:00:00.000Z" };
+  const backup = projectBackup.readBackup(fileWith({ projects: FILE.concat([{ id: "bad" }]), unreadable: [old] }), NOW);
+  const result = projectBackup.restoreBackup(storage, current, backup, NOW);
+  assert.strictEqual(result.ok, true);
+  assert.strictEqual(result.unreadableKept, true);
+  assert.deepStrictEqual(result.counts, { added: 2, updated: 1, unchanged: 1, kept: 2 });
+  assert.deepStrictEqual(JSON.parse(storage.data["counter.v2"]).projects, projectBackup.mergeRestore(HERE, FILE));
+  assert.deepStrictEqual(JSON.parse(storage.data["counter.v2.unreadable"]).map((u) => u.reason), ["not valid JSON", "not a working project"]);
+  // Again: nothing doubles.
+  const again = projectBackup.restoreBackup(storage, result.projects, backup, NOW);
+  assert.deepStrictEqual(again.counts, { added: 0, updated: 0, unchanged: 4, kept: 2 });
+  assert.strictEqual(JSON.parse(storage.data["counter.v2"]).projects.length, 7);
+  assert.strictEqual(JSON.parse(storage.data["counter.v2.unreadable"]).length, 2);
+});
+
+test("restore after a newer version's load is refused and writes nothing", () => {
+  const newer = JSON.stringify({ version: 3, projects: HERE });
+  const storage = fakeStorage({ "counter.v2": newer });
+  const loaded = projectStorage.loadStore(storage, NOW);
+  assert.strictEqual(loaded.readOnly, true);
+  const backup = projectBackup.readBackup(fileWith({ projects: FILE.concat([{ id: "bad" }]) }), NOW);
+  const result = projectBackup.restoreBackup(storage, loaded.projects, backup, NOW);
+  assert.strictEqual(result.ok, false);
+  assert.strictEqual(result.readOnly, true);
+  assert.deepStrictEqual(storage.writes, []);
+  assert.strictEqual(storage.data["counter.v2"], newer);
+  assert.strictEqual(result.projects, loaded.projects);
+});
+
+test("restore when storage is full: ok false, and the list here is unchanged", () => {
+  const storage = fakeStorage({}, { full: true });
+  const backup = projectBackup.readBackup(fileWith({}), NOW);
+  const result = projectBackup.restoreBackup(storage, [], backup, NOW);
+  assert.strictEqual(result.ok, false);
+  assert.strictEqual(result.readOnly, false);
+  assert.deepStrictEqual(result.projects, []);
+});
+
 console.log(`\n${passed} passed, ${failed} failed`);
 if (failed) process.exitCode = 1;

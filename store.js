@@ -200,6 +200,8 @@ const projectStorage = {
   saveStore,
   // For backup.js: the same checks and the same unreadable list.
   sortItems,
+  readUnreadable,
+  keepUnreadable,
 };
 
 if (typeof module !== "undefined") module.exports = projectStorage;
