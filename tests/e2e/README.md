@@ -55,6 +55,7 @@ Each test prints a line starting with `!!` for anything it finds, then a count. 
 | `close-the-gap` | Ways to close the gap for every job, offer, and rounds: when it shows, the options, the grid, no overlaps, the keyboard, and how the pick drives the price, reply, saving, and image |
 | `dashboard` | The Projects dashboard and its summary card: the example set's numbers, the table toggles (kept after a rename), the tooltip, Fix landing on Ways to close the gap (and Back, Forward, reload not jumping), when the card shows, and the layout at 375, 768, 1024, and 1440 |
 | `upgrade` | Projects saved by version 1 (`counter.projects`) show on Projects, are copied into `counter.v2`, still open, edit, and save, and `counter.projects` never changes |
+| `load-shift` | Screen 1 doesn't move while it loads at 360, 390, and 1440, as a file and over a slow network (scripts and fonts held back): layout shift 0.05 or less in Chromium; in WebKit, which doesn't report layout shift, the header, Save, heading, intro, and steppers stay within 2px of the first paint |
 | `chart-labels` | Hours and rate chart labels for every job and offer: no overlaps, nothing cut off, the budget split line never through its label, the target label never hidden |
 
 ## Good to know
