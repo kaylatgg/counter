@@ -198,6 +198,8 @@ const projectStorage = {
   V1_KEY,
   loadStore,
   saveStore,
+  // For backup.js: the same checks and the same unreadable list.
+  sortItems,
 };
 
 if (typeof module !== "undefined") module.exports = projectStorage;
