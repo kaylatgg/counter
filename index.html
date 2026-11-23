@@ -48,6 +48,7 @@
   <script src="calc.js" defer></script>
   <script src="projects.js" defer></script>
   <script src="store.js" defer></script>
+  <script src="backup.js" defer></script>
   <script src="share.js" defer></script>
   <script src="app/core.js" defer></script>
   <script src="app/result.js" defer></script>
@@ -100,7 +101,7 @@
 
   <main>
     <p class="save-error" id="save-error" role="alert" hidden>Couldn't save. Your changes will be lost if you leave this page.</p>
-    <p class="save-error" id="newer-version" role="status" hidden>These jobs were saved by a newer version of Counter. Reload the page to keep editing.</p>
+    <p class="save-error" id="newer-version" role="status" hidden>These projects were saved by a newer version of Counter. Reload the page to keep editing.</p>
 
     <!-- Projects -->
     <section class="screen-projects" id="screen-projects" aria-labelledby="projects-title" hidden>
@@ -117,6 +118,7 @@
       <div class="projects-empty" id="projects-empty" hidden>
         <p>No projects yet. Start one to see what a job really pays.</p>
         <button type="button" class="round-button" id="new-calc-empty">New calculation</button>
+        <button type="button" class="link-button empty-restore" id="backup-restore-empty">Restore from backup</button>
       </div>
 
       <!-- Your pricing so far: only when at least one project has an offer and
@@ -218,7 +220,16 @@
         <tbody id="project-rows" role="rowgroup"></tbody>
       </table>
 
-      <p class="mono-note storage-note">Projects save in this browser on this device.</p>
+      <!-- Backup: download the projects as a file, or restore one. With 5 or more
+           projects and no recent backup, the note becomes the reminder. -->
+      <div class="backup-row">
+        <p class="mono-note storage-note" id="storage-note">Projects save in this browser on this device.</p>
+        <div class="backup-actions" id="backup-actions">
+          <button type="button" class="link-button" id="backup-download">Download backup</button>
+          <button type="button" class="link-button" id="backup-restore">Restore from backup</button>
+        </div>
+      </div>
+      <input type="file" id="backup-file" accept=".json,application/json" aria-label="Backup file" hidden>
     </section>
 
     <!-- Screen 1: inputs -->
@@ -752,6 +763,21 @@
         <button type="button" class="action-button" id="start-over-save">Save as project</button>
         <button type="button" class="action-button outline" id="start-over-yes">Don't save</button>
         <button type="button" class="link-button" id="start-over-cancel">Cancel</button>
+      </div>
+    </dialog>
+
+    <!-- Restoring a backup: what it would change, or why the file can't be used.
+         Nothing is saved until Restore. -->
+    <dialog class="panel-dialog" id="restore-panel" aria-labelledby="restore-question" aria-describedby="restore-text">
+      <div class="start-over-copy">
+        <p class="start-over-question" id="restore-question">Restore from this backup?</p>
+        <p class="start-over-text" id="restore-text"></p>
+        <p class="start-over-text" id="restore-unreadable" hidden></p>
+      </div>
+      <div class="panel-actions start-over-actions">
+        <button type="button" class="action-button" id="restore-yes">Restore</button>
+        <button type="button" class="link-button" id="restore-cancel">Cancel</button>
+        <button type="button" class="action-button outline" id="restore-close" hidden>Close</button>
       </div>
     </dialog>
 

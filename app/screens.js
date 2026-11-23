@@ -337,10 +337,10 @@ function renderHeader() {
   renderPricingCard();
 }
 
-// The four dialogs: Save as project, Start over?, Open the shared result?, and
-// the link to copy by hand. One is open at a time. Focus moves without
+// The five dialogs: Save as project, Start over?, Open the shared result?, the
+// link to copy by hand, and Restore from backup. One is open at a time. Focus moves without
 // scrolling, so the page underneath never jumps.
-const PANEL_DIALOGS = ["save-panel", "start-over", "share-question", "share-panel"];
+const PANEL_DIALOGS = ["save-panel", "start-over", "share-question", "share-panel", "restore-panel"];
 let dialogOpener = null;
 
 function openDialog(id, opener) {
@@ -356,6 +356,7 @@ function closePanels() {
   });
   dialogOpener = null;
   pendingShare = null;
+  pendingBackup = null;
   setFieldError(byId("save-name"), "");
 }
 

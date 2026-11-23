@@ -5,7 +5,7 @@
   "license": "UNLICENSED",
   "scripts": {
     "test": "npm run test:unit && npm run test:e2e",
-    "test:unit": "node calc.test.js && node share.test.js && node projects.test.js && node store.test.js",
+    "test:unit": "node calc.test.js && node share.test.js && node projects.test.js && node store.test.js && node backup.test.js",
     "test:e2e": "node tests/e2e/run.mjs"
   },
   "devDependencies": {

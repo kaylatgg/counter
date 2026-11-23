@@ -67,6 +67,7 @@ function renderProjects() {
   show(byId("all-projects-title"), list.length > 0);
   renderBackButton();
   renderDashboard(list);
+  renderBackupRow();
 
   const body = byId("project-rows");
   body.textContent = "";
@@ -116,6 +117,173 @@ function renderProjects() {
     body.appendChild(row);
   });
   renderHeader();
+}
+
+// Backup (backup.js): download the projects as a file, or restore one.
+
+const STORAGE_NOTE = "Projects save in this browser on this device.";
+const BACKUP_REMINDER = "Your projects are only in this browser. Download a backup so you don't lose them.";
+const RESTORE_REFUSALS = {
+  "not-json": "This file isn't a Counter backup.",
+  "not-counter": "This file isn't a Counter backup.",
+  "unknown-version": "This file isn't a Counter backup.",
+  newer: "This backup is from a newer version of Counter. Reload the page and try again.",
+  "too-big": "This file is too big to be a Counter backup.",
+};
+// The checked file waiting for Restore.
+let pendingBackup = null;
+
+function plural(count, one, many) {
+  return count + " " + (count === 1 ? one : many);
+}
+
+// The note under the list, or the reminder in its place; the buttons only
+// when there's something to back up (the empty screen has its own Restore).
+function renderBackupRow() {
+  const now = new Date();
+  const reminder = projectBackup.needsBackupReminder(projectList, projectBackup.loadLastBackup(storage()), now);
+  byId("storage-note").textContent = reminder ? BACKUP_REMINDER : STORAGE_NOTE;
+  byId("storage-note").classList.toggle("reminder", reminder);
+  show(byId("backup-actions"), projectList.length > 0);
+}
+
+function downloadBackup() {
+  const now = new Date();
+  let unreadable = [];
+  try {
+    unreadable = projectStorage.readUnreadable(storage()).list;
+  } catch (error) {
+    // Storage can't be read: the projects on screen still go in the file.
+  }
+  try {
+    const blob = new Blob([projectBackup.buildBackup(projectList, unreadable, now)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = projectBackup.backupFileName(now);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+  } catch (error) {
+    return;
+  }
+  projectBackup.saveLastBackup(storage(), now);
+  announce("Backup downloaded");
+  renderBackupRow();
+}
+
+// One dialog, three states: the preview (Restore and Cancel), or a message
+// with only Close.
+function showRestoreDialog(question, text, unreadable, canRestore, opener) {
+  byId("restore-question").textContent = question;
+  byId("restore-text").textContent = text;
+  show(byId("restore-text"), Boolean(text));
+  byId("restore-unreadable").textContent = unreadable;
+  show(byId("restore-unreadable"), Boolean(unreadable));
+  show(byId("restore-yes"), canRestore);
+  show(byId("restore-cancel"), canRestore);
+  show(byId("restore-close"), !canRestore);
+  openDialog("restore-panel", opener);
+  // Like the start-over question, focus opens on the safe choice.
+  byId(canRestore ? "restore-cancel" : "restore-close").focus({ preventScroll: true });
+}
+
+// Restore from backup: the file picker, or in read-only mode the reason it
+// can't work until a reload.
+function startRestore(event) {
+  const opener = event.currentTarget;
+  if (projectsReadOnly) {
+    showRestoreDialog(byId("newer-version").textContent, "", "", false, opener);
+    return;
+  }
+  restoreOpener = opener;
+  byId("backup-file").click();
+}
+let restoreOpener = null;
+
+// "12 projects in this backup: 3 new, 2 updated with newer changes, 7 already up to date."
+function restoreSummary(counts) {
+  const upToDate = counts.unchanged + counts.kept;
+  const total = counts.added + counts.updated + upToDate;
+  if (!total) return "No projects in this backup.";
+  const head = plural(total, "project", "projects") + " in this backup";
+  if (!counts.added && !counts.updated) return head + (total === 1 ? ", already up to date." : ", all already up to date.");
+  const parts = [];
+  if (counts.added) parts.push(counts.added + " new");
+  if (counts.updated) parts.push(counts.updated + " updated with newer changes");
+  if (upToDate) parts.push(upToDate + " already up to date");
+  return head + ": " + parts.join(", ") + ".";
+}
+
+function unreadableSentence(count) {
+  if (!count) return "";
+  return count === 1 ? "1 item in this file can't be read. It'll be kept aside, not restored."
+    : count + " items in this file can't be read. They'll be kept aside, not restored.";
+}
+
+// A file was picked: check it and show what Restore would do. The file is
+// only read as text and parsed as JSON.
+function onBackupFile() {
+  const input = byId("backup-file");
+  const file = input.files && input.files[0];
+  const opener = restoreOpener;
+  input.value = "";
+  if (!file) return;
+  if (file.size > projectBackup.BACKUP_MAX_LENGTH) {
+    showRestoreDialog(RESTORE_REFUSALS["too-big"], "", "", false, opener);
+    return;
+  }
+  file.text().then(function (text) {
+    const backup = projectBackup.readBackup(text);
+    if (!backup.ok) {
+      showRestoreDialog(RESTORE_REFUSALS[backup.reason], "", "", false, opener);
+      return;
+    }
+    const counts = projectBackup.previewRestore(projectList, backup.projects);
+    const unreadable = unreadableSentence(backup.unreadable.length);
+    if (!counts.added && !counts.updated) {
+      showRestoreDialog(restoreSummary(counts), "", unreadable, false, opener);
+      return;
+    }
+    showRestoreDialog("Restore from this backup?", restoreSummary(counts), unreadable, true, opener);
+    pendingBackup = backup;
+  }, function () {
+    showRestoreDialog(RESTORE_REFUSALS["not-json"], "", "", false, opener);
+  });
+}
+
+// Restore: merge, save through saveStore, then show the list. Focus goes back
+// to the button that opened it, or to the heading if that button is gone (the
+// empty screen's Restore).
+function confirmRestore() {
+  const backup = pendingBackup;
+  const opener = dialogOpener;
+  if (!backup) return;
+  const result = projectBackup.restoreBackup(storage(), projectList, backup);
+  if (!result.ok) {
+    if (result.readOnly) {
+      projectsReadOnly = true;
+      show(byId("newer-version"), true);
+      showRestoreDialog(byId("newer-version").textContent, "", "", false, opener);
+    } else {
+      showRestoreDialog("Couldn't restore this backup. Nothing was changed.", "", "", false, opener);
+    }
+    renderHeader();
+    return;
+  }
+  closePanels();
+  projectList = result.projects;
+  projectsUnsaved = false;
+  showSaveResult(true);
+  renderProjects();
+  const changed = result.counts.added + result.counts.updated;
+  const parts = [];
+  if (result.counts.added) parts.push(result.counts.added + " new");
+  if (result.counts.updated) parts.push(result.counts.updated + " updated");
+  announce("Restored " + plural(changed, "project", "projects") + ": " + parts.join(", ") + ".");
+  if (opener && opener.isConnected && !opener.closest("[hidden]")) opener.focus({ preventScroll: true });
+  else byId("projects-title").focus({ preventScroll: true });
 }
 
 function rowElement(id, selector) {
