@@ -5,6 +5,7 @@ const assert = require("assert");
 const projectStore = require("./projects.js");
 const projectStorage = require("./store.js");
 const projectBackup = require("./backup.js");
+const projectTimeline = require("./timeline.js");
 
 let passed = 0;
 let failed = 0;
@@ -67,7 +68,7 @@ const THREE = [
 ];
 
 function fileWith(changes) {
-  return JSON.stringify(Object.assign({ app: "counter", kind: "backup", version: 2, exportedAt: NOW.toISOString(), projects: THREE, unreadable: [] }, changes));
+  return JSON.stringify(Object.assign({ app: "counter", kind: "backup", version: 3, exportedAt: NOW.toISOString(), projects: THREE, unreadable: [] }, changes));
 }
 
 group("Writing a backup");
@@ -78,7 +79,7 @@ test("buildBackup writes the format, pretty-printed with 2 spaces", () => {
   assert.deepStrictEqual(Object.keys(data), ["app", "kind", "version", "exportedAt", "projects", "unreadable"]);
   assert.strictEqual(data.app, "counter");
   assert.strictEqual(data.kind, "backup");
-  assert.strictEqual(data.version, 2);
+  assert.strictEqual(data.version, 3);
   assert.strictEqual(data.exportedAt, "2026-11-18T10:00:00.000Z");
   assert.ok(text.startsWith('{\n  "app": "counter",\n  "kind": "backup",'));
 });
@@ -118,12 +119,50 @@ test("a version 1 plain list of projects is not a Counter backup", () => {
 });
 
 test("a file from a newer version", () => {
-  assert.deepStrictEqual(projectBackup.readBackup(fileWith({ version: 3 }), NOW), { ok: false, reason: "newer" });
-  assert.deepStrictEqual(projectBackup.readBackup(fileWith({ version: 2.1 }), NOW), { ok: false, reason: "newer" });
+  assert.deepStrictEqual(projectBackup.readBackup(fileWith({ version: 4 }), NOW), { ok: false, reason: "newer" });
+  assert.deepStrictEqual(projectBackup.readBackup(fileWith({ version: 3.1 }), NOW), { ok: false, reason: "newer" });
+});
+
+test("a version 2 file (from before timelines) still reads and restores", () => {
+  const read = projectBackup.readBackup(fileWith({ version: 2 }), NOW);
+  assert.deepStrictEqual(read, { ok: true, projects: THREE, unreadable: [] });
+  const storage = fakeStorage({});
+  const result = projectBackup.restoreBackup(storage, [], read, NOW);
+  assert.strictEqual(result.ok, true);
+  assert.deepStrictEqual(JSON.parse(storage.data["counter.v2"]), { version: 3, projects: THREE });
+});
+
+test("a backup with timelines round-trips exactly", () => {
+  const working = projectTimeline.markWorking(THREE[0],
+    { agreedCents: 27000, plannedHours: 10, expensesCents: 2000, targetCents: 2500 }, new Date("2026-10-13T09:00:00.000Z")).project;
+  const withRequest = Object.assign({}, working, { timeline: Object.assign({}, working.timeline, { requests: [
+    { id: "r1", at: "2026-10-20T12:00:00.000Z", text: "Add a dessert section", hours: 1, decision: "free", rateCents: 2500, chargeCents: 0 },
+  ] }) });
+  const paid = projectTimeline.markPaid(withRequest, { receivedCents: 31000, actualHours: 13 }, new Date("2026-10-30T17:30:00.000Z")).project;
+  const list = [paid, THREE[1], projectTimeline.markWorking(THREE[2],
+    { agreedCents: 1, plannedHours: 0.01, expensesCents: 0, targetCents: 0 }, NOW).project];
+  const text = projectBackup.buildBackup(list, [], NOW);
+  const read = projectBackup.readBackup(text, NOW);
+  assert.deepStrictEqual(read, { ok: true, projects: list, unreadable: [] });
+  assert.strictEqual(projectBackup.buildBackup(read.projects, read.unreadable, NOW), text);
+  // Restored into an empty browser, then loaded again: still the same.
+  const storage = fakeStorage({});
+  projectBackup.restoreBackup(storage, [], read, NOW);
+  assert.deepStrictEqual(projectStorage.loadStore(storage, NOW).projects, list);
+});
+
+test("a backup project with a bad timeline goes to unreadable; the rest restore", () => {
+  const working = projectTimeline.markWorking(THREE[0],
+    { agreedCents: 27000, plannedHours: 10, expensesCents: 2000, targetCents: 2500 }, new Date("2026-10-13T09:00:00.000Z")).project;
+  const bad = Object.assign({}, working, { timeline: Object.assign({}, working.timeline, { stage: "paid" }) });
+  const read = projectBackup.readBackup(fileWith({ projects: [bad, THREE[1]] }), NOW);
+  assert.deepStrictEqual(read.projects, [THREE[1]]);
+  assert.deepStrictEqual(read.unreadable, [{ raw: bad, reason: "timeline is not valid", at: NOW.toISOString() }]);
 });
 
 test("an unknown version: older, missing, not a number, or projects not a list", () => {
-  for (const changes of [{ version: 1 }, { version: undefined }, { version: "2" }, { version: null }, { projects: {} }, { projects: undefined }]) {
+  for (const changes of [{ version: 1 }, { version: 0 }, { version: 2.5 }, { version: undefined }, { version: "2" }, { version: "3" }, { version: null },
+    { projects: {} }, { projects: undefined }, { version: 2, projects: {} }]) {
     assert.deepStrictEqual(projectBackup.readBackup(fileWith(changes), NOW), { ok: false, reason: "unknown-version" }, JSON.stringify(changes));
   }
 });
@@ -301,7 +340,7 @@ test("a broken or blocked backup date reads as never; a full storage gives ok fa
 });
 
 test("restore saves the merged list to counter.v2 and keeps the file's unreadable items once", () => {
-  const storage = fakeStorage({ "counter.v2": JSON.stringify({ version: 2, projects: HERE }) });
+  const storage = fakeStorage({ "counter.v2": JSON.stringify({ version: 3, projects: HERE }) });
   const current = projectStorage.loadStore(storage, NOW).projects;
   const old = { raw: "{oops", reason: "not valid JSON", at: "2026-11-01T00:00:00.000Z" };
   const backup = projectBackup.readBackup(fileWith({ projects: FILE.concat([{ id: "bad" }]), unreadable: [old] }), NOW);
@@ -319,7 +358,7 @@ test("restore saves the merged list to counter.v2 and keeps the file's unreadabl
 });
 
 test("restore after a newer version's load is refused and writes nothing", () => {
-  const newer = JSON.stringify({ version: 3, projects: HERE });
+  const newer = JSON.stringify({ version: 4, projects: HERE });
   const storage = fakeStorage({ "counter.v2": newer });
   const loaded = projectStorage.loadStore(storage, NOW);
   assert.strictEqual(loaded.readOnly, true);
