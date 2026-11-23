@@ -1591,6 +1591,12 @@ legend {
     padding-bottom: 0;
   }
 
+  /* "Offer pays / after expenses" on two lines: 14 mono characters, the
+     length of "after expenses", so the column is no wider than it needs. */
+  .project-table thead th:nth-child(4) {
+    max-width: calc(14ch + 16px);
+  }
+
   .project-table thead th:nth-child(5),
   .project-table td.project-edited {
     padding-right: 0;
