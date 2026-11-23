@@ -54,16 +54,17 @@ export async function fresh(ctx, hash = "") {
   await ctx.page.waitForTimeout(150);
 }
 
-// Saved projects for a test: replaces whatever projects are saved (version 2,
+// Saved projects for a test: replaces whatever projects are saved (counter.v2,
 // its unreadable list, and version 1) and leaves the draft alone. The list is
-// plain data, usually made in the page with projectStore. With { v1: true } it
-// goes only into version 1's counter.projects, to test the upgrade.
-export async function seedProjects(page, list, { v1 = false } = {}) {
-  await page.evaluate(([list, v1]) => {
+// plain data, usually made in the page with projectStore. It's saved as
+// version 3, or as { version: 2 } to test that older saves still load. With
+// { v1: true } it goes only into version 1's counter.projects, to test the upgrade.
+export async function seedProjects(page, list, { v1 = false, version = 3 } = {}) {
+  await page.evaluate(([list, v1, version]) => {
     ["counter.v2", "counter.v2.unreadable", "counter.projects"].forEach((key) => localStorage.removeItem(key));
     if (v1) localStorage.setItem("counter.projects", JSON.stringify(list));
-    else localStorage.setItem("counter.v2", JSON.stringify({ version: 2, projects: list }));
-  }, [list, v1]);
+    else localStorage.setItem("counter.v2", JSON.stringify({ version, projects: list }));
+  }, [list, v1, version]);
 }
 
 // The projects the app saved (counter.v2), or [] when none are.
