@@ -1540,6 +1540,94 @@ legend {
   margin-left: 8px;
 }
 
+/* Below 1024px, names wrap only between words; a single word too long for
+   the column is the one thing that breaks. At 1024px and up the desktop
+   table keeps "anywhere", since there break-word would let one long word
+   push the table wider than the page. */
+@media (max-width: 1023px) {
+  .project-open {
+    overflow-wrap: break-word;
+  }
+}
+
+/* Tablets: the name, job, estimate, offer, and edited on the first line,
+   the row actions under the name on the second, as on phones. The header
+   row and every project row share one set of columns (subgrid), so each
+   header sits over its values. */
+@media (min-width: 760px) and (max-width: 1023px) {
+  .project-table {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto auto auto;
+  }
+
+  .project-table thead,
+  .project-table tbody,
+  .project-table tr {
+    display: grid;
+    grid-column: 1 / -1;
+    grid-template-columns: subgrid;
+  }
+
+  .project-table tbody tr {
+    align-items: center;
+    padding-top: 18px;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .project-table thead tr {
+    align-items: end;
+    border-bottom: 1px solid var(--ink);
+  }
+
+  .project-table thead th,
+  .project-table tbody th,
+  .project-table td {
+    border: 0;
+  }
+
+  .project-table tbody th,
+  .project-table td {
+    padding-top: 0;
+    padding-bottom: 0;
+  }
+
+  /* "Offer pays / after expenses" on two lines: 14 mono characters, the
+     length of "after expenses", so the column is no wider than it needs. */
+  .project-table thead th:nth-child(4) {
+    max-width: calc(14ch + 16px);
+  }
+
+  .project-table thead th:nth-child(5),
+  .project-table td.project-edited {
+    padding-right: 0;
+  }
+
+  /* The hidden "Actions" header stays for screen readers but takes no column. */
+  .project-table thead th:last-child {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    overflow: hidden;
+  }
+
+  .project-name {
+    width: auto;
+    min-width: 0;
+  }
+
+  .project-table td.project-actions {
+    grid-column: 1 / -1;
+    padding-bottom: 8px;
+    text-align: left;
+    white-space: normal;
+  }
+
+  .row-action:first-child {
+    padding-left: 0;
+  }
+}
+
 /* Backup: the note on the left, Download and Restore on the right. On a
    narrow screen the buttons wrap under the note. */
 .backup-row {
