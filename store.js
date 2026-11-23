@@ -1,5 +1,5 @@
-// Counter saving, version 2: the saved projects under one versioned key, and a
-// safe upgrade from version 1. Pure functions plus a small storage helper. Works
+// Counter saving: the saved projects under one versioned key (version 3), and
+// a safe upgrade from version 1. Pure functions plus a small storage helper. Works
 // in the browser (as the global projectStorage) and in Node (through module.exports).
 //
 // Two rules. A save is never destroyed: version 1's list is read but never
@@ -8,8 +8,13 @@
 
 const storeProjects = typeof projectStore !== "undefined" ? projectStore : require("./projects.js");
 
-const STORE_VERSION = 2;
-// { "version": 2, "projects": [ ... ] }
+// Version 3 added project.timeline (timeline.js). Pages from before it drop
+// keys they don't know when they save, so they must treat version 3 as newer
+// and only show it. Version 2 has the same shape minus timelines: it loads as
+// usual and is written back as version 3 on the next save.
+const STORE_VERSION = 3;
+const OLDEST_VERSION = 2;
+// { "version": 3, "projects": [ ... ] }
 const STORE_KEY = "counter.v2";
 // [{ "raw": the original item, "reason": "short text", "at": "ISO date" }]
 const UNREADABLE_KEY = "counter.v2.unreadable";
@@ -23,9 +28,25 @@ function unreadableEntry(raw, reason, at) {
   return { raw: raw, reason: reason, at: at };
 }
 
+// A version this page reads and writes: 2 or 3.
+function isKnownVersion(version) {
+  return Number.isInteger(version) && version >= OLDEST_VERSION && version <= STORE_VERSION;
+}
+
+// Why a saved item isn't a working project. A project that works except for
+// its timeline says so.
+function brokenReason(raw) {
+  if (raw && typeof raw === "object" && !Array.isArray(raw) && raw.timeline !== undefined) {
+    const rest = Object.assign({}, raw);
+    delete rest.timeline;
+    if (storeProjects.cleanProject(rest)) return "timeline is not valid";
+  }
+  return "not a working project";
+}
+
 // What counter.v2's text holds: "missing", "unreadable" (with a reason), or
-// "ok" with the data. Version 2 needs a list of projects; a newer version is
-// read as far as it can be, since it's only shown, never written.
+// "ok" with the data. Versions 2 and 3 need a list of projects; a newer
+// version is read as far as it can be, since it's only shown, never written.
 function readStoreText(text) {
   if (text === null || text === undefined) return { status: "missing" };
   let data;
@@ -36,9 +57,9 @@ function readStoreText(text) {
   }
   if (!data || typeof data !== "object" || Array.isArray(data)) return { status: "unreadable", reason: "not an object" };
   if (typeof data.version !== "number" || !isFinite(data.version)) return { status: "unreadable", reason: "no version number" };
-  if (data.version < STORE_VERSION || (data.version === STORE_VERSION && !Array.isArray(data.projects))) {
-    return { status: "unreadable", reason: data.version === STORE_VERSION ? "projects is not a list" : "unknown version " + data.version };
-  }
+  if (data.version > STORE_VERSION) return { status: "ok", data: data };
+  if (!isKnownVersion(data.version)) return { status: "unreadable", reason: "unknown version " + data.version };
+  if (!Array.isArray(data.projects)) return { status: "unreadable", reason: "projects is not a list" };
   return { status: "ok", data: data };
 }
 
@@ -51,7 +72,7 @@ function sortItems(items, at) {
   items.forEach(function (raw) {
     const project = storeProjects.cleanProject(raw);
     if (!project) {
-      unreadable.push(unreadableEntry(raw, "not a working project", at));
+      unreadable.push(unreadableEntry(raw, brokenReason(raw), at));
     } else if (seen[project.id]) {
       unreadable.push(unreadableEntry(raw, "repeated id " + project.id, at));
     } else {
@@ -129,8 +150,8 @@ function loadStore(storage, now) {
     const text = storage.getItem(STORE_KEY);
     const stored = readStoreText(text);
 
-    // a. Version 2: its projects.
-    if (stored.status === "ok" && stored.data.version === STORE_VERSION) {
+    // a. Version 2 or 3: its projects. Version 2 becomes 3 on the next save.
+    if (stored.status === "ok" && isKnownVersion(stored.data.version)) {
       const sorted = sortItems(stored.data.projects, at);
       const kept = keepUnreadable(storage, sorted.unreadable);
       return { ok: kept.ok, projects: sorted.projects, unreadable: kept.list, readOnly: false, source: "v2" };
@@ -147,10 +168,10 @@ function loadStore(storage, now) {
       };
     }
 
-    // c. Version 2 that can't be read: its text is kept, then as d or e.
+    // c. counter.v2 that can't be read: its text is kept, then as d or e.
     const found = stored.status === "unreadable" ? [unreadableEntry(text, stored.reason, at)] : [];
 
-    // d. Only version 1: converted, written as version 2, and left as it was.
+    // d. Only version 1: converted, written as version 3, and left as it was.
     const v1Text = storage.getItem(V1_KEY);
     if (v1Text !== null && v1Text !== undefined) {
       let items = [];
@@ -180,7 +201,7 @@ function loadStore(storage, now) {
   }
 }
 
-// Saves the projects as version 2. Returns { ok }, or { ok: false, readOnly: true }
+// Saves the projects as version 3. Returns { ok }, or { ok: false, readOnly: true }
 // when a newer version's save is there (or was, at the last load). Never throws.
 function saveStore(storage, projects, now) {
   if (newerStorages.has(storage)) return { ok: false, readOnly: true };
@@ -193,6 +214,7 @@ function saveStore(storage, projects, now) {
 
 const projectStorage = {
   STORE_VERSION,
+  OLDEST_VERSION,
   STORE_KEY,
   UNREADABLE_KEY,
   V1_KEY,

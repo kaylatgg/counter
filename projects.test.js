@@ -529,5 +529,63 @@ test("none or all unpaid", function () {
   assert.strictEqual(store.unpaidLine(40, 40), "None of your hours were covered.");
 });
 
+group("Project stages (the timeline)");
+
+const projectTimeline = require("./timeline.js");
+
+// Luigi's menu moved to Working: $270 agreed, 10 hrs planned, $20 expenses, $25 target.
+function working() {
+  const project = make("Luigi's menu", "menu", "a", MON);
+  return projectTimeline.markWorking(project,
+    { agreedCents: 27000, plannedHours: 10, expensesCents: 2000, targetCents: 2500 }, TUE).project;
+}
+
+test("a project with a valid timeline survives cleanProject unchanged", function () {
+  const project = working();
+  assert.deepStrictEqual(store.cleanProject(project), project);
+  const paid = projectTimeline.markPaid(project, { receivedCents: 31000, actualHours: 13 }, new Date(2026, 9, 30)).project;
+  assert.deepStrictEqual(store.cleanProject(paid), paid);
+  assert.deepStrictEqual(store.parseProjects(JSON.stringify([paid])), [paid]);
+});
+
+test("a project without a timeline stays exactly as before", function () {
+  const project = make("Luigi's menu", "menu", "a", MON);
+  const clean = store.cleanProject(project);
+  assert.deepStrictEqual(clean, project);
+  assert.strictEqual("timeline" in clean, false);
+});
+
+test("a bad timeline makes the whole project null, never silently dropped", function () {
+  const bad = [null, "working", {}, { stage: "working" }, Object.assign({}, working().timeline, { agreedCents: -1 }),
+    Object.assign({}, working().timeline, { stage: "paid" })];
+  bad.forEach(function (timeline) {
+    const project = Object.assign(working(), { timeline: timeline });
+    assert.strictEqual(store.cleanProject(project), null, JSON.stringify(timeline));
+    assert.deepStrictEqual(store.parseProjects(JSON.stringify([project])), [], JSON.stringify(timeline));
+  });
+});
+
+test("a duplicate has no timeline (it starts as Quoted); the original keeps its own", function () {
+  const list = store.duplicateProject([working()], "a", "c", TUE);
+  const copy = store.findProject(list, "c");
+  assert.strictEqual("timeline" in copy, false);
+  assert.strictEqual(projectTimeline.timelineOf(copy).stage, "quoted");
+  assert.strictEqual(store.findProject(list, "a").timeline.stage, "working");
+  assert.strictEqual(copy.name, "Luigi's menu copy");
+});
+
+test("updateProject with an autosave snapshot keeps the timeline", function () {
+  const project = working();
+  // What screens.js autosave passes: the calculation fields only.
+  const snap = store.exampleDraft("logo");
+  snap.inputs.rate = "40";
+  const list = store.updateProject([project], "a", snap, new Date(2026, 9, 14), true);
+  assert.deepStrictEqual(list[0].timeline, project.timeline);
+  assert.strictEqual(list[0].job, "logo");
+  assert.strictEqual(list[0].inputs.rate, "40");
+  // Renaming keeps it too.
+  assert.deepStrictEqual(store.renameProject(list, "a", "Luigi's menu, final", new Date(2026, 9, 15))[0].timeline, project.timeline);
+});
+
 console.log("\n" + passed + " passed, " + failed + " failed");
 if (failed > 0) process.exitCode = 1;

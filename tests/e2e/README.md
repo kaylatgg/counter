@@ -54,7 +54,7 @@ Each test prints a line starting with `!!` for anything it finds, then a count. 
 | `layout-grid` | Every block starts and ends on a column edge (12/8/4 columns) |
 | `close-the-gap` | Ways to close the gap for every job, offer, and rounds: when it shows, the options, the grid, no overlaps, the keyboard, and how the pick drives the price, reply, saving, and image |
 | `dashboard` | The Projects dashboard and its summary card: the example set's numbers, the table toggles (kept after a rename), the tooltip, Fix landing on Ways to close the gap (and Back, Forward, reload not jumping), when the card shows, and the layout at 375, 768, 1024, and 1440 |
-| `upgrade` | Projects saved by version 1 (`counter.projects`) show on Projects, are copied into `counter.v2`, still open, edit, and save, and `counter.projects` never changes |
+| `upgrade` | Projects saved by version 1 (`counter.projects`) show on Projects, are copied into `counter.v2`, still open, edit, and save, and `counter.projects` never changes. A version 2 save still loads and becomes version 3 on the next save |
 | `load-shift` | Screen 1 doesn't move while it loads at 360, 390, and 1440, as a file and over a slow network (scripts and fonts held back): layout shift 0.05 or less in Chromium; in WebKit, which doesn't report layout shift, the header, Save, heading, intro, and steppers stay within 2px of the first paint |
 | `backup` | Download a backup of 3 projects, clear storage, restore it from the empty screen, and all 3 come back field for field; Cancel and Escape change nothing; restoring twice doubles nothing; newer, plain-list, and non-JSON files show their message; unreadable items are kept; read-only mode refuses restore but still downloads; the reminder at 4 and 5 projects and after a download; axe on the row, the empty screen, and the dialog |
 | `chart-labels` | Hours and rate chart labels for every job and offer: no overlaps, nothing cut off, the budget split line never through its label, the target label never hidden |
@@ -63,5 +63,5 @@ Each test prints a line starting with `!!` for anything it finds, then a count. 
 
 - The tests open `index.html` straight from the file, the same as double-clicking it.
 - They run with reduced motion unless a test is about motion, so results don't depend on timing.
-- Tests that need saved projects use `seedProjects` in `lib.mjs`, which writes them to `counter.v2` (or, for the upgrade test, only to `counter.projects`), and `savedProjects` to read back what the app saved.
+- Tests that need saved projects use `seedProjects` in `lib.mjs`, which writes them to `counter.v2` as version 3 (or as version 2, or for the upgrade test only to `counter.projects`), and `savedProjects` to read back what the app saved.
 - On phones that can share files, "Save image" shares instead of downloading; the tests expect that.

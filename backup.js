@@ -11,7 +11,10 @@
 const backupProjects = typeof projectStore !== "undefined" ? projectStore : require("./projects.js");
 const backupStorage = typeof projectStorage !== "undefined" ? projectStorage : require("./store.js");
 
+// Backups share the saved data's version: files from version 2 (no timelines)
+// still restore.
 const BACKUP_VERSION = backupStorage.STORE_VERSION;
+const OLDEST_BACKUP_VERSION = backupStorage.OLDEST_VERSION;
 // { "at": "ISO date" }: when a backup was last downloaded.
 const BACKUP_KEY = "counter.v2.backup";
 // A real backup is far smaller; a bigger file is something else.
@@ -60,7 +63,8 @@ function readBackup(text, now) {
     return { ok: false, reason: "not-counter" };
   }
   if (typeof data.version === "number" && data.version > BACKUP_VERSION) return { ok: false, reason: "newer" };
-  if (data.version !== BACKUP_VERSION || !Array.isArray(data.projects)) return { ok: false, reason: "unknown-version" };
+  const known = Number.isInteger(data.version) && data.version >= OLDEST_BACKUP_VERSION && data.version <= BACKUP_VERSION;
+  if (!known || !Array.isArray(data.projects)) return { ok: false, reason: "unknown-version" };
 
   const sorted = backupStorage.sortItems(data.projects, at);
   // The file's own unreadable items come along as they are.

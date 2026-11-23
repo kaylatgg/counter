@@ -3,6 +3,7 @@
 // global projectStore) and in Node (through module.exports).
 
 const projectCalc = typeof calc !== "undefined" ? calc : require("./calc.js");
+const projectStages = typeof projectTimeline !== "undefined" ? projectTimeline : require("./timeline.js");
 
 // Saved projects live under one localStorage key, as a list. The unsaved
 // calculation (the draft) has its own key, so it can never overwrite a project.
@@ -105,15 +106,23 @@ function cleanCalculation(raw) {
 
 // Checks one saved project. Returns a clean copy, or null if it's broken.
 // Optional parts that are missing get their defaults; anything the project
-// can't work without (id, name, job, inputs, dates) makes it broken.
+// can't work without (id, name, job, inputs, dates) makes it broken. A
+// timeline (see timeline.js) is kept when it's valid; one that isn't makes the
+// whole project broken, so it's kept as unreadable rather than lost.
 function cleanProject(raw) {
   const calculation = cleanCalculation(raw);
   if (!calculation) return null;
   if (typeof raw.id !== "string" || !raw.id) return null;
   if (typeof raw.name !== "string" || !raw.name.trim()) return null;
   if (!isDate(raw.created) || !isDate(raw.edited)) return null;
-  return Object.assign({ id: raw.id, name: raw.name.trim().slice(0, NAME_MAX) }, calculation,
+  const project = Object.assign({ id: raw.id, name: raw.name.trim().slice(0, NAME_MAX) }, calculation,
     { created: raw.created, edited: raw.edited });
+  if (raw.timeline !== undefined) {
+    const timeline = projectStages.cleanTimeline(raw.timeline);
+    if (!timeline) return null;
+    project.timeline = timeline;
+  }
+  return project;
 }
 
 // Reads the saved draft. Broken or missing gives null, so the page starts fresh.
@@ -191,6 +200,8 @@ function duplicateProject(list, id, newId, now) {
   copy.name = copyName(original.name);
   copy.created = now.toISOString();
   copy.edited = now.toISOString();
+  // A copy starts again as Quoted.
+  delete copy.timeline;
   return list.concat([copy]);
 }
 

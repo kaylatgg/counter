@@ -67,7 +67,7 @@ await forEachConfig(async (ctx) => {
   if (!/^counter-backup-\d{4}-\d{2}-\d{2}\.json$/.test(d.suggestedFilename())) note(ctx, "download", "filename " + d.suggestedFilename(), "high");
   const file = writeFile(ctx, "backup.json", fs.readFileSync(await d.path(), "utf8"));
   const data = JSON.parse(fs.readFileSync(file, "utf8"));
-  if (data.app !== "counter" || data.kind !== "backup" || data.version !== 2 || JSON.stringify(data.projects) !== JSON.stringify(list)) note(ctx, "download content", JSON.stringify(data).slice(0, 160), "high");
+  if (data.app !== "counter" || data.kind !== "backup" || data.version !== 3 || JSON.stringify(data.projects) !== JSON.stringify(list)) note(ctx, "download content", JSON.stringify(data).slice(0, 160), "high");
   if (!fs.readFileSync(file, "utf8").startsWith('{\n  "app": "counter"')) note(ctx, "download content", "not pretty-printed", "medium");
   const recorded = await p.evaluate(() => localStorage.getItem("counter.v2.backup"));
   if (!recorded || !/"at":"\d{4}-/.test(recorded)) note(ctx, "download records the date", String(recorded), "high");
@@ -117,7 +117,7 @@ await forEachConfig(async (ctx) => {
 
   // Files that can't be used: a message with only Close.
   const refusals = [
-    ["newer", JSON.stringify(Object.assign({}, data, { version: 3 })), "This backup is from a newer version of Counter. Reload the page and try again."],
+    ["newer", JSON.stringify(Object.assign({}, data, { version: 4 })), "This backup is from a newer version of Counter. Reload the page and try again."],
     ["plain-list", JSON.stringify(list), "This file isn't a Counter backup."],
     ["not-json", "hello", "This file isn't a Counter backup."],
   ];
@@ -148,7 +148,7 @@ await forEachConfig(async (ctx) => {
   const p = ctx.page;
   await fresh(ctx);
   const list = await p.evaluate(() => [projectStore.createProject("Poster job", projectStore.exampleDraft("poster"), "r1", new Date(2026, 9, 1))]);
-  await p.evaluate((projects) => localStorage.setItem("counter.v2", JSON.stringify({ version: 3, projects })), list);
+  await p.evaluate((projects) => localStorage.setItem("counter.v2", JSON.stringify({ version: 4, projects })), list);
   await p.goto("about:blank"); await p.goto(BASE + "#projects"); await p.waitForTimeout(300);
   const before = await p.evaluate(() => localStorage.getItem("counter.v2"));
   let chose = false;
