@@ -1551,6 +1551,11 @@ legend {
   margin-top: 32px;
 }
 
+/* The reminder reads in ink, in the note's own font and place. */
+.storage-note.reminder {
+  color: var(--ink);
+}
+
 .backup-actions {
   display: flex;
   flex-wrap: wrap;

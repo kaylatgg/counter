@@ -4,7 +4,16 @@ import fs from "fs";
 import path from "path";
 import { forEachConfig, fresh, note, tap, closeAll, report, axe, flushErrors, OUT, BASE, seedProjects, savedProjects } from "./lib.mjs";
 
-const NEWER = "These jobs were saved by a newer version of Counter. Reload the page to keep editing.";
+const NEWER = "These projects were saved by a newer version of Counter. Reload the page to keep editing.";
+const noteInk = (p) => p.evaluate(() => {
+  const color = (el) => getComputedStyle(el).color;
+  const probe = document.createElement("span");
+  probe.style.color = "var(--ink)";
+  document.body.appendChild(probe);
+  const ink = color(probe);
+  probe.remove();
+  return color(document.getElementById("storage-note")) === ink;
+});
 const state = (p) => p.evaluate(() => {
   const open = document.getElementById("restore-panel").open;
   const visible = (id) => !document.getElementById(id).hidden && !document.getElementById(id).closest("[hidden]");
@@ -119,14 +128,17 @@ await forEachConfig(async (ctx) => {
     if (name === "newer") await axe(ctx, "restore dialog, refused");
     await p.keyboard.press("Escape"); await p.waitForTimeout(150);
   }
-  // A file with an unreadable item says so, and the item is kept.
-  const withBroken = Object.assign({}, data, { projects: data.projects.concat([Object.assign({}, data.projects[0], { id: "b9", name: "New one" }), { id: "broken" }]) });
+  // A file with an unreadable item says so, and the item is kept. One project
+  // in it was edited later, so it counts as updated.
+  const later = data.projects.map((project, i) => i === 1 ? Object.assign({}, project, { name: "Bakery, final", edited: "2026-11-20T10:00:00.000Z" }) : project);
+  const withBroken = Object.assign({}, data, { projects: later.concat([Object.assign({}, data.projects[0], { id: "b9", name: "New one" }), { id: "broken" }]) });
   await pick(ctx, "#backup-restore", writeFile(ctx, "broken.json", JSON.stringify(withBroken)));
   s = await state(p);
-  if (s.text !== "4 projects in this backup: 1 new, 3 already up to date." || s.unreadable !== "1 item in this file can't be read. It'll be kept aside, not restored.") note(ctx, "unreadable sentence", JSON.stringify(s), "high");
+  if (s.text !== "4 projects in this backup: 1 new, 1 updated with newer changes, 2 already up to date." || s.unreadable !== "1 item in this file can't be read. It'll be kept aside, not restored.") note(ctx, "unreadable sentence", JSON.stringify(s), "high");
   await tap(ctx, "#restore-yes"); await p.waitForTimeout(300);
   const kept = await p.evaluate(() => JSON.parse(localStorage.getItem("counter.v2.unreadable") || "[]"));
   if ((await savedProjects(p)).length !== 4 || kept.length !== 1 || kept[0].raw.id !== "broken") note(ctx, "unreadable kept", JSON.stringify(kept), "high");
+  if (!(await savedProjects(p)).some((project) => project.id === "b2" && project.name === "Bakery, final")) note(ctx, "updated project", "not replaced", "high");
   if (ctx.width === 390 || ctx.width === 1440) await flushErrors(ctx, "backup flow");
 }, { widths: [390, 1440] });
 
@@ -160,13 +172,15 @@ await forEachConfig(async (ctx) => {
   const five = await p.evaluate(() => [0, 1, 2, 3, 4].map((i) => projectStore.createProject("Job " + i, projectStore.exampleDraft("menu"), "m" + i, new Date(2026, 9, 1 + i))));
   await seedProjects(p, five.slice(0, 4));
   await p.goto("about:blank"); await p.goto(BASE + "#projects"); await p.waitForTimeout(300);
-  if ((await state(p)).note !== "Projects save in this browser on this device.") note(ctx, "reminder at 4", (await state(p)).note, "high");
+  if ((await state(p)).note !== "Projects save in this browser on this device." || await noteInk(p)) note(ctx, "reminder at 4", (await state(p)).note, "high");
   await seedProjects(p, five);
   await p.goto("about:blank"); await p.goto(BASE + "#projects"); await p.waitForTimeout(300);
-  if ((await state(p)).note !== "Your projects are saved only in this browser.") note(ctx, "reminder at 5", (await state(p)).note, "high");
+  if ((await state(p)).note !== "Your projects are only in this browser. Download a backup so you don't lose them.") note(ctx, "reminder at 5", (await state(p)).note, "high");
+  if (!(await noteInk(p))) note(ctx, "reminder at 5", "not in ink", "high");
+  await axe(ctx, "projects with the reminder");
   const download = p.waitForEvent("download", { timeout: 5000 });
   await tap(ctx, "#backup-download");
   await download.catch(() => null); await p.waitForTimeout(150);
-  if ((await state(p)).note !== "Projects save in this browser on this device.") note(ctx, "reminder after download", (await state(p)).note, "high");
+  if ((await state(p)).note !== "Projects save in this browser on this device." || await noteInk(p)) note(ctx, "reminder after download", (await state(p)).note, "high");
 }, { widths: [390, 1440] });
 report("backup"); await closeAll();

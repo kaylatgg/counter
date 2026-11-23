@@ -122,7 +122,7 @@ function renderProjects() {
 // Backup (backup.js): download the projects as a file, or restore one.
 
 const STORAGE_NOTE = "Projects save in this browser on this device.";
-const BACKUP_REMINDER = "Your projects are saved only in this browser.";
+const BACKUP_REMINDER = "Your projects are only in this browser. Download a backup so you don't lose them.";
 const RESTORE_REFUSALS = {
   "not-json": "This file isn't a Counter backup.",
   "not-counter": "This file isn't a Counter backup.",
@@ -143,6 +143,7 @@ function renderBackupRow() {
   const now = new Date();
   const reminder = projectBackup.needsBackupReminder(projectList, projectBackup.loadLastBackup(storage()), now);
   byId("storage-note").textContent = reminder ? BACKUP_REMINDER : STORAGE_NOTE;
+  byId("storage-note").classList.toggle("reminder", reminder);
   show(byId("backup-actions"), projectList.length > 0);
 }
 
@@ -201,7 +202,7 @@ function startRestore(event) {
 }
 let restoreOpener = null;
 
-// "12 projects in this backup: 3 new, 2 newer than yours, 7 already up to date."
+// "12 projects in this backup: 3 new, 2 updated with newer changes, 7 already up to date."
 function restoreSummary(counts) {
   const upToDate = counts.unchanged + counts.kept;
   const total = counts.added + counts.updated + upToDate;
@@ -210,7 +211,7 @@ function restoreSummary(counts) {
   if (!counts.added && !counts.updated) return head + (total === 1 ? ", already up to date." : ", all already up to date.");
   const parts = [];
   if (counts.added) parts.push(counts.added + " new");
-  if (counts.updated) parts.push(counts.updated + " newer than yours");
+  if (counts.updated) parts.push(counts.updated + " updated with newer changes");
   if (upToDate) parts.push(upToDate + " already up to date");
   return head + ": " + parts.join(", ") + ".";
 }
