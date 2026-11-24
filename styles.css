@@ -5007,7 +5007,7 @@ textarea {
   letter-spacing: -0.02em;
 }
 
-.project-rates .rate-bars {
+.project-rates .rbar-bars {
   margin-top: 28px;
 }
 
@@ -5035,36 +5035,36 @@ textarea {
 /* The rate bar: a thick rounded track from $0, the fill, and one target
    notch. Each row: the name (with a date or note) on the left, the bar, and
    the value on the right. The bars are aria-hidden; the values are text. */
-.rate-bars {
+.rbar-bars {
   display: flex;
   flex-direction: column;
   gap: 24px;
 }
 
-.rate-row {
+.rbar-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   align-items: center;
   column-gap: var(--column-gap);
 }
 
-.rate-name {
+.rbar-name {
   display: flex;
   flex-direction: column;
   gap: 2px;
 }
 
-.rate-label {
+.rbar-label {
   font-size: 15px;
 }
 
-.rate-date {
+.rbar-date {
   font-family: var(--mono);
   font-size: 12px;
   color: var(--ink-2);
 }
 
-.rate-track {
+.rbar-track {
   position: relative;
   height: 14px;
   border-radius: 999px;
@@ -5072,21 +5072,21 @@ textarea {
 }
 
 /* The first bar leaves room above it for "Target $25". */
-.rate-row:first-child .rate-track {
+.rbar-row:first-child .rbar-track {
   margin-top: 24px;
 }
 
-.rate-fill {
+.rbar-fill {
   height: 100%;
   border-radius: 999px;
   background: var(--charcoal);
 }
 
-.rate-fill.planned {
+.rbar-fill.planned {
   background: var(--ink-3);
 }
 
-.rate-notch {
+.rbar-notch {
   position: absolute;
   top: -5px;
   bottom: -5px;
@@ -5095,7 +5095,7 @@ textarea {
   background: var(--ink);
 }
 
-.rate-target {
+.rbar-target {
   position: absolute;
   bottom: calc(100% + 4px);
   left: 50%;
@@ -5107,12 +5107,12 @@ textarea {
 }
 
 /* Near the left end the label starts at the notch instead. */
-.rate-notch.at-start .rate-target {
+.rbar-notch.at-start .rbar-target {
   left: 0;
   transform: none;
 }
 
-.rate-value {
+.rbar-value {
   justify-self: end;
   white-space: nowrap;
   font-size: 32px;
@@ -5121,7 +5121,7 @@ textarea {
   line-height: 1.1;
 }
 
-.rate-unit {
+.rbar-unit {
   margin-left: 4px;
   font-family: var(--mono);
   font-size: 13px;
@@ -5130,21 +5130,21 @@ textarea {
 }
 
 /* In the result: name, bar, and value on the page's columns. */
-.project-rates .rate-row {
+.project-rates .rbar-row {
   grid-template-columns: repeat(var(--columns), minmax(0, 1fr));
 }
 
-.project-rates .rate-name { grid-column: span 3; }
-.project-rates .rate-track { grid-column: span 7; }
-.project-rates .rate-value { grid-column: span 2; }
+.project-rates .rbar-name { grid-column: span 3; }
+.project-rates .rbar-track { grid-column: span 7; }
+.project-rates .rbar-value { grid-column: span 2; }
 
 /* In the Mark as paid dialog: a narrow name, the bar, the value. */
-.paid-result .rate-row {
+.paid-result .rbar-row {
   grid-template-columns: 72px minmax(0, 1fr) auto;
   column-gap: 16px;
 }
 
-.paid-result .rate-value {
+.paid-result .rbar-value {
   font-size: 22px;
 }
 
@@ -5228,9 +5228,9 @@ textarea {
 
 /* Tablet (8 columns): the project stats 2 by 2; the bars 2 + 4 + 2. */
 @media (max-width: 1023px) {
-  .project-rates .rate-name { grid-column: span 2; }
-  .project-rates .rate-track { grid-column: span 4; }
-  .project-rates .rate-value { grid-column: span 2; }
+  .project-rates .rbar-name { grid-column: span 2; }
+  .project-rates .rbar-track { grid-column: span 4; }
+  .project-rates .rbar-value { grid-column: span 2; }
 }
 
 /* Desktop: the project stats in 3 columns. */
@@ -5278,35 +5278,35 @@ textarea {
     margin-top: 56px;
   }
 
-  .project-rates .rate-row,
-  .paid-result .rate-row {
+  .project-rates .rbar-row,
+  .paid-result .rbar-row {
     grid-template-columns: minmax(0, 1fr) auto;
     column-gap: 16px;
   }
 
-  .project-rates .rate-name,
-  .paid-result .rate-name {
+  .project-rates .rbar-name,
+  .paid-result .rbar-name {
     grid-column: 1;
     grid-row: 1;
   }
 
-  .project-rates .rate-value,
-  .paid-result .rate-value {
+  .project-rates .rbar-value,
+  .paid-result .rbar-value {
     grid-column: 2;
     grid-row: 1;
     font-size: 26px;
   }
 
-  .project-rates .rate-track,
-  .paid-result .rate-track {
+  .project-rates .rbar-track,
+  .paid-result .rbar-track {
     grid-column: 1 / -1;
     grid-row: 2;
     height: 12px;
     margin-top: 12px;
   }
 
-  .project-rates .rate-row:first-child .rate-track,
-  .paid-result .rate-row:first-child .rate-track {
+  .project-rates .rbar-row:first-child .rbar-track,
+  .paid-result .rbar-row:first-child .rbar-track {
     margin-top: 28px;
   }
 

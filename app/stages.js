@@ -185,22 +185,22 @@ function renderRateBars(container, rows, targetCents) {
   const notchAt = projectTimeline.barShare(targetCents, scale);
   container.textContent = "";
   rows.forEach(function (row, i) {
-    const element = make("div", "rate-row");
-    const name = make("div", "rate-name");
-    name.appendChild(make("span", "rate-label", row.label));
-    if (row.note) name.appendChild(make("span", "rate-date", row.note));
+    const element = make("div", "rbar-row");
+    const name = make("div", "rbar-name");
+    name.appendChild(make("span", "rbar-label", row.label));
+    if (row.note) name.appendChild(make("span", "rbar-date", row.note));
 
-    const track = make("div", "rate-track");
+    const track = make("div", "rbar-track");
     track.setAttribute("aria-hidden", "true");
-    const fill = make("div", "rate-fill" + (row.planned ? " planned" : ""));
+    const fill = make("div", "rbar-fill" + (row.planned ? " planned" : ""));
     fill.style.width = projectTimeline.barShare(row.cents, scale) * 100 + "%";
-    const notch = make("div", "rate-notch" + (notchAt < 0.12 ? " at-start" : ""));
+    const notch = make("div", "rbar-notch" + (notchAt < 0.12 ? " at-start" : ""));
     notch.style.left = notchAt * 100 + "%";
-    if (i === 0) notch.appendChild(make("span", "rate-target", "Target " + centsPrice(targetCents)));
+    if (i === 0) notch.appendChild(make("span", "rbar-target", "Target " + centsPrice(targetCents)));
     track.append(fill, notch);
 
-    const value = make("p", "rate-value", row.cents === null ? "" : centsMoney(row.cents));
-    if (row.cents !== null) value.appendChild(make("span", "rate-unit", "/hr"));
+    const value = make("p", "rbar-value", row.cents === null ? "" : centsMoney(row.cents));
+    if (row.cents !== null) value.appendChild(make("span", "rbar-unit", "/hr"));
     element.append(name, track, value);
     container.appendChild(element);
   });

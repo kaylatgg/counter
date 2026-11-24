@@ -25,7 +25,7 @@ const state = (p) => p.evaluate(() => {
     job: text("project-hero-job"),
     sentence: text("project-hero-sentence"),
     stats: [...document.querySelectorAll("#project-stats > div")].map((d) => d.querySelector("dt").textContent + " " + d.querySelector("dd").textContent),
-    rows: [...document.querySelectorAll("#project-rate-bars .rate-row")].map((r) => r.querySelector(".rate-label").textContent + " " + r.querySelector(".rate-value").textContent),
+    rows: [...document.querySelectorAll("#project-rate-bars .rbar-row")].map((r) => r.querySelector(".rbar-label").textContent + " " + r.querySelector(".rbar-value").textContent),
     pricing: vis("pricing-heading"),
     focus: document.activeElement && document.activeElement.id,
     open: [...document.querySelectorAll("dialog")].filter((d) => d.open).map((d) => d.id),
@@ -126,7 +126,7 @@ await forEachConfig(async (ctx) => {
   await p.fill("#paid-amount", "310");
   await p.fill("#paid-hours", "13"); await p.waitForTimeout(50);
   const live = await p.evaluate(() => [document.getElementById("paid-result-number").textContent,
-    [...document.querySelectorAll("#paid-rate-bars .rate-row")].map((r) => r.querySelector(".rate-label").textContent + " " + r.querySelector(".rate-value").textContent)]);
+    [...document.querySelectorAll("#paid-rate-bars .rbar-row")].map((r) => r.querySelector(".rbar-label").textContent + " " + r.querySelector(".rbar-value").textContent)]);
   if (JSON.stringify(live) !== JSON.stringify(["$22.31/hr", ["Planned $21.74/hr", "Real $22.31/hr"]])) note(ctx, "paid, live", JSON.stringify(live), "high");
   await tap(ctx, "#paid-form button[type=submit]"); await p.waitForTimeout(300);
   check(ctx, "paid", await state(p), {
