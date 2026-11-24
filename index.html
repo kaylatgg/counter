@@ -58,6 +58,7 @@
   <script src="app/controls.js" defer></script>
   <script src="app/screens.js" defer></script>
   <script src="app/projects-view.js" defer></script>
+  <script src="app/stages.js" defer></script>
   <script src="app/motion.js" defer></script>
   <script src="app/share-and-image.js" defer></script>
   <script src="app/start.js" defer></script>
@@ -542,6 +543,24 @@
         <p class="shared-note" id="shared-note"><span class="shared-dot" aria-hidden="true"></span><span class="shared-text"></span></p>
       </div>
 
+      <!-- Saved projects only: the stage (not a control) and the action for it. -->
+      <div class="results-body stage-row" id="stage-row" hidden>
+        <div class="stage-bar">
+          <div class="stage-left">
+            <ol class="stage-steps" id="stage-steps" aria-label="Stage">
+              <li data-stage="quoted"><span class="stage-dot" aria-hidden="true"></span>Quoted</li>
+              <li data-stage="working"><span class="stage-dot" aria-hidden="true"></span>Working</li>
+              <li data-stage="paid"><span class="stage-dot" aria-hidden="true"></span>Paid</li>
+            </ol>
+          </div>
+          <div class="stage-action">
+            <button type="button" class="round-button stage-forward" id="stage-forward" hidden>They said yes</button>
+            <p class="stage-paid-on" id="stage-paid-on" hidden>Paid Nov 23</p>
+          </div>
+          <button type="button" class="link-button stage-back" id="stage-back" hidden>Move back to Quoted</button>
+        </div>
+      </div>
+
       <!-- The hero panel: the sunset gradient opens into the answer. -->
       <div class="hero-panel" id="hero-panel">
         <div class="hero-content" id="result-summary">
@@ -561,6 +580,37 @@
 
         <p class="empty-state" id="empty-state" tabindex="-1" hidden>Add some hours to see your estimate.</p>
         <p class="empty-state" id="error-state" tabindex="-1" hidden>Fix the fields with errors to see your result.</p>
+      </div>
+
+      <!-- Working and Paid projects: what the project pays now, in place of the
+           hero above (which is hidden, not removed). Filled by app/stages.js. -->
+      <div class="hero-panel project-hero" id="project-hero" hidden>
+        <div class="hero-content" id="project-summary">
+          <div class="hero-top">
+            <p class="hero-label" id="project-hero-label" tabindex="-1">This project pays now, after expenses</p>
+            <div class="hero-aside">
+              <p class="hero-job" id="project-hero-job">Menu · working since Nov 21</p>
+              <p class="hero-sentence" id="project-hero-sentence">10 hrs for $270. You planned $25.00 an hour.</p>
+            </div>
+          </div>
+          <p class="hero-number">
+            <span class="visually-hidden" id="project-hero-spoken">$25.00 per hour</span>
+            <span class="hero-digits project-digits" aria-hidden="true"><span class="hero-sign" id="project-hero-sign"></span><span class="hero-currency">$</span><span class="hero-amount" id="project-hero-amount">25.00</span><span class="hero-unit">/hr</span></span>
+          </p>
+        </div>
+      </div>
+
+      <div class="results-body project-body" id="project-body" hidden>
+        <dl class="stats project-stats" id="project-stats"></dl>
+
+        <section class="project-rates" aria-labelledby="project-rates-title">
+          <h2 class="project-rates-title" id="project-rates-title">Your rate, request by request</h2>
+          <div class="rate-bars" id="project-rate-bars"></div>
+          <p class="project-rates-note" id="project-rates-note">If the client asks for more after yes, each request will show here.</p>
+        </section>
+
+        <h2 class="pricing-heading" id="pricing-heading">Your pricing</h2>
+        <p class="pricing-state" id="pricing-state" hidden></p>
       </div>
 
       <!-- Over 160 hours: a note just below the hero, on the page color so it stays readable. -->
@@ -802,6 +852,72 @@
       </div>
       <div class="panel-actions">
         <button type="button" class="action-button outline" id="share-close">Close</button>
+      </div>
+    </dialog>
+
+    <!-- "They said yes": the price they agreed to, then the project is Working. -->
+    <dialog class="panel-dialog stage-dialog" id="working-panel" aria-labelledby="working-title">
+      <form class="save-form" id="working-form" novalidate>
+        <div class="field">
+          <label class="stage-dialog-title" for="agreed-price" id="working-title">What price did they agree to?</label>
+          <div class="unit-input stage-money">
+            <span class="currency" aria-hidden="true">$</span>
+            <input id="agreed-price" type="text" inputmode="decimal" autocomplete="off" aria-describedby="agreed-line">
+          </div>
+          <p class="stage-live" id="agreed-line" aria-live="polite">That's $25.00 an hour after expenses for 10 hours.</p>
+        </div>
+        <p class="error stage-refusal" id="working-refusal" role="alert" hidden></p>
+        <div class="panel-actions">
+          <button type="submit" class="action-button">Start working</button>
+          <button type="button" class="action-button outline" id="working-cancel">Cancel</button>
+        </div>
+      </form>
+    </dialog>
+
+    <!-- "Mark as paid": what came in and the real hours, then the project is Paid. -->
+    <dialog class="panel-dialog stage-dialog paid-dialog" id="paid-panel" aria-labelledby="paid-title">
+      <form class="save-form" id="paid-form" novalidate>
+        <h2 class="stage-dialog-title" id="paid-title">Mark as paid</h2>
+        <div class="stage-fields">
+          <div class="field">
+            <label for="paid-amount">Amount you received</label>
+            <div class="unit-input stage-money">
+              <span class="currency" aria-hidden="true">$</span>
+              <input id="paid-amount" type="text" inputmode="decimal" autocomplete="off">
+            </div>
+          </div>
+          <div class="field">
+            <label for="paid-hours">Hours you really worked</label>
+            <div class="unit-input stage-money">
+              <input id="paid-hours" type="text" inputmode="decimal" autocomplete="off" aria-describedby="paid-hours-hint">
+              <span class="unit" aria-hidden="true">hrs</span>
+            </div>
+            <p class="mono-note" id="paid-hours-hint">One total is enough</p>
+          </div>
+        </div>
+        <div class="paid-result" id="paid-result">
+          <p class="paid-result-label">This project really paid, after expenses</p>
+          <p class="paid-result-number" id="paid-result-number" aria-live="polite">$22.31<span class="paid-result-unit">/hr</span></p>
+          <div class="rate-bars" id="paid-rate-bars"></div>
+        </div>
+        <p class="error stage-refusal" id="paid-refusal" role="alert" hidden></p>
+        <div class="panel-actions">
+          <button type="submit" class="action-button">Mark as paid</button>
+          <button type="button" class="action-button outline" id="paid-cancel">Cancel</button>
+        </div>
+      </form>
+    </dialog>
+
+    <!-- Moving back a stage, to fix a mistake. -->
+    <dialog class="panel-dialog" id="back-panel" aria-labelledby="back-question" aria-describedby="back-text">
+      <div class="start-over-copy">
+        <p class="start-over-question" id="back-question">Move back to Working?</p>
+        <p class="start-over-text" id="back-text">The amount received and real hours are cleared.</p>
+      </div>
+      <p class="error stage-refusal" id="back-refusal" role="alert" hidden></p>
+      <div class="panel-actions start-over-actions">
+        <button type="button" class="action-button" id="back-yes">Move back</button>
+        <button type="button" class="action-button outline" id="back-cancel">Cancel</button>
       </div>
     </dialog>
 

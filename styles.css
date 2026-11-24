@@ -4901,6 +4901,428 @@ textarea {
   }
 }
 
+/* Project stages (app/stages.js, docs/DESIGN.md "Project stages"): the stage
+   bar, the project hero for Working and Paid, the rate bars, and the three
+   stage dialogs. Saved projects only. */
+
+/* The stage bar: the stage on the left (not a control), its action on the
+   right, the move-back link under the stage. */
+.results-body.stage-row {
+  padding-bottom: 20px;
+}
+
+.stage-bar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas: "steps action" "back back";
+  align-items: center;
+  column-gap: var(--column-gap);
+}
+
+.stage-left {
+  grid-area: steps;
+}
+
+.stage-action {
+  grid-area: action;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.stage-back {
+  grid-area: back;
+  justify-self: start;
+  margin-top: 0;
+  color: var(--ink);
+}
+
+/* Three equal segments on a warm track. The current one is raised, with a
+   coral dot. #E3DFD7 is the track from the approved design. */
+.stage-steps {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  width: min(100%, 420px);
+  margin: 0;
+  padding: 4px;
+  border-radius: 999px;
+  background: #E3DFD7;
+  list-style: none;
+}
+
+.stage-steps li {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 36px;
+  padding: 0 12px;
+  border-radius: 999px;
+  font-size: 14px;
+  color: var(--ink-2);
+}
+
+.stage-steps li[aria-current="step"] {
+  background: var(--paper);
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.stage-dot {
+  display: none;
+  flex: none;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--red);
+}
+
+.stage-steps li[aria-current="step"] .stage-dot {
+  display: block;
+}
+
+.stage-paid-on {
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--ink-2);
+}
+
+/* The project hero uses the hero panel's look; only the sign is new. */
+.hero-sign {
+  margin-right: 0.04em;
+}
+
+.results-body.project-body {
+  padding-bottom: 0;
+}
+
+/* Under the stats: the rate bars, then "Your pricing", which heads the
+   original calculation below it. */
+.project-rates {
+  margin-top: 72px;
+}
+
+.project-rates-title {
+  font-size: 22px;
+  font-weight: 300;
+  letter-spacing: -0.02em;
+}
+
+.project-rates .rate-bars {
+  margin-top: 28px;
+}
+
+.project-rates-note {
+  margin-top: 16px;
+  font-size: 14px;
+  color: var(--ink-2);
+}
+
+.pricing-heading {
+  margin-top: 72px;
+  padding-top: 20px;
+  border-top: 1px solid var(--line);
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--ink-2);
+}
+
+.pricing-state {
+  max-width: var(--measure);
+  margin-top: 16px;
+  font-size: 20px;
+}
+
+/* The rate bar: a thick rounded track from $0, the fill, and one target
+   notch. Each row: the name (with a date or note) on the left, the bar, and
+   the value on the right. The bars are aria-hidden; the values are text. */
+.rate-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.rate-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: center;
+  column-gap: var(--column-gap);
+}
+
+.rate-name {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.rate-label {
+  font-size: 15px;
+}
+
+.rate-date {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--ink-2);
+}
+
+.rate-track {
+  position: relative;
+  height: 14px;
+  border-radius: 999px;
+  background: var(--rule-warm);
+}
+
+/* The first bar leaves room above it for "Target $25". */
+.rate-row:first-child .rate-track {
+  margin-top: 24px;
+}
+
+.rate-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--charcoal);
+}
+
+.rate-fill.planned {
+  background: var(--ink-3);
+}
+
+.rate-notch {
+  position: absolute;
+  top: -5px;
+  bottom: -5px;
+  width: 2px;
+  margin-left: -1px;
+  background: var(--ink);
+}
+
+.rate-target {
+  position: absolute;
+  bottom: calc(100% + 4px);
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--ink-2);
+}
+
+/* Near the left end the label starts at the notch instead. */
+.rate-notch.at-start .rate-target {
+  left: 0;
+  transform: none;
+}
+
+.rate-value {
+  justify-self: end;
+  white-space: nowrap;
+  font-size: 32px;
+  font-weight: 300;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+}
+
+.rate-unit {
+  margin-left: 4px;
+  font-family: var(--mono);
+  font-size: 13px;
+  letter-spacing: 0;
+  color: var(--ink-2);
+}
+
+/* In the result: name, bar, and value on the page's columns. */
+.project-rates .rate-row {
+  grid-template-columns: repeat(var(--columns), minmax(0, 1fr));
+}
+
+.project-rates .rate-name { grid-column: span 3; }
+.project-rates .rate-track { grid-column: span 7; }
+.project-rates .rate-value { grid-column: span 2; }
+
+/* In the Mark as paid dialog: a narrow name, the bar, the value. */
+.paid-result .rate-row {
+  grid-template-columns: 72px minmax(0, 1fr) auto;
+  column-gap: 16px;
+}
+
+.paid-result .rate-value {
+  font-size: 22px;
+}
+
+/* The three stage dialogs: the same panel as Save as project. */
+.field > label.stage-dialog-title,
+.stage-dialog-title {
+  display: block;
+  font-size: 22px;
+  font-weight: 300;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+  color: var(--ink);
+}
+
+.stage-dialog .field > label.stage-dialog-title + .unit-input {
+  margin-top: 16px;
+}
+
+.stage-dialog .stage-money {
+  align-items: baseline;
+  gap: 2px;
+}
+
+.stage-dialog .stage-money .currency {
+  font-size: 24px;
+}
+
+.stage-dialog .stage-money .unit {
+  margin-left: 6px;
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--ink-2);
+}
+
+.stage-live {
+  margin-top: 8px;
+  font-size: 14px;
+  color: var(--ink-2);
+}
+
+.stage-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px;
+}
+
+.stage-fields .unit-input {
+  margin-top: 6px;
+}
+
+@media (min-width: 760px) {
+  .paid-dialog {
+    width: min(560px, calc(100vw - 48px));
+  }
+}
+
+.paid-result-label {
+  font-size: 14px;
+  color: var(--ink-2);
+}
+
+.paid-result-number {
+  margin: 4px 0 20px;
+  font-size: 56px;
+  font-weight: 300;
+  letter-spacing: -0.04em;
+  line-height: 1;
+}
+
+.paid-result-unit {
+  margin-left: 4px;
+  font-family: var(--mono);
+  font-size: 14px;
+  letter-spacing: 0;
+  color: var(--ink-2);
+}
+
+.stage-refusal {
+  margin-top: -12px;
+}
+
+/* Tablet (8 columns): the project stats 2 by 2; the bars 2 + 4 + 2. */
+@media (max-width: 1023px) {
+  .project-rates .rate-name { grid-column: span 2; }
+  .project-rates .rate-track { grid-column: span 4; }
+  .project-rates .rate-value { grid-column: span 2; }
+}
+
+/* Desktop: the project stats in 3 columns. */
+@media (min-width: 1024px) {
+  .project-stats > div {
+    grid-column: span 4;
+  }
+}
+
+/* Phone: the stage full width, the action under it, then the link. Each bar
+   row: name and value on one line, the bar full width under them. */
+@media (max-width: 759px) {
+  .stage-bar {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: "steps" "action" "back";
+    row-gap: 12px;
+  }
+
+  .stage-steps {
+    width: 100%;
+  }
+
+  .stage-steps li {
+    min-height: 40px;
+    padding: 0 8px;
+  }
+
+  .stage-action {
+    justify-content: stretch;
+  }
+
+  .stage-action .round-button {
+    width: 100%;
+  }
+
+  .stage-paid-on {
+    min-height: 0;
+  }
+
+  .stage-back {
+    margin-top: -4px;
+  }
+
+  .project-rates {
+    margin-top: 56px;
+  }
+
+  .project-rates .rate-row,
+  .paid-result .rate-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+    column-gap: 16px;
+  }
+
+  .project-rates .rate-name,
+  .paid-result .rate-name {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .project-rates .rate-value,
+  .paid-result .rate-value {
+    grid-column: 2;
+    grid-row: 1;
+    font-size: 26px;
+  }
+
+  .project-rates .rate-track,
+  .paid-result .rate-track {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    height: 12px;
+    margin-top: 12px;
+  }
+
+  .project-rates .rate-row:first-child .rate-track,
+  .paid-result .rate-row:first-child .rate-track {
+    margin-top: 28px;
+  }
+
+  .stage-fields {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .paid-result-number {
+    font-size: 44px;
+  }
+
+  .pricing-heading {
+    margin-top: 56px;
+  }
+}
+
 /* The reveal: plays once when "Check the offer" is pressed. app/motion.js runs
    the fades as Web Animations, each step after the last one finishes. Never
    under reduced motion. */
