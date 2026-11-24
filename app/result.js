@@ -97,7 +97,7 @@ function renderStats(items, morph) {
 const STAT_MIN_SIZE = 22;
 
 function fitStats() {
-  document.querySelectorAll("#metrics dd").forEach(function (value) {
+  document.querySelectorAll("#metrics dd, #project-stats dd").forEach(function (value) {
     value.style.fontSize = "";
     const room = value.clientWidth;
     if (!room) return;

@@ -37,9 +37,8 @@ function openResults(quiet) {
   // reveal, plays start when the orb lands.
   armPlays();
   if (!document.body.classList.contains("revealing")) startPlays();
-  const target = ["hero-label", "empty-state", "error-state"].map(byId).filter(function (element) {
-    return !element.hidden && !element.closest("[hidden]");
-  })[0];
+  // The project hero's label when it shows, otherwise the hero's (app/stages.js).
+  const target = heroFocusTarget();
   if (target && !quiet) focusScreen(target);
 }
 
@@ -335,12 +334,15 @@ function renderHeader() {
     button.setAttribute("aria-label", "Save as project");
   }
   renderPricingCard();
+  renderStageView();
 }
 
-// The five dialogs: Save as project, Start over?, Open the shared result?, the
-// link to copy by hand, and Restore from backup. One is open at a time. Focus moves without
-// scrolling, so the page underneath never jumps.
-const PANEL_DIALOGS = ["save-panel", "start-over", "share-question", "share-panel", "restore-panel"];
+// The dialogs: Save as project, Start over?, Open the shared result?, the
+// link to copy by hand, Restore from backup, and the three stage dialogs
+// (They said yes, Mark as paid, Move back). One is open at a time. Focus moves
+// without scrolling, so the page underneath never jumps.
+const PANEL_DIALOGS = ["save-panel", "start-over", "share-question", "share-panel", "restore-panel",
+  "working-panel", "paid-panel", "back-panel"];
 let dialogOpener = null;
 
 function openDialog(id, opener) {

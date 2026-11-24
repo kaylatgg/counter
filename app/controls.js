@@ -264,6 +264,8 @@ function update(commit) {
   updatePage(commit);
   formatMoneyFields();
   autosave();
+  // "They said yes" needs a valid calculation; the pricing line follows it too.
+  renderStageView();
   if (commit) announceSummary();
   if (sharedSnapshot !== null && !loadingValues && JSON.stringify(snapshot()) !== sharedSnapshot) {
     hideSharedNote();
@@ -314,7 +316,7 @@ function announceSummary() {
 
 // Money fields show "1,000" when not focused, and "1000" while typing.
 // Typing "1,000" works too: the math reads commas.
-const MONEY_FIELDS = ["rate", "expenses", "offer", "quote", "bar-offer", "bar-rate"];
+const MONEY_FIELDS = ["rate", "expenses", "offer", "quote", "bar-offer", "bar-rate", "agreed-price", "paid-amount"];
 
 function formatMoneyFields() {
   MONEY_FIELDS.forEach(function (id) {
@@ -400,6 +402,7 @@ let lastFormKey = null;
 
 function relayoutCharts() {
   markWrappedPills();
+  if (!byId("project-hero").hidden) fitProjectNumber();
   layoutTally(lastHours);
   if (!lastResult || byId("result").hidden) return;
   fitHeroNumber();
