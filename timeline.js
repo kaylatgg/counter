@@ -255,6 +255,70 @@ function dollarsToCents(text) {
   return isCents(cents) ? cents : null;
 }
 
+// Hours rounded to 2 decimals, the way they're saved ("6.000000001" from
+// adding 0.1s becomes 6).
+function roundHours(hours) {
+  return Math.round(hours * 100) / 100;
+}
+
+// The planned rate after expenses, in whole cents: the agreed price less
+// expenses, over the planned hours. Null when Quoted (or not valid).
+function plannedRateCents(project) {
+  const timeline = timelineOf(project);
+  if (!timeline || timeline.stage === "quoted") return null;
+  return roundCents((timeline.agreedCents - timeline.expensesCents) / timeline.plannedHours);
+}
+
+// Any money over any hours, after expenses, in whole cents. Null when a value
+// isn't whole cents or the hours aren't valid hours.
+function rateAfterCents(moneyCents, expensesCents, hours) {
+  if (!isCents(moneyCents) || !isCents(expensesCents) || !isHours(hours)) return null;
+  return roundCents((moneyCents - expensesCents) / hours);
+}
+
+// What "Mark as paid" starts with: the agreed price plus charged requests, and
+// the planned hours plus every request's hours. Null unless Working.
+function paidDefaults(project) {
+  const timeline = timelineOf(project);
+  if (!timeline || timeline.stage !== "working") return null;
+  return {
+    receivedCents: timeline.agreedCents + sum(timeline.requests, "chargeCents"),
+    actualHours: roundHours(timeline.plannedHours + sum(timeline.requests, "hours")),
+  };
+}
+
+// Typed hours as a number: "13", "13.5", ".75", " 13 ". Above 0, at most 1000,
+// up to 2 decimals. Anything else gives null.
+const HOURS_PATTERN = /^(?:\d+(?:\.\d{1,2})?|\.\d{1,2})$/;
+function hoursFromText(text) {
+  if (typeof text !== "string") return null;
+  const trimmed = text.trim();
+  if (!HOURS_PATTERN.test(trimmed)) return null;
+  const hours = Number(trimmed);
+  return isHours(hours) ? hours : null;
+}
+
+// One scale for every bar in a rate chart, in whole cents: the largest of the
+// values shown and the target, times 1.2, rounded up to the next $5. Never
+// less than $5, so a chart of zeros still has a scale.
+const BAR_STEP_CENTS = 500;
+function barScaleCents(valuesCents, targetCents) {
+  const all = (valuesCents || []).concat([targetCents]).filter(function (value) {
+    return typeof value === "number" && isFinite(value);
+  });
+  const largest = Math.max.apply(null, [0].concat(all));
+  // Rounded to the cent first, so 1.2 times a whole number of cents that
+  // lands on a multiple of $5 doesn't round up a step from float noise.
+  const scaled = Math.round(largest * 1.2);
+  return Math.max(BAR_STEP_CENTS, Math.ceil(scaled / BAR_STEP_CENTS) * BAR_STEP_CENTS);
+}
+
+// How much of the bar a value fills, from 0 to 1. Negative fills nothing.
+function barShare(valueCents, scaleCents) {
+  if (!(scaleCents > 0) || !(valueCents > 0)) return 0;
+  return Math.min(1, valueCents / scaleCents);
+}
+
 const projectTimeline = {
   STAGES,
   MAX_CENTS,
@@ -266,6 +330,13 @@ const projectTimeline = {
   moveBack,
   rateNowCents,
   dollarsToCents,
+  roundHours,
+  plannedRateCents,
+  rateAfterCents,
+  paidDefaults,
+  hoursFromText,
+  barScaleCents,
+  barShare,
 };
 
 if (typeof module !== "undefined") module.exports = projectTimeline;

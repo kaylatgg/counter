@@ -506,5 +506,94 @@ test("results never share objects with the input", function () {
   assert.strictEqual(paid.timeline.requests[0].text, FREE_REQUEST.text);
 });
 
+group("Helpers for the stage screens");
+
+test("planned rate: (agreed - expenses) / planned hours, in cents", function () {
+  assert.strictEqual(projectTimeline.plannedRateCents(withTimeline(WORKING_TIMELINE)), 2500);
+  // Paid keeps the planned rate from the Working snapshot.
+  assert.strictEqual(projectTimeline.plannedRateCents(withTimeline(PAID_TIMELINE)), 2500);
+  // Requests don't change the plan.
+  assert.strictEqual(projectTimeline.plannedRateCents(withTimeline(timelineWith(WORKING_TIMELINE, { requests: [CHARGED_REQUEST] }))), 2500);
+  // $100 agreed, $20 expenses, 3 hrs: $26.666... rounds to $26.67.
+  assert.strictEqual(projectTimeline.plannedRateCents(withTimeline(timelineWith(WORKING_TIMELINE, { agreedCents: 10000, plannedHours: 3 }))), 2667);
+  // Below expenses: negative.
+  assert.strictEqual(projectTimeline.plannedRateCents(withTimeline(timelineWith(WORKING_TIMELINE, { agreedCents: 1000 }))), -100);
+});
+
+test("planned rate is null when Quoted or broken", function () {
+  assert.strictEqual(projectTimeline.plannedRateCents(LUIGI), null);
+  assert.strictEqual(projectTimeline.plannedRateCents(withTimeline(timelineWith(WORKING_TIMELINE, { stage: "done" }))), null);
+});
+
+test("rate after expenses for any money and hours", function () {
+  assert.strictEqual(projectTimeline.rateAfterCents(27000, 2000, 10), 2500);
+  // Mark as paid with $310 and 13 hrs: $22.31.
+  assert.strictEqual(projectTimeline.rateAfterCents(31000, 2000, 13), 2231);
+  assert.strictEqual(projectTimeline.rateAfterCents(0, 2000, 10), -200);
+  assert.strictEqual(projectTimeline.rateAfterCents(1500, 2000, 10), -50);
+  assert.strictEqual(projectTimeline.rateAfterCents(null, 2000, 10), null);
+  assert.strictEqual(projectTimeline.rateAfterCents(27000, 2000, 0), null);
+  assert.strictEqual(projectTimeline.rateAfterCents(27000, 2000, 1001), null);
+  assert.strictEqual(projectTimeline.rateAfterCents(27000.5, 2000, 10), null);
+});
+
+test("paid defaults: agreed plus charged requests, planned plus request hours", function () {
+  assert.deepStrictEqual(projectTimeline.paidDefaults(withTimeline(WORKING_TIMELINE)), { receivedCents: 27000, actualHours: 10 });
+  assert.deepStrictEqual(
+    projectTimeline.paidDefaults(withTimeline(timelineWith(WORKING_TIMELINE, { requests: [FREE_REQUEST, CHARGED_REQUEST] }))),
+    { receivedCents: 32000, actualHours: 13 });
+  // Hours are rounded to 2 decimals, so float sums don't leak.
+  const tenths = timelineWith(WORKING_TIMELINE, { plannedHours: 0.1, requests: [timelineWith(FREE_REQUEST, { hours: 0.2 })] });
+  assert.strictEqual(projectTimeline.paidDefaults(withTimeline(tenths)).actualHours, 0.3);
+  assert.strictEqual(projectTimeline.paidDefaults(LUIGI), null);
+  assert.strictEqual(projectTimeline.paidDefaults(withTimeline(PAID_TIMELINE)), null);
+});
+
+test("typed hours: above 0, at most 1000, up to 2 decimals", function () {
+  assert.strictEqual(projectTimeline.hoursFromText("13"), 13);
+  assert.strictEqual(projectTimeline.hoursFromText(" 13.5 "), 13.5);
+  assert.strictEqual(projectTimeline.hoursFromText("0.25"), 0.25);
+  assert.strictEqual(projectTimeline.hoursFromText(".75"), 0.75);
+  assert.strictEqual(projectTimeline.hoursFromText("1000"), 1000);
+  ["", " ", "0", "0.00", "-1", "1000.01", "1001", "1.234", "abc", "1,000", "13 hrs", "1e2", "13.", null, 13].forEach(function (text) {
+    assert.strictEqual(projectTimeline.hoursFromText(text), null, JSON.stringify(text));
+  });
+});
+
+test("round hours to 2 decimals", function () {
+  assert.strictEqual(projectTimeline.roundHours(0.1 * 3), 0.3);
+  assert.strictEqual(projectTimeline.roundHours(11.5), 11.5);
+  assert.strictEqual(projectTimeline.roundHours(6.0000000001), 6);
+});
+
+test("bar scale: largest of values and target, times 1.2, up to the next $5", function () {
+  // Planned $25 and target $25: $30.
+  assert.strictEqual(projectTimeline.barScaleCents([2500], 2500), 3000);
+  // Planned $25, real $22.31, target $25: still $30.
+  assert.strictEqual(projectTimeline.barScaleCents([2500, 2231], 2500), 3000);
+  // A value above the target sets it: $40 x 1.2 = $48, up to $50.
+  assert.strictEqual(projectTimeline.barScaleCents([4000], 2500), 5000);
+  // The target above every value sets it: $60 x 1.2 = $72, up to $75.
+  assert.strictEqual(projectTimeline.barScaleCents([1000], 6000), 7500);
+  // Exactly on a $5 step stays there: $50 x 1.2 = $60.
+  assert.strictEqual(projectTimeline.barScaleCents([5000], 2500), 6000);
+  // Cents: $17.39 x 1.2 = $20.868, up to $25.
+  assert.strictEqual(projectTimeline.barScaleCents([1739], 1000), 2500);
+  // Negative values and nulls are ignored; never below $5.
+  assert.strictEqual(projectTimeline.barScaleCents([-200, null], 0), 500);
+  assert.strictEqual(projectTimeline.barScaleCents([], 0), 500);
+  assert.strictEqual(projectTimeline.barScaleCents([-200], 2500), 3000);
+});
+
+test("bar share: 0 to 1, negative fills nothing", function () {
+  assert.strictEqual(projectTimeline.barShare(2500, 3000), 2500 / 3000);
+  assert.strictEqual(projectTimeline.barShare(3000, 3000), 1);
+  assert.strictEqual(projectTimeline.barShare(4000, 3000), 1);
+  assert.strictEqual(projectTimeline.barShare(0, 3000), 0);
+  assert.strictEqual(projectTimeline.barShare(-200, 3000), 0);
+  assert.strictEqual(projectTimeline.barShare(null, 3000), 0);
+  assert.strictEqual(projectTimeline.barShare(2500, 0), 0);
+});
+
 console.log("\n" + passed + " passed, " + failed + " failed");
 if (failed) process.exitCode = 1;

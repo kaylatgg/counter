@@ -194,6 +194,21 @@ PANEL_DIALOGS.forEach(function (id) {
   });
 });
 byId("project-rows").addEventListener("click", onRowClick);
+// Project stages (app/stages.js).
+byId("stage-forward").addEventListener("click", onStageForward);
+byId("stage-back").addEventListener("click", openBackDialog);
+byId("working-form").addEventListener("submit", submitWorking);
+byId("working-cancel").addEventListener("click", dismissDialog);
+byId("agreed-price").addEventListener("input", onAgreedInput);
+byId("paid-form").addEventListener("submit", submitPaid);
+byId("paid-cancel").addEventListener("click", dismissDialog);
+byId("paid-amount").addEventListener("input", onPaidInput);
+byId("paid-hours").addEventListener("input", onPaidInput);
+byId("back-yes").addEventListener("click", confirmBack);
+byId("back-cancel").addEventListener("click", dismissDialog);
+["agreed-price", "paid-amount"].forEach(function (id) {
+  byId(id).addEventListener("blur", groupOnLeave);
+});
 byId("backup-download").addEventListener("click", downloadBackup);
 byId("backup-restore").addEventListener("click", startRestore);
 byId("backup-restore-empty").addEventListener("click", startRestore);

@@ -450,7 +450,8 @@ function revealResults(quiet) {
     revealAnimations.forEach(function (animation) { animation.cancel(); });
     revealAnimations = [];
     openResults(quiet);
-    const to = byId("hero-panel").getBoundingClientRect();
+    // The project hero when it shows (Working and Paid), otherwise the hero.
+    const to = visibleHeroPanel().getBoundingClientRect();
     const start = Object.assign(rectFrame(from), { borderRadius: from.width / 2 + "px" });
     const end = Object.assign(rectFrame(to), { borderRadius: "28px" });
     // 3. The orb grows into the hero panel, 400ms.

@@ -51,13 +51,14 @@ Each test prints a line starting with `!!` for anything it finds, then a count. 
 | `hero-fit` | The hero number always fits its panel, including during a live change |
 | `not-saved` | "Not saved" and "Try again" when saving fails |
 | `save-error-grid` | The "Couldn't save" box sits on the layout grid lines |
-| `layout-grid` | Every block starts and ends on a column edge (12/8/4 columns) |
+| `layout-grid` | Every block starts and ends on a column edge (12/8/4 columns), including a Working project's stage bar, project hero, stats, and rate bars |
 | `close-the-gap` | Ways to close the gap for every job, offer, and rounds: when it shows, the options, the grid, no overlaps, the keyboard, and how the pick drives the price, reply, saving, and image |
 | `dashboard` | The Projects dashboard and its summary card: the example set's numbers, the table toggles (kept after a rename), the tooltip, Fix landing on Ways to close the gap (and Back, Forward, reload not jumping), when the card shows, and the layout at 375, 768, 1024, and 1440 |
 | `upgrade` | Projects saved by version 1 (`counter.projects`) show on Projects, are copied into `counter.v2`, still open, edit, and save, and `counter.projects` never changes. A version 2 save still loads and becomes version 3 on the next save |
-| `load-shift` | Screen 1 doesn't move while it loads at 360, 390, and 1440, as a file and over a slow network (scripts and fonts held back): layout shift 0.05 or less in Chromium; in WebKit, which doesn't report layout shift, the header, Save, heading, intro, and steppers stay within 2px of the first paint |
+| `load-shift` | Screen 1 doesn't move while it loads at 360, 390, and 1440, as a file and over a slow network (scripts and fonts held back): layout shift 0.05 or less in Chromium; in WebKit, which doesn't report layout shift, the header, Save, heading, intro, and steppers stay within 2px of the first paint. A Working project opened on screen 2 doesn't jump either |
 | `backup` | Download a backup of 3 projects, clear storage, restore it from the empty screen, and all 3 come back field for field; Cancel and Escape change nothing; restoring twice doubles nothing; newer, plain-list, and non-JSON files show their message; unreadable items are kept; read-only mode refuses restore but still downloads; the reminder at 4 and 5 projects and after a download; axe on the row, the empty screen, and the dialog |
 | `chart-labels` | Hours and rate chart labels for every job and offer: no overlaps, nothing cut off, the budget split line never through its label, the target label never hidden |
+| `stages` | Project stages at 390 and 1440: a saved project shows Quoted and today's hero; They said yes (an invalid price, $0, then $270), the project hero, its stats and bar; reload; editing keeps the snapshots; Mark as paid (errors, then $310 and 13 hrs: $22.31 and both bars); moving back to Working and Quoted; Fix the details; the draft never shows a stage bar; switching projects and Back; read only hides the actions; Escape and focus for each dialog; axe on each dialog and stage; and the reveal growing into the project hero with motion on |
 
 ## Good to know
 
