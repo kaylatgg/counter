@@ -339,11 +339,12 @@ function renderHeader() {
 }
 
 // The dialogs: Save as project, Start over?, Open the shared result?, the
-// link to copy by hand, Restore from backup, and the three stage dialogs
-// (They said yes, Mark as paid, Move back). One is open at a time. Focus moves
-// without scrolling, so the page underneath never jumps.
+// link to copy by hand, Restore from backup, the three stage dialogs
+// (They said yes, Mark as paid, Move back), and the two client request
+// dialogs (Client asked for more, Remove this request). One is open at a
+// time. Focus moves without scrolling, so the page underneath never jumps.
 const PANEL_DIALOGS = ["save-panel", "start-over", "share-question", "share-panel", "restore-panel",
-  "working-panel", "paid-panel", "back-panel"];
+  "working-panel", "paid-panel", "back-panel", "request-panel", "remove-request-panel"];
 let dialogOpener = null;
 
 function openDialog(id, opener) {
