@@ -25,7 +25,7 @@ const state = (p) => p.evaluate(() => {
     buttons: ["restore-yes", "restore-cancel", "restore-close"].filter(visible).join(","),
     focus: document.activeElement.id,
     note: document.getElementById("storage-note").textContent,
-    rows: document.querySelectorAll("#project-rows tr").length,
+    rows: document.querySelectorAll("#project-groups tbody tr").length,
     rowActions: visible("backup-actions"),
     emptyRestore: visible("backup-restore-empty"),
     announcer: document.getElementById("announcer").textContent,
@@ -105,8 +105,8 @@ await forEachConfig(async (ctx) => {
   if (s.open || s.rows !== 3 || s.focus !== "projects-title" || s.emptyRestore || !s.rowActions) note(ctx, "restore", JSON.stringify(s), "high");
   if (s.announcer !== "Restored 3 projects: 3 new.") note(ctx, "restore announcement", s.announcer, "medium");
   if ((await p.textContent("#projects-count")).trim() !== "3") note(ctx, "restore count", await p.textContent("#projects-count"), "high");
-  const names = await p.evaluate(() => [...document.querySelectorAll("#project-rows tr")].map((r) => r.querySelector("th").textContent.trim()));
-  if (!names.some((n) => n.startsWith('<b>Bakery</b> & "portrait"')) || await p.evaluate(() => !!document.querySelector("#project-rows b"))) note(ctx, "names as text", JSON.stringify(names), "high");
+  const names = await p.evaluate(() => [...document.querySelectorAll("#project-groups tbody tr")].map((r) => r.querySelector("th").textContent.trim()));
+  if (!names.some((n) => n.startsWith('<b>Bakery</b> & "portrait"')) || await p.evaluate(() => !!document.querySelector("#project-groups tbody b"))) note(ctx, "names as text", JSON.stringify(names), "high");
 
   // Restoring again changes nothing and doubles nothing.
   await pick(ctx, "#backup-restore", file);

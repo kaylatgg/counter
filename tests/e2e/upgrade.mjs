@@ -1,7 +1,7 @@
 // Saved projects upgrade from version 1 (counter.projects) to counter.v2 (version 3),
 // and version 2 saves (from before project timelines) still load and become version 3.
 import { forEachConfig, fresh, note, tap, closeAll, report, BASE, seedProjects, savedProjects } from "./lib.mjs";
-const rows = (p) => p.evaluate(() => [...document.querySelectorAll("#project-rows tr")].map(r => r.innerText.replace(/\s+/g, " ").trim()));
+const rows = (p) => p.evaluate(() => [...document.querySelectorAll("#project-groups tbody tr")].map(r => r.innerText.replace(/\s+/g, " ").trim()));
 await forEachConfig(async (ctx) => {
   const p = ctx.page;
   await fresh(ctx);
@@ -27,7 +27,7 @@ await forEachConfig(async (ctx) => {
   if (!v2 || v2.version !== 3 || JSON.stringify(v2.projects) !== JSON.stringify(list)) note(ctx, "upgrade counter.v2", JSON.stringify(v2).slice(0, 160), "high");
   if ((await p.evaluate(() => localStorage.getItem("counter.projects"))) !== v1Before) note(ctx, "upgrade counter.projects", "changed on load", "high");
   // An upgraded project still opens, edits, and saves, into counter.v2 only.
-  await tap(ctx, '#project-rows tr:last-child [data-action="open"]'); await p.waitForTimeout(400);
+  await tap(ctx, '#project-groups tbody tr:last-child [data-action="open"]'); await p.waitForTimeout(400);
   if ((await p.textContent("#crumb-name")).trim() !== "Luigi's menu") note(ctx, "upgrade open", await p.textContent("#crumb-name"), "high");
   await tap(ctx, '#result button[data-target=rounds][data-step="1"]'); await p.waitForTimeout(500);
   const saved = (await savedProjects(p)).find((x) => x.id === "v1-a");
@@ -53,7 +53,7 @@ await forEachConfig(async (ctx) => {
   // Loading alone doesn't rewrite it.
   const atLoad = await p.evaluate(() => JSON.parse(localStorage.getItem("counter.v2")).version);
   if (atLoad !== 2) note(ctx, "version 2 load", "version became " + atLoad + " before any save", "high");
-  await tap(ctx, '#project-rows tr:last-child [data-action="open"]'); await p.waitForTimeout(400);
+  await tap(ctx, '#project-groups tbody tr:last-child [data-action="open"]'); await p.waitForTimeout(400);
   await tap(ctx, '#result button[data-target=rounds][data-step="1"]'); await p.waitForTimeout(500);
   const v3 = await p.evaluate(() => JSON.parse(localStorage.getItem("counter.v2")));
   const a = v3.projects.find((x) => x.id === "v2-a");

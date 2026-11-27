@@ -13,9 +13,9 @@ await forEachConfig(async (ctx) => {
   await stepTo("check", () => tap(ctx, "#check-offer"));
   await stepTo("edit details", () => tap(ctx, "#edit-details"));
   await stepTo("projects", () => tap(ctx, "#projects-link"));
-  await stepTo("open project", () => tap(ctx, "#project-rows .project-open"));
+  await stepTo("open project", () => tap(ctx, "#project-groups .project-open"));
   await stepTo("projects again", () => tap(ctx, "#projects-link"));
-  await stepTo("edit project", () => tap(ctx, '#project-rows [data-action="edit"]'));
+  await stepTo("edit project", () => tap(ctx, '#project-groups [data-action="edit"]'));
   const expectScreens = { start: "on-inputs", check: "on-results", "edit details": "on-inputs", projects: "on-projects", "open project": "on-results", "projects again": "on-projects", "edit project": "on-inputs" };
   for (const [label, w] of trail) if (w.screen !== expectScreens[label]) note(ctx, "forward " + label, JSON.stringify(w), "high");
   // "Edit details" goes back in history (it came from screen 1), so the
