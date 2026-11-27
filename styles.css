@@ -1427,15 +1427,118 @@ legend {
   margin-top: 28px;
 }
 
+/* Projects grouped by stage (decision 58). "All projects" with the stage
+   pills on its right, an intro line, then one table each for Working,
+   Quoted, and Paid. The tables keep their table roles but lay out with
+   grid: every table, and its header row, shares one set of columns, so the
+   bars line up from table to table. The row actions sit on their own line
+   under each row, at every width. */
+.all-projects-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px 24px;
+  margin-top: 72px;
+}
+
+.all-projects-head .all-projects-title {
+  margin-top: 0;
+}
+
+/* A pale pill track; the pressed stage is ink. */
+.stage-pills {
+  display: flex;
+  padding: 4px;
+  border-radius: 999px;
+  background: var(--paper);
+}
+
+.stage-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 999px;
+  background: none;
+  font-size: 14px;
+  color: var(--ink);
+  white-space: nowrap;
+  transition: background-color 160ms var(--ease), color 160ms var(--ease);
+}
+
+.stage-pill-count {
+  font-size: 12px;
+  color: var(--ink-2);
+}
+
+.stage-pill[aria-pressed="true"] {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.stage-pill[aria-pressed="true"] .stage-pill-count {
+  color: var(--paper);
+}
+
+.projects-intro {
+  max-width: 70ch;
+  margin-top: 12px;
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+
+.project-group {
+  margin-top: 40px;
+}
+
+.group-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  column-gap: 12px;
+  font-size: 22px;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+}
+
+.group-note {
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: 0;
+  color: var(--ink-2);
+}
+
+/* Name 26%, job 12%, number 10%, rate 14%, bar 24%, date 14%. */
 .project-table {
+  display: grid;
+  grid-template-columns: minmax(0, 26fr) minmax(0, 12fr) minmax(0, 10fr) minmax(0, 14fr) minmax(0, 24fr) minmax(0, 14fr);
+  column-gap: 16px;
   width: 100%;
-  margin-top: 56px;
-  border-collapse: collapse;
+  margin-top: 16px;
+}
+
+.project-table thead,
+.project-table tbody,
+.project-table tr {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
+}
+
+.project-table thead tr {
+  align-items: end;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--ink);
 }
 
 .project-table thead th {
-  padding: 0 16px 12px 0;
-  border-bottom: 1px solid var(--ink);
+  padding: 0;
   font-family: var(--mono);
   font-size: 11px;
   font-weight: 400;
@@ -1443,16 +1546,31 @@ legend {
   text-align: left;
 }
 
+/* The hidden "Actions" header stays for screen readers but takes no column. */
+.project-table thead th:last-child {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}
+
+.project-table tbody tr {
+  align-items: center;
+  padding-top: 18px;
+  border-bottom: 1px solid var(--line);
+}
+
 .project-table tbody th,
 .project-table td {
-  padding: 18px 16px 18px 0;
-  border-bottom: 1px solid var(--line);
+  min-width: 0;
+  padding: 0;
+  border: 0;
   text-align: left;
-  vertical-align: middle;
 }
 
 .project-name {
-  width: 34%;
   font-weight: 400;
 }
 
@@ -1486,35 +1604,131 @@ legend {
   outline-offset: 3px;
 }
 
-.project-job,
-.project-edited {
+.project-job {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--ink-2);
+}
+
+.list-number {
+  font-size: 22px;
+  font-weight: 300;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+.list-rate {
+  font-size: 16px;
+}
+
+/* "Target $30" under the rate when a table's targets differ. */
+.list-target {
+  display: block;
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* "Agreed", "Pays now": below 1024px only, where the headers are hidden. */
+.list-label {
+  display: none;
+  margin-bottom: 2px;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.project-table thead th:nth-child(6),
+.project-table .project-date {
+  text-align: right;
+}
+
+.project-date {
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--muted);
+}
+
+/* The job's copy in the date cell, for phones ("Menu · Nov 21"). */
+.list-job {
+  display: none;
+}
+
+.said-yes {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font-family: var(--font);
+  font-size: 14px;
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* The bar: a 10px track from $0, the fill to the rate (coral for Working,
+   charcoal for Quoted and Paid), and one 2px target mark that sticks out
+   5px above and below. No transitions. */
+.list-bar-track {
+  position: relative;
+  height: 10px;
+  border-radius: 999px;
+  background: var(--rule-warm);
+}
+
+.list-bar-fill {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  border-radius: 999px;
+  background: var(--charcoal);
+}
+
+.list-bar-working .list-bar-fill {
+  background: var(--red);
+}
+
+.list-bar-mark {
+  position: absolute;
+  top: -5px;
+  bottom: -5px;
+  width: 2px;
+  margin-left: -1px;
+  border-radius: 2px;
+  background: var(--ink);
+}
+
+/* "Target $25": centered over the mark, kept inside the column near either
+   end. --share is the mark's place (0 to 1) and --chars the label's length;
+   the label is mono, so it is exactly that many ch wide. */
+.list-bar-head-label,
+.list-bar-label {
+  display: block;
+  width: calc(var(--chars, 0) * 1ch);
+  margin-left: clamp(0px, calc(var(--share, 0) * 100% - var(--chars, 0) * 0.5ch), calc(100% - var(--chars, 0) * 1ch));
   font-family: var(--mono);
   font-size: 12px;
   color: var(--ink-2);
   white-space: nowrap;
 }
 
-.project-edited {
-  color: var(--muted);
+.list-bar-head-label:empty {
+  display: none;
 }
 
-.project-estimate {
-  font-size: 22px;
-  font-weight: 300;
-  letter-spacing: -0.02em;
-  white-space: nowrap;
-}
-
-.project-offer {
-  font-size: 15px;
-  color: var(--ink-2);
-  white-space: nowrap;
+/* The label above the first bar is for widths without the header. */
+.list-bar-label {
+  display: none;
+  margin-bottom: 8px;
 }
 
 .project-table td.project-actions {
-  padding-right: 0;
-  text-align: right;
-  white-space: nowrap;
+  grid-column: 1 / -1;
+  padding: 4px 0 8px;
+  text-align: left;
 }
 
 .row-action {
@@ -1526,8 +1740,8 @@ legend {
   color: var(--ink-2);
 }
 
-.row-action:last-child {
-  padding-right: 0;
+.row-action:first-child {
+  padding-left: 0;
 }
 
 .delete-question {
@@ -1543,88 +1757,73 @@ legend {
 /* Below 1024px, names wrap only between words; a single word too long for
    the column is the one thing that breaks. At 1024px and up the desktop
    table keeps "anywhere", since there break-word would let one long word
-   push the table wider than the page. */
+   push the table wider than the page. The column headers are hidden from
+   sight but kept for screen readers, and small labels name the number and
+   the rate instead. */
 @media (max-width: 1023px) {
   .project-open {
     overflow-wrap: break-word;
   }
-}
 
-/* Tablets: the name, job, estimate, offer, and edited on the first line,
-   the row actions under the name on the second, as on phones. The header
-   row and every project row share one set of columns (subgrid), so each
-   header sits over its values. */
-@media (min-width: 760px) and (max-width: 1023px) {
-  .project-table {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto auto auto auto;
-  }
-
-  .project-table thead,
-  .project-table tbody,
-  .project-table tr {
-    display: grid;
-    grid-column: 1 / -1;
-    grid-template-columns: subgrid;
-  }
-
-  .project-table tbody tr {
-    align-items: center;
-    padding-top: 18px;
-    border-bottom: 1px solid var(--line);
-  }
-
-  .project-table thead tr {
-    align-items: end;
-    border-bottom: 1px solid var(--ink);
-  }
-
-  .project-table thead th,
-  .project-table tbody th,
-  .project-table td {
-    border: 0;
-  }
-
-  .project-table tbody th,
-  .project-table td {
-    padding-top: 0;
-    padding-bottom: 0;
-  }
-
-  /* "Offer pays / after expenses" on two lines: 14 mono characters, the
-     length of "after expenses", so the column is no wider than it needs. */
-  .project-table thead th:nth-child(4) {
-    max-width: calc(14ch + 16px);
-  }
-
-  .project-table thead th:nth-child(5),
-  .project-table td.project-edited {
-    padding-right: 0;
-  }
-
-  /* The hidden "Actions" header stays for screen readers but takes no column. */
-  .project-table thead th:last-child {
+  .project-table thead {
     position: absolute;
     width: 1px;
     height: 1px;
-    padding: 0;
+    margin: -1px;
     overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
   }
 
-  .project-name {
-    width: auto;
-    min-width: 0;
+  .list-label,
+  .list-bar-label {
+    display: block;
+  }
+}
+
+/* Tablets: three lines per row. The name (the job under it), number, rate,
+   and date; the bar across the row; then the actions. */
+@media (min-width: 760px) and (max-width: 1023px) {
+  .project-table {
+    grid-template-columns: minmax(0, 1fr) auto auto auto;
+    column-gap: 24px;
+  }
+
+  .project-table tbody .project-name {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .project-table .project-job {
+    grid-column: 1;
+    grid-row: 2;
+  }
+
+  .project-table .project-number {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+  }
+
+  .project-table .project-rate {
+    grid-column: 3;
+    grid-row: 1 / span 2;
+  }
+
+  .project-table .project-date {
+    grid-column: 4;
+    grid-row: 1 / span 2;
+    max-width: 22ch;
+  }
+
+  .project-table .project-bar {
+    grid-column: 1 / -1;
+    grid-row: 3;
+    padding-top: 14px;
   }
 
   .project-table td.project-actions {
-    grid-column: 1 / -1;
-    padding-bottom: 8px;
-    text-align: left;
-    white-space: normal;
-  }
-
-  .row-action:first-child {
-    padding-left: 0;
+    grid-row: 4;
+    padding-top: 8px;
   }
 }
 
@@ -2385,9 +2584,6 @@ legend {
   line-height: 1.2;
 }
 
-.all-projects-title + .project-table {
-  margin-top: 24px;
-}
 
 /* The summary card on a saved result. */
 .pricing-card {
@@ -4680,38 +4876,46 @@ textarea {
     min-height: 44px;
   }
 
-  .project-table,
+  /* Projects grouped by stage: the pills under the heading, and each row
+     as lines: the name; the job and date; the number and rate; the bar;
+     the actions. */
+  .all-projects-head {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .stage-pills {
+    align-self: flex-start;
+    max-width: 100%;
+  }
+
+  .stage-pill {
+    gap: 4px;
+    padding: 0 9px;
+  }
+
+  .project-group {
+    margin-top: 32px;
+  }
+
+  .project-table {
+    display: block;
+    margin-top: 8px;
+  }
+
   .project-table tbody {
     display: block;
   }
 
-  .project-table {
-    margin-top: 32px;
-  }
-
-  .project-table thead {
-    display: none;
-  }
-
-  .project-table tr {
-    display: grid;
+  .project-table tbody tr {
     grid-template-columns: auto minmax(0, 1fr);
-    align-items: baseline;
-    gap: 2px 12px;
-    min-height: 56px;
-    padding: 10px 0;
-    border-bottom: 1px solid var(--line);
+    align-items: end;
+    column-gap: 24px;
+    padding-top: 12px;
   }
 
-  .project-table tbody th,
-  .project-table td {
-    padding: 0;
-    border: 0;
-  }
-
-  .project-name {
+  .project-table tbody .project-name {
     grid-column: 1 / -1;
-    width: auto;
   }
 
   .project-open,
@@ -4720,19 +4924,59 @@ textarea {
     font-size: 22px;
   }
 
-  .project-estimate,
-  .project-offer {
-    display: none;
+  /* The job cell stays for screen readers; its copy shows in the date. */
+  .project-table .project-job {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  .project-table .project-date {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--ink-2);
+    text-align: left;
+  }
+
+  .list-job {
+    display: inline;
+  }
+
+  .project-table .project-number {
+    grid-column: 1;
+    grid-row: 3;
+  }
+
+  .project-table .project-rate {
+    grid-column: 2;
+    grid-row: 3;
+  }
+
+
+  .project-table .project-number,
+  .project-table .project-rate {
+    margin-top: 8px;
+  }
+
+
+  .project-table .project-bar {
+    grid-column: 1 / -1;
+    grid-row: 4;
+    padding-top: 14px;
   }
 
   .project-table td.project-actions {
-    grid-column: 1 / -1;
-    text-align: left;
-    white-space: normal;
+    grid-row: 5;
   }
 
-  .row-action:first-child {
-    padding-left: 0;
+  .project-table .project-bar:empty {
+    padding-top: 0;
   }
 }
 
