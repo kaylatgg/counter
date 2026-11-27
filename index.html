@@ -59,6 +59,7 @@
   <script src="app/screens.js" defer></script>
   <script src="app/projects-view.js" defer></script>
   <script src="app/stages.js" defer></script>
+  <script src="app/requests.js" defer></script>
   <script src="app/motion.js" defer></script>
   <script src="app/share-and-image.js" defer></script>
   <script src="app/start.js" defer></script>
@@ -607,6 +608,7 @@
           </div>
           <div class="stage-action">
             <button type="button" class="round-button stage-forward" id="stage-forward" hidden>They said yes</button>
+            <button type="button" class="round-button" id="stage-request" hidden>Client asked for more</button>
             <p class="stage-paid-on" id="stage-paid-on" hidden>Paid Nov 23</p>
           </div>
           <button type="button" class="link-button stage-back" id="stage-back" hidden>Move back to Quoted</button>
@@ -658,6 +660,7 @@
         <section class="project-rates" aria-labelledby="project-rates-title">
           <h2 class="project-rates-title" id="project-rates-title">Your rate, request by request</h2>
           <div class="rbar-bars" id="project-rate-bars"></div>
+          <p class="error stage-refusal request-row-refusal" id="request-row-refusal" role="alert" hidden></p>
           <p class="project-rates-note" id="project-rates-note">If the client asks for more after yes, each request will show here.</p>
         </section>
 
@@ -970,6 +973,68 @@
       <div class="panel-actions start-over-actions">
         <button type="button" class="action-button" id="back-yes">Move back</button>
         <button type="button" class="action-button outline" id="back-cancel">Cancel</button>
+      </div>
+    </dialog>
+
+    <!-- "Client asked for more" (app/requests.js): step 1, the request, what it
+         does to the rate, and Do it free or Charge; step 2 (charge only), the
+         message to send. One dialog, two steps. -->
+    <dialog class="panel-dialog stage-dialog request-dialog" id="request-panel" aria-labelledby="request-title">
+      <form class="save-form request-step" id="request-form" novalidate>
+        <h2 class="stage-dialog-title" id="request-title">The client asked for more</h2>
+        <div class="field request-text-field">
+          <label for="request-text">What did they ask for?</label>
+          <div class="unit-input">
+            <input id="request-text" type="text" maxlength="120" autocomplete="off">
+          </div>
+        </div>
+        <div class="request-hours" role="group" aria-labelledby="request-hours-label">
+          <p class="field-label" id="request-hours-label">How long will it take?</p>
+          <div class="stepper request-stepper">
+            <button type="button" id="request-less" aria-label="Half an hour less">−</button>
+            <p class="request-hours-value" id="request-hours" aria-live="polite">1 hr</p>
+            <button type="button" class="request-plus" id="request-more" aria-label="Half an hour more">+</button>
+          </div>
+        </div>
+        <div class="request-rates">
+          <h3 class="request-rates-title">This job's hourly rate, after expenses</h3>
+          <div class="rbar-bars request-bars" id="request-bars"></div>
+          <p class="error" id="request-choice-error" hidden><svg class="icon" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><circle cx="8" cy="8" r="7" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8 4.5v4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><circle cx="8" cy="11.4" r="0.95" fill="currentColor"/></svg><span class="error-text">Choose Do it free or Charge.</span></p>
+          <p class="request-rule" id="request-rule">$40 is 1.5 hrs at your $25 target, rounded up to the next $5.</p>
+        </div>
+        <p class="error stage-refusal" id="request-refusal" role="alert" hidden></p>
+        <div class="panel-actions">
+          <button type="submit" class="action-button" id="request-add">Add request</button>
+          <button type="button" class="action-button outline" id="request-cancel">Cancel</button>
+        </div>
+      </form>
+
+      <div class="request-step request-message" id="request-message" hidden>
+        <h2 class="stage-dialog-title" id="request-message-title" tabindex="-1">Send this before you start the extra work.</h2>
+        <dl class="request-breakdown" id="request-breakdown"></dl>
+        <div class="field">
+          <label for="request-reply">Your message to the client</label>
+          <p class="hint" id="request-reply-hint">Edit it however you like. If they say no, you can switch this request to free later.</p>
+          <textarea id="request-reply" rows="5" autocomplete="off" aria-describedby="request-reply-hint"></textarea>
+        </div>
+        <div class="reply-actions">
+          <button type="button" class="action-button" id="request-copy">Copy message</button>
+          <button type="button" class="action-button outline" id="request-done">Done</button>
+          <p class="copy-status" id="request-copy-status" role="status"></p>
+        </div>
+      </div>
+    </dialog>
+
+    <!-- Removing a client request, after a confirm. -->
+    <dialog class="panel-dialog" id="remove-request-panel" aria-labelledby="remove-request-question" aria-describedby="remove-request-text">
+      <div class="start-over-copy">
+        <p class="start-over-question" id="remove-request-question">Remove this request?</p>
+        <p class="start-over-text" id="remove-request-text">Darker background on both pages and its 1 hr come off this project.</p>
+      </div>
+      <p class="error stage-refusal" id="remove-request-refusal" role="alert" hidden></p>
+      <div class="panel-actions start-over-actions">
+        <button type="button" class="action-button" id="remove-request-yes">Remove</button>
+        <button type="button" class="action-button outline" id="remove-request-cancel">Cancel</button>
       </div>
     </dialog>
 

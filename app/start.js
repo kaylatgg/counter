@@ -190,6 +190,7 @@ PANEL_DIALOGS.forEach(function (id) {
   byId(id).addEventListener("cancel", function (event) {
     event.preventDefault();
     if (id === "share-question") keepMine();
+    else if (id === "request-panel") closeRequestDialog();
     else dismissDialog();
   });
 });
@@ -207,6 +208,20 @@ byId("paid-amount").addEventListener("input", onPaidInput);
 byId("paid-hours").addEventListener("input", onPaidInput);
 byId("back-yes").addEventListener("click", confirmBack);
 byId("back-cancel").addEventListener("click", dismissDialog);
+// Client requests (app/requests.js).
+byId("stage-request").addEventListener("click", openRequestDialog);
+byId("request-form").addEventListener("submit", submitRequest);
+byId("request-cancel").addEventListener("click", dismissDialog);
+byId("request-text").addEventListener("input", onRequestTextInput);
+byId("request-less").addEventListener("click", function () { stepRequestHours(-1); });
+byId("request-more").addEventListener("click", function () { stepRequestHours(1); });
+byId("request-bars").addEventListener("change", onRequestPick);
+byId("request-copy").addEventListener("click", copyRequestMessage);
+byId("request-done").addEventListener("click", finishRequestMessage);
+byId("request-panel").addEventListener("close", onRequestPanelClose);
+byId("project-rate-bars").addEventListener("click", onRequestRowAction);
+byId("remove-request-yes").addEventListener("click", confirmRemoveRequest);
+byId("remove-request-cancel").addEventListener("click", dismissDialog);
 ["agreed-price", "paid-amount"].forEach(function (id) {
   byId(id).addEventListener("blur", groupOnLeave);
 });

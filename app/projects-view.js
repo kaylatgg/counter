@@ -102,6 +102,8 @@ function listRow(project, now) {
       ? dashDate(timeline.paidAt, now) + " · " + calc.formatNumber(timeline.actualHours) + " of " + calc.formatHours(timeline.plannedHours)
       : dashDate(timeline.workingAt, now),
     canSayYes: false,
+    // Working: the hours of client requests done free ("1 hr free").
+    freeHours: paid ? 0 : sumHours(timeline.requests, "free"),
   };
 }
 
@@ -254,6 +256,7 @@ function projectRow(item, scale, tableTarget, firstTarget) {
   if (item.rate) {
     rate.append(make("span", "list-label", RATE_LABELS[item.stage]), make("span", "list-rate", item.rate));
     rate.firstChild.setAttribute("aria-hidden", "true");
+    if (item.freeHours > 0) rate.append(" ", make("span", "list-free", calc.formatHours(item.freeHours) + " free"));
   }
   if (item.hasBar && tableTarget === null) rate.appendChild(make("span", "list-target", "Target " + centsPrice(item.targetCents)));
 

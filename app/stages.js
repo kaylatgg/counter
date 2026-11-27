@@ -18,7 +18,7 @@ const STAGE_REFUSALS = {
   "bad-received": "Enter the amount you received, like 310.",
   "bad-actual-hours": "Enter the hours you worked, like 13.",
   "bad-date": "This device's date is earlier than the project's last stage. Check the date and try again.",
-  "has-requests": "This project has client requests, so it can't move back to Quoted.",
+  "has-requests": "This project has client requests, so it can't move back to Quoted. Remove them first.",
 };
 
 const AGREED_ERROR = "Enter the price they agreed to, like 270.";
@@ -111,6 +111,10 @@ function renderStageBar(timeline) {
     forward.textContent = "Mark as paid";
   }
   show(forward, stage !== "paid" && !projectsReadOnly);
+  // Working: "Mark as paid" steps back to an outline; "Client asked for
+  // more" (app/requests.js) is the filled action.
+  forward.classList.toggle("outline", stage === "working");
+  show(byId("stage-request"), stage === "working" && !projectsReadOnly);
 
   show(byId("stage-paid-on"), stage === "paid");
   if (stage === "paid") byId("stage-paid-on").textContent = "Paid " + stageDate(timeline.paidAt);
@@ -133,21 +137,36 @@ function renderProjectHero(project, timeline) {
   byId("project-hero-spoken").textContent = centsMoney(rate) + " per hour";
   byId("project-hero-job").textContent = (jobInfo ? jobInfo.name + " · " : "") +
     (paid ? "paid " + stageDate(timeline.paidAt) : "working since " + stageDate(timeline.workingAt));
-  const hours = paid ? timeline.actualHours : timeline.plannedHours;
-  const money = paid ? timeline.receivedCents : timeline.agreedCents;
+  // Working counts the client requests so far: the agreed price plus every
+  // charge, over the planned hours plus every request's hours.
+  const soFar = paid ? null : projectTimeline.paidDefaults(project);
+  const hours = paid ? timeline.actualHours : soFar.actualHours;
+  const money = paid ? timeline.receivedCents : soFar.receivedCents;
   byId("project-hero-sentence").textContent = calc.formatHours(hours) + " for " + centsPrice(money) +
     ". You planned " + centsMoney(planned) + " an hour.";
 
-  renderProjectStats([
-    { label: paid ? "Received" : "Agreed price", value: centsPrice(money) },
-    { label: paid ? "Real hours" : "Hours planned", value: calc.formatNumber(hours), unit: isOne(hours) ? "hr" : "hrs" },
+  const hasRequests = timeline.requests.length > 0;
+  const hoursUnit = isOne(hours) ? "hr" : "hrs";
+  renderProjectStats(paid ? [
+    { label: "Received", value: centsPrice(money) },
+    { label: "Real hours", value: calc.formatNumber(hours), unit: hoursUnit },
+    { label: "Planned rate", value: centsMoney(planned), unit: "/hr" },
+  ] : [
+    { label: "Agreed price", value: centsPrice(money), unit: requestChargesUnit(timeline) },
+    { label: hasRequests ? "Hours so far" : "Hours planned", value: calc.formatNumber(hours),
+      unit: hoursUnit + requestHoursUnit(timeline) },
     { label: "Planned rate", value: centsMoney(planned), unit: "/hr" },
   ]);
 
-  const rows = [{ label: "Planned", note: stageDate(timeline.workingAt), cents: planned, planned: true }];
+  const rows = [{
+    label: "Planned",
+    note: stageDate(timeline.workingAt) + " · agreed " + centsPrice(timeline.agreedCents) +
+      " for " + calc.formatHours(timeline.plannedHours),
+    cents: planned, fill: "planned",
+  }].concat(requestRows(project, timeline));
   if (paid) rows.push({ label: "Real", note: stageDate(timeline.paidAt), cents: rate });
   renderRateBars(byId("project-rate-bars"), rows, timeline.targetCents);
-  show(byId("project-rates-note"), !paid);
+  show(byId("project-rates-note"), !paid && !hasRequests);
   fitProjectNumber();
 }
 
@@ -175,36 +194,84 @@ function renderPricingState() {
   state.textContent = source ? source.textContent : "";
 }
 
-// The rate bars (one component, in the project hero's section and in the
-// Mark as paid dialog). rows: { label, note, cents, planned }. Every bar in
-// one chart shares one scale, from $0. One target notch per bar, labeled once
-// above the first. The bars are hidden from screen readers; the names and
-// values next to them are text, read in order.
-function renderRateBars(container, rows, targetCents) {
+// The rate bars (one component: the project's section, the Mark as paid
+// dialog, and the Client asked for more dialog). Every bar in one chart shares
+// one scale, from $0. One target notch per bar, labeled once above the first.
+// The bars are hidden from screen readers; the names and values next to them
+// are text, read in order. rows:
+//   label, note, cents
+//   fill: "planned" (--ink-3), "now" (coral), "off" (--choice-off), or none (--charcoal)
+//   deltaCents: the change from the row before, shown under the value
+//   actions: [{ text, label, action, requestId }], small buttons after the note
+//   choice: { name, value, checked, describedBy }, the whole row a radio's label
+// Choice rows go in one fieldset, after the rows before them, with
+// options.legend as its (visually hidden) legend.
+function renderRateBars(container, rows, targetCents, options) {
   const scale = projectTimeline.barScaleCents(rows.map(function (row) { return row.cents; }), targetCents);
   const notchAt = projectTimeline.barShare(targetCents, scale);
   container.textContent = "";
+  let choices = null;
   rows.forEach(function (row, i) {
-    const element = make("div", "rbar-row");
-    const name = make("div", "rbar-name");
-    name.appendChild(make("span", "rbar-label", row.label));
-    if (row.note) name.appendChild(make("span", "rbar-date", row.note));
+    // A label holds only phrasing content, so a choice row is all spans.
+    const block = row.choice ? "span" : "div";
+    const element = make(row.choice ? "label" : "div", "rbar-row" + (row.choice ? " rbar-choice" : ""));
+    const name = make(block, "rbar-name");
+    const label = make("span", "rbar-label");
+    if (row.choice) {
+      const input = document.createElement("input");
+      input.type = "radio";
+      input.name = row.choice.name;
+      input.value = row.choice.value;
+      input.checked = Boolean(row.choice.checked);
+      if (row.choice.describedBy) input.setAttribute("aria-describedby", row.choice.describedBy);
+      label.appendChild(input);
+    }
+    label.append(row.label);
+    name.appendChild(label);
+    if (row.note || row.actions) {
+      const note = make("span", "rbar-date" + (row.actions ? " rbar-note" : ""));
+      if (row.note) note.appendChild(make("span", null, row.note));
+      (row.actions || []).forEach(function (action) {
+        const button = make("button", "rbar-action", action.text);
+        button.type = "button";
+        button.dataset.action = action.action;
+        button.dataset.requestId = action.requestId;
+        button.setAttribute("aria-label", action.label);
+        note.appendChild(button);
+      });
+      name.appendChild(note);
+    }
 
-    const track = make("div", "rbar-track");
+    const track = make(block, "rbar-track");
     track.setAttribute("aria-hidden", "true");
-    const fill = make("div", "rbar-fill" + (row.planned ? " planned" : ""));
+    const fill = make(block, "rbar-fill" + (row.fill ? " " + row.fill : ""));
     fill.style.width = projectTimeline.barShare(row.cents, scale) * 100 + "%";
-    const notch = make("div", "rbar-notch" + (notchAt < 0.12 ? " at-start" : ""));
+    const notch = make(block, "rbar-notch" + (notchAt < 0.12 ? " at-start" : ""));
     notch.style.left = notchAt * 100 + "%";
     if (i === 0) notch.appendChild(make("span", "rbar-target", "Target " + centsPrice(targetCents)));
     track.append(fill, notch);
 
-    const value = make("p", "rbar-value", row.cents === null ? "" : centsMoney(row.cents));
+    const value = make(row.choice ? "span" : "p", "rbar-value", row.cents === null ? "" : centsMoney(row.cents));
     if (row.cents !== null) value.appendChild(make("span", "rbar-unit", "/hr"));
+    if (typeof row.deltaCents === "number") value.appendChild(make("span", "rbar-delta", signedCents(row.deltaCents)));
     element.append(name, track, value);
-    container.appendChild(element);
+
+    if (row.choice && !choices) {
+      choices = make("fieldset", "request-choices");
+      choices.appendChild(make("legend", "visually-hidden", (options && options.legend) || ""));
+      container.appendChild(choices);
+    }
+    (row.choice ? choices : container).appendChild(element);
   });
   container.appendChild(make("p", "visually-hidden", "Your target: " + centsMoney(targetCents) + " an hour."));
+}
+
+// A change in the rate: "+$0.47", "−$2.27" (the minus sign, like the
+// dashboard), or "$0.00" when nothing moved.
+function signedCents(cents) {
+  if (cents > 0) return "+" + centsMoney(cents);
+  if (cents < 0) return MINUS + centsMoney(-cents);
+  return centsMoney(0);
 }
 
 // The project hero's number stays on one line and shrinks to fit, like the hero's.
@@ -358,7 +425,7 @@ function renderPaidResult() {
   number.textContent = rate === null ? "" : centsMoney(rate);
   if (rate !== null) number.appendChild(make("span", "paid-result-unit", "/hr"));
   show(number, rate !== null);
-  const rows = [{ label: "Planned", cents: projectTimeline.plannedRateCents(project), planned: true }];
+  const rows = [{ label: "Planned", cents: projectTimeline.plannedRateCents(project), fill: "planned" }];
   if (rate !== null) rows.push({ label: "Real", cents: rate });
   renderRateBars(byId("paid-rate-bars"), rows, timeline.targetCents);
 }
