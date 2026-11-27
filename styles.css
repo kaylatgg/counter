@@ -138,6 +138,7 @@
   --beyond-line: #89847B;  /* their outline. 3.1:1 on --bg, 3.0:1 on --beyond */
   --short: #F3E3D3;        /* area below target on the rate curve */
   --select: #FBEBDF;       /* halo behind the current point on the rate curve */
+  --choice-off: #B9B4AB;   /* a client request choice that isn't picked, decorative */
 }
 
 /* Tablet: 760 to 1023px. */
@@ -5568,6 +5569,297 @@ textarea {
 
   .pricing-heading {
     margin-top: 56px;
+  }
+}
+
+/* Client requests (app/requests.js, docs/DESIGN.md "Client requests"). */
+
+/* Working: "Mark as paid" (outline) and "Client asked for more" (filled). */
+.stage-action {
+  gap: 8px;
+}
+
+/* The rate bars' extras: the change under a value, the coral "now" fill, the
+   unpicked choice fill, and the small actions in a request row's note. */
+.rbar-fill.now {
+  background: var(--red);
+}
+
+.rbar-fill.off {
+  background: var(--choice-off);
+}
+
+.rbar-delta {
+  display: block;
+  margin-top: 2px;
+  font-size: 13px;
+  font-weight: 400;
+  letter-spacing: 0;
+  line-height: 1.3;
+  text-align: right;
+  color: var(--ink-2);
+}
+
+.rbar-note {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  column-gap: 12px;
+}
+
+.rbar-action {
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+@media (hover: hover) {
+  .rbar-action:hover {
+    text-decoration-thickness: 2px;
+  }
+}
+
+.request-row-refusal {
+  margin-top: 16px;
+}
+
+/* The dialog: up to 800px wide on tablet and desktop, a bottom sheet on phones. */
+@media (min-width: 760px) {
+  .request-dialog {
+    width: min(800px, calc(100vw - 48px));
+  }
+}
+
+.request-dialog[open] {
+  overflow-y: auto;
+}
+
+.request-step {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.request-text-field .unit-input input {
+  font-size: 20px;
+}
+
+.request-hours .stepper {
+  margin-top: 8px;
+}
+
+.request-hours-value {
+  min-width: 4.5ch;
+  font-size: 34px;
+  font-weight: 300;
+  line-height: 1.2;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.request-stepper .request-plus {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.request-stepper button:disabled {
+  border-color: var(--line);
+  background: transparent;
+  color: var(--muted);
+  cursor: default;
+}
+
+@media (hover: hover) {
+  .request-stepper button:not(.request-plus):not(:disabled):hover {
+    background: rgba(22, 22, 22, 0.06);
+  }
+
+  .request-stepper .request-plus:not(:disabled):hover {
+    background: var(--ink-2);
+  }
+}
+
+.request-rates-title {
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--ink-2);
+}
+
+/* Three rows on one scale: Now, then the two choices. Each row is padded the
+   same, so the bars line up; a choice is the whole row, as its label. */
+.request-bars {
+  margin-top: 12px;
+  gap: 8px;
+}
+
+.request-choices {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.request-bars .rbar-row {
+  grid-template-columns: minmax(0, 200px) minmax(0, 1fr) auto;
+  column-gap: 16px;
+  padding: 12px 16px;
+  border-radius: 16px;
+}
+
+.request-bars .rbar-value {
+  min-width: 5.5ch;
+  font-size: 22px;
+  text-align: right;
+}
+
+.rbar-choice {
+  box-shadow: inset 0 0 0 1px var(--line);
+  cursor: pointer;
+}
+
+.rbar-choice:has(input:checked) {
+  background: var(--paper);
+  box-shadow: inset 0 0 0 2px var(--ink);
+}
+
+.rbar-choice:has(input:checked) .rbar-fill {
+  background: var(--charcoal);
+}
+
+.rbar-choice:has(input:focus-visible) {
+  outline: 2px solid var(--ink);
+  outline-offset: 3px;
+}
+
+.rbar-choice .rbar-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.rbar-choice input {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  accent-color: var(--ink);
+}
+
+.rbar-choice input:focus-visible {
+  outline: none;
+}
+
+.rbar-choice .rbar-date {
+  padding-left: 30px;
+}
+
+.request-rule {
+  margin-top: 12px;
+  font-size: 13px;
+  color: var(--ink-2);
+}
+
+#request-choice-error {
+  margin-top: 12px;
+}
+
+/* Step 2: the breakdown, then the message. */
+.request-breakdown {
+  display: flex;
+  flex-direction: column;
+  max-width: 480px;
+}
+
+.request-breakdown > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 8px 0;
+  font-size: 15px;
+}
+
+.request-breakdown dt {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.request-breakdown dd {
+  flex: none;
+  white-space: nowrap;
+}
+
+.request-breakdown .request-total {
+  margin-top: 4px;
+  padding-top: 12px;
+  border-top: 2px solid var(--ink);
+  font-size: 20px;
+}
+
+.request-message textarea {
+  max-width: none;
+}
+
+.request-message .reply-actions {
+  margin-top: 0;
+}
+
+.copy-status {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--ink-2);
+}
+
+/* The Projects list: " 1 hr free" after a Working row's rate. */
+.list-free {
+  margin-left: 6px;
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--ink-2);
+}
+
+@media (max-width: 759px) {
+  .stage-action {
+    flex-direction: column;
+  }
+
+  .request-step {
+    gap: 24px;
+  }
+
+  .request-bars .rbar-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+    padding: 12px;
+  }
+
+  .request-bars .rbar-name {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .request-bars .rbar-value {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .request-bars .rbar-track {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    height: 12px;
+    margin-top: 12px;
+  }
+
+  .request-bars .rbar-row:first-child .rbar-track {
+    margin-top: 28px;
+  }
+
+  .request-message .reply-actions .action-button {
+    flex: 1;
+    min-height: 44px;
   }
 }
 
