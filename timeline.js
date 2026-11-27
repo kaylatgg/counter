@@ -298,6 +298,142 @@ function hoursFromText(text) {
   return isHours(hours) ? hours : null;
 }
 
+// Client requests while Working. Each one is done free or charged; a charge is
+// the request's hours at the target, rounded up to the next $5, like v1's
+// extra round. A request keeps the target it was priced at (rateCents), so
+// switching it later charges the same.
+
+const CHARGE_STEP_CENTS = 500;
+
+// hours x rate, rounded to the cent, then up to the next $5. Null when the
+// hours or the rate aren't valid.
+function requestChargeCents(hours, rateCents) {
+  if (!isHours(hours) || !isCents(rateCents)) return null;
+  const cents = Math.round(hours * rateCents);
+  return Math.ceil(cents / CHARGE_STEP_CENTS) * CHARGE_STEP_CENTS;
+}
+
+// The money and hours so far: the agreed price plus every charge, and the
+// planned hours plus every request's hours.
+function soFar(timeline) {
+  return {
+    moneyCents: timeline.agreedCents + sum(timeline.requests, "chargeCents"),
+    hours: roundHours(timeline.plannedHours + sum(timeline.requests, "hours")),
+  };
+}
+
+// What a new request of these hours would do, or null unless Working with
+// valid hours. Every rate is after expenses, in whole cents.
+function previewRequest(project, hours) {
+  const timeline = timelineOf(project);
+  if (!timeline || timeline.stage !== "working" || !isHours(hours)) return null;
+  const current = soFar(timeline);
+  const chargeAmount = requestChargeCents(hours, timeline.targetCents);
+  const after = roundHours(current.hours + hours);
+  return {
+    moneyCents: current.moneyCents,
+    hoursSoFar: current.hours,
+    nowCents: rateNowCents(project),
+    freeCents: roundCents((current.moneyCents - timeline.expensesCents) / after),
+    chargeAmountCents: chargeAmount,
+    chargeCents: roundCents((current.moneyCents + chargeAmount - timeline.expensesCents) / after),
+    targetCents: timeline.targetCents,
+  };
+}
+
+// Adds one request. values: { text, hours, decision }. Returns
+// { ok: true, project } or { ok: false, reason }: "bad-timeline",
+// "not-working", "bad-text", "bad-hours", "bad-decision", "bad-date" (now
+// isn't a date, or is before the project moved to Working), "too-much-money",
+// or "too-many-hours".
+function addRequest(project, values, now, id) {
+  const current = timelineOf(project);
+  if (!current) return { ok: false, reason: "bad-timeline" };
+  if (current.stage !== "working") return { ok: false, reason: "not-working" };
+  const v = values || {};
+  const text = typeof v.text === "string" ? v.text.trim() : "";
+  if (!text || text.length > REQUEST_TEXT_MAX) return { ok: false, reason: "bad-text" };
+  if (!isHours(v.hours)) return { ok: false, reason: "bad-hours" };
+  if (DECISIONS.indexOf(v.decision) === -1) return { ok: false, reason: "bad-decision" };
+  if (!isValidDate(now) || now.getTime() < Date.parse(current.workingAt)) return { ok: false, reason: "bad-date" };
+  // The id comes from projectStore.newProjectId; without one the request
+  // couldn't be saved.
+  if (typeof id !== "string" || !id) return { ok: false, reason: "bad-timeline" };
+  const request = {
+    id: id,
+    at: now.toISOString(),
+    text: text,
+    hours: v.hours,
+    decision: v.decision,
+    rateCents: current.targetCents,
+    chargeCents: v.decision === "charge" ? requestChargeCents(v.hours, current.targetCents) : 0,
+  };
+  const timeline = Object.assign(current, { requests: current.requests.concat([request]) });
+  // Hours first: "too-many-hours" says more about a request than its charge.
+  const before = soFar(timeline);
+  if (before.hours > MAX_HOURS) return { ok: false, reason: "too-many-hours" };
+  if (before.moneyCents > MAX_CENTS) return { ok: false, reason: "too-much-money" };
+  return { ok: true, project: withTimeline(project, timeline) };
+}
+
+// The timeline and the index of one request, or a refusal.
+function findRequest(project, id) {
+  const current = timelineOf(project);
+  if (!current) return { reason: "bad-timeline" };
+  if (current.stage !== "working") return { reason: "not-working" };
+  const index = current.requests.findIndex(function (request) { return request.id === id; });
+  if (index === -1) return { reason: "no-request" };
+  return { timeline: current, index: index };
+}
+
+// Switches one request between "free" and "charge". Charging recomputes the
+// charge from the request's own hours and rate; its date doesn't change.
+// Reasons: "bad-timeline", "not-working", "no-request", "bad-decision",
+// "too-much-money".
+function setRequestDecision(project, id, decision) {
+  const found = findRequest(project, id);
+  if (found.reason) return { ok: false, reason: found.reason };
+  if (DECISIONS.indexOf(decision) === -1) return { ok: false, reason: "bad-decision" };
+  const timeline = found.timeline;
+  const request = timeline.requests[found.index];
+  timeline.requests[found.index] = Object.assign({}, request, {
+    decision: decision,
+    chargeCents: decision === "charge" ? requestChargeCents(request.hours, request.rateCents) : 0,
+  });
+  if (soFar(timeline).moneyCents > MAX_CENTS) return { ok: false, reason: "too-much-money" };
+  return { ok: true, project: withTimeline(project, timeline) };
+}
+
+// Removes one request. Reasons: "bad-timeline", "not-working", "no-request".
+function removeRequest(project, id) {
+  const found = findRequest(project, id);
+  if (found.reason) return { ok: false, reason: found.reason };
+  const timeline = found.timeline;
+  timeline.requests = timeline.requests.filter(function (request, i) { return i !== found.index; });
+  return { ok: true, project: withTimeline(project, timeline) };
+}
+
+// The rate after each request, in saved order, for Working or Paid:
+// [{ request, rateCents, deltaCents }]. rateCents counts that request and
+// every one before it; deltaCents compares it to the rate before (the first
+// one to the planned rate). Null when Quoted or not valid.
+function requestSteps(project) {
+  const timeline = timelineOf(project);
+  if (!timeline || timeline.stage === "quoted") return null;
+  let money = timeline.agreedCents;
+  let hours = timeline.plannedHours;
+  let previous = roundCents((money - timeline.expensesCents) / hours);
+  return timeline.requests.map(function (request) {
+    money += request.chargeCents;
+    hours += request.hours;
+    // The same sum as rateNowCents, so the last step is the rate now.
+    const rate = roundCents((money - timeline.expensesCents) / hours);
+    const step = { request: request, rateCents: rate, deltaCents: rate - previous };
+    previous = rate;
+    return step;
+  });
+}
+
 // One scale for every bar in a rate chart, in whole cents: the largest of the
 // values shown and the target, times 1.2, rounded up to the next $5. Never
 // less than $5, so a chart of zeros still has a scale.
@@ -337,6 +473,12 @@ const projectTimeline = {
   hoursFromText,
   barScaleCents,
   barShare,
+  requestChargeCents,
+  previewRequest,
+  addRequest,
+  setRequestDecision,
+  removeRequest,
+  requestSteps,
 };
 
 if (typeof module !== "undefined") module.exports = projectTimeline;
