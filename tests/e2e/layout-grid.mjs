@@ -8,7 +8,7 @@ const SCREENS = {
   "screen 1": ["", [["header", ".topbar-inner"], ["headline", ".inputs-top"], ["left column", ".inputs-columns > .inputs-column:first-child"], ["right column", ".inputs-columns > .inputs-column:last-child"], ["tally card", ".tally"], ["button", "#check-offer"], ["footer", ".site-footer p"]]],
   "screen 2": ["#result", [["header", ".topbar-inner"], ["edit details", "#edit-details", false, "left"], ["controls", ".control-bar", false, "right"], ["hero panel", "#hero-panel"], ["stat", "#metrics > div", true], ["chart", ".charts-row > .chart", true], ["show the math", ".math summary"], ["price/reply", ".results-pair > *", true], ["reply box", "#reply"], ["footer", ".site-footer p"]]],
   "working project": ["#p/w1/result", [["stage bar", ".stage-bar"], ["project hero", "#project-hero"], ["project stat", "#project-stats > div", true], ["rate bar", "#project-rate-bars .rbar-track", true], ["your pricing", "#pricing-heading"], ["stat", "#metrics > div", true]]],
-  projects: ["#projects", [["header", ".topbar-inner"], ["back pill", "#back-to-calc", false, "left"], ["title", "#projects-title", false, "left"], ["table", "#project-table"], ["footer", ".site-footer p"]]],
+  projects: ["#projects", [["header", ".topbar-inner"], ["back pill", "#back-to-calc", false, "left"], ["title", "#projects-title", false, "left"], ["tables", "#project-groups .project-table", true], ["footer", ".site-footer p"]]],
 };
 
 await forEachConfig(async (ctx) => {

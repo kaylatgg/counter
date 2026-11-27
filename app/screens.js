@@ -96,6 +96,7 @@ function route(state) {
   if (state.screen === "results") {
     openResults();
     landOnGapSection();
+    openSayYesFromRow();
   } else {
     openInputs();
   }

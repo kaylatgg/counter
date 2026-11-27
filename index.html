@@ -205,22 +205,74 @@
         </section>
       </div>
 
-      <h2 class="all-projects-title" id="all-projects-title">All projects</h2>
+      <!-- All projects, grouped by stage: Working, Quoted, Paid. The pills
+           show one stage at a time. app/projects-view.js fills it in renderProjects. -->
+      <div class="all-projects-head" id="all-projects-head">
+        <h2 class="all-projects-title" id="all-projects-title">All projects</h2>
+        <div class="stage-pills" id="stage-pills" role="group" aria-label="Show by stage" hidden>
+          <button type="button" class="stage-pill" data-filter="all" aria-pressed="true">All <span class="stage-pill-count"></span></button>
+          <button type="button" class="stage-pill" data-filter="working" aria-pressed="false">Working <span class="stage-pill-count"></span></button>
+          <button type="button" class="stage-pill" data-filter="quoted" aria-pressed="false">Quoted <span class="stage-pill-count"></span></button>
+          <button type="button" class="stage-pill" data-filter="paid" aria-pressed="false">Paid <span class="stage-pill-count"></span></button>
+        </div>
+      </div>
+      <p class="projects-intro" id="projects-intro" hidden></p>
 
-      <!-- Explicit table roles, kept when the phone layout restyles the rows. -->
-      <table class="project-table" id="project-table" role="table">
-        <thead role="rowgroup">
-          <tr role="row">
-            <th scope="col" role="columnheader">Name</th>
-            <th scope="col" role="columnheader">Job</th>
-            <th scope="col" role="columnheader">Estimate</th>
-            <th scope="col" role="columnheader">Offer pays after expenses</th>
-            <th scope="col" role="columnheader">Edited</th>
-            <th scope="col" role="columnheader"><span class="visually-hidden">Actions</span></th>
-          </tr>
-        </thead>
-        <tbody id="project-rows" role="rowgroup"></tbody>
-      </table>
+      <!-- One table per stage, with explicit table roles, kept when the
+           layout restyles the rows. Every table shares one set of columns. -->
+      <div class="project-groups" id="project-groups">
+        <section class="project-group" id="group-working" data-stage="working" aria-labelledby="group-working-title" hidden>
+          <h3 class="group-title" id="group-working-title">Working <span class="group-note" id="group-working-note"></span></h3>
+          <table class="project-table" role="table" aria-labelledby="group-working-title">
+            <thead role="rowgroup">
+              <tr role="row">
+                <th scope="col" role="columnheader">Name</th>
+                <th scope="col" role="columnheader">Job</th>
+                <th scope="col" role="columnheader">Agreed</th>
+                <th scope="col" role="columnheader">Pays now</th>
+                <th scope="col" role="columnheader" class="list-bar-head"><span class="visually-hidden">Rate compared with target</span><span class="list-bar-head-label" aria-hidden="true"></span></th>
+                <th scope="col" role="columnheader">Since</th>
+                <th scope="col" role="columnheader"><span class="visually-hidden">Actions</span></th>
+              </tr>
+            </thead>
+            <tbody role="rowgroup"></tbody>
+          </table>
+        </section>
+        <section class="project-group" id="group-quoted" data-stage="quoted" aria-labelledby="group-quoted-title" hidden>
+          <h3 class="group-title" id="group-quoted-title">Quoted <span class="group-note" id="group-quoted-note"></span></h3>
+          <table class="project-table" role="table" aria-labelledby="group-quoted-title">
+            <thead role="rowgroup">
+              <tr role="row">
+                <th scope="col" role="columnheader">Name</th>
+                <th scope="col" role="columnheader">Job</th>
+                <th scope="col" role="columnheader">Estimate</th>
+                <th scope="col" role="columnheader">Their offer pays</th>
+                <th scope="col" role="columnheader" class="list-bar-head"><span class="visually-hidden">Rate compared with target</span><span class="list-bar-head-label" aria-hidden="true"></span></th>
+                <th scope="col" role="columnheader">Quoted</th>
+                <th scope="col" role="columnheader"><span class="visually-hidden">Actions</span></th>
+              </tr>
+            </thead>
+            <tbody role="rowgroup"></tbody>
+          </table>
+        </section>
+        <section class="project-group" id="group-paid" data-stage="paid" aria-labelledby="group-paid-title" hidden>
+          <h3 class="group-title" id="group-paid-title">Paid <span class="group-note" id="group-paid-note"></span></h3>
+          <table class="project-table" role="table" aria-labelledby="group-paid-title">
+            <thead role="rowgroup">
+              <tr role="row">
+                <th scope="col" role="columnheader">Name</th>
+                <th scope="col" role="columnheader">Job</th>
+                <th scope="col" role="columnheader">Received</th>
+                <th scope="col" role="columnheader">Really paid</th>
+                <th scope="col" role="columnheader" class="list-bar-head"><span class="visually-hidden">Rate compared with target</span><span class="list-bar-head-label" aria-hidden="true"></span></th>
+                <th scope="col" role="columnheader">Paid</th>
+                <th scope="col" role="columnheader"><span class="visually-hidden">Actions</span></th>
+              </tr>
+            </thead>
+            <tbody role="rowgroup"></tbody>
+          </table>
+        </section>
+      </div>
 
       <!-- Backup: download the projects as a file, or restore one. With 5 or more
            projects and no recent backup, the note becomes the reminder. -->

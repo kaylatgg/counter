@@ -157,7 +157,7 @@ await forEachConfig(async (ctx) => {
   await axe(ctx, "dashboard tables");
   for (const issue of await p.evaluate(LAYOUT)) note(ctx, "layout with tables", issue, "medium");
   await sideways(ctx, "dashboard tables");
-  await p.click('#project-rows tr:first-child [data-action="rename"]');
+  await p.click('#project-groups tbody tr:first-child [data-action="rename"]');
   await p.fill(".row-rename", "Editorial illustration, renamed"); await p.keyboard.press("Enter"); await p.waitForTimeout(150);
   const kept = await p.evaluate(() => [document.getElementById("waterfall-toggle").textContent, document.getElementById("waterfall-table").hidden, document.getElementById("bullet-toggle").textContent, document.getElementById("bullet-table").hidden, document.querySelector("#bullet-table-rows").innerText.includes("renamed")]);
   if (kept.join() !== "Show as chart,false,Show as chart,false,true") note(ctx, "toggles after rename", JSON.stringify(kept), "high");
@@ -185,7 +185,7 @@ await forEachConfig(async (ctx) => {
   if (s.focus === "gap-heading") note(ctx, "reload after Fix", JSON.stringify(s), "high");
   // Opening the same project from the list afterward starts at the top.
   await p.goto(BASE + "#projects"); await p.waitForTimeout(250);
-  await p.click('#project-rows tr[data-id="social-posts"] .project-open'); await p.waitForTimeout(400);
+  await p.click('#project-groups tbody tr[data-id="social-posts"] .project-open'); await p.waitForTimeout(400);
   s = await p.evaluate(() => ({ y: scrollY, focus: document.activeElement.id }));
   if (s.y !== 0 || s.focus === "gap-heading") note(ctx, "open after Fix", JSON.stringify(s), "high");
   // The card's link goes to Projects.

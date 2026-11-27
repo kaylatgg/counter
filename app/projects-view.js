@@ -23,16 +23,22 @@ function openProjects() {
 }
 
 // Estimate and offer per hour after expenses for a row, from the saved numbers.
+// Also the offer's rate and the target in whole cents for the row's bar: no
+// bar when there's no estimate, and rateCents is null with no offer.
 function projectSummary(project) {
   const raw = Object.assign({}, project.inputs, { quote: project.quote });
   const checked = calc.validateInputs(raw, project.job);
   const blocking = Object.keys(checked.errors).filter(function (name) { return name !== "quote"; });
-  if (blocking.length) return { estimate: "No estimate yet", offer: "" };
+  const none = { estimate: "No estimate yet", offer: "", hasEstimate: false, rateCents: null, targetCents: null };
+  if (blocking.length) return none;
   const r = calc.calculate(checked.values);
-  if (!r.hasHours) return { estimate: "No estimate yet", offer: "" };
+  if (!r.hasHours) return none;
   return {
     estimate: calc.formatWholeMoney(r.estimate),
     offer: r.offer ? calc.formatMoney(r.offer.hourlyAfter) + "/hr" : "No offer yet",
+    hasEstimate: true,
+    rateCents: r.offer ? Math.round(r.offer.hourlyAfter * 100) : null,
+    targetCents: Math.round(checked.values.rate * 100),
   };
 }
 
@@ -59,64 +65,237 @@ function rowButton(parent, action, text, label, className) {
 // rowMode: { id, mode: "rename" | "delete" } for the one row being changed.
 let rowMode = null;
 
+// The stage pill that's pressed: "all", "working", "quoted", or "paid". Not
+// saved, so a reload shows every stage again.
+let stageFilter = "all";
+
+const GROUP_ORDER = ["working", "quoted", "paid"];
+const GROUP_NOTES = { working: "client said yes", quoted: "waiting on the client", paid: "with real hours" };
+// The small labels before the number and the rate below 1024px.
+const NUMBER_LABELS = { working: "Agreed", quoted: "Estimate", paid: "Received" };
+const RATE_LABELS = { working: "Pays now", quoted: "Their offer pays", paid: "Really paid" };
+
+// Everything a row shows, from the project and its timeline. hasBar: the row
+// draws a bar (every Working and Paid row, and Quoted rows with an estimate).
+function listRow(project, now) {
+  const timeline = projectTimeline.timelineOf(project);
+  // A broken timeline never gets this far (cleanProject); Quoted to be safe.
+  const stage = timeline ? timeline.stage : "quoted";
+  if (stage === "quoted") {
+    const summary = projectSummary(project);
+    return {
+      project: project, stage: stage,
+      number: summary.estimate, rate: summary.offer,
+      hasBar: summary.hasEstimate, rateCents: summary.rateCents, targetCents: summary.targetCents,
+      date: dashDate(timeline ? timeline.quotedAt : project.created, now),
+      canSayYes: summary.hasEstimate && !projectsReadOnly,
+    };
+  }
+  const rateCents = projectTimeline.rateNowCents(project);
+  const paid = stage === "paid";
+  return {
+    project: project, stage: stage,
+    number: centsPrice(paid ? timeline.receivedCents : timeline.agreedCents),
+    rate: centsMoney(rateCents) + "/hr",
+    hasBar: true, rateCents: rateCents, targetCents: timeline.targetCents,
+    date: paid
+      ? dashDate(timeline.paidAt, now) + " · " + calc.formatNumber(timeline.actualHours) + " of " + calc.formatHours(timeline.plannedHours)
+      : dashDate(timeline.workingAt, now),
+    canSayYes: false,
+  };
+}
+
+// The one target every row with a bar shares, or null when they differ (or
+// there are none).
+function sharedTarget(rows) {
+  const targets = rows.filter(function (row) { return row.hasBar; }).map(function (row) { return row.targetCents; });
+  if (!targets.length) return null;
+  return targets.every(function (target) { return target === targets[0]; }) ? targets[0] : null;
+}
+
+// "Target $25" as the bar's label: its place (0 to 1) and its length in
+// characters, so CSS can center it over the mark and keep it in the column.
+function placeTargetLabel(label, text, share) {
+  label.textContent = text;
+  label.style.setProperty("--share", share);
+  label.style.setProperty("--chars", text.length);
+}
+
+// The bar: a track from $0, the fill to the rate, and one mark at the target.
+// Hidden from screen readers; the rate is in the text next to it.
+function listBar(row, scale, firstLabel) {
+  const wrap = make("div", "list-bar list-bar-" + row.stage);
+  wrap.setAttribute("aria-hidden", "true");
+  if (firstLabel) {
+    const label = make("span", "list-bar-label");
+    placeTargetLabel(label, firstLabel, projectTimeline.barShare(row.targetCents, scale));
+    wrap.appendChild(label);
+  }
+  const track = make("div", "list-bar-track");
+  if (row.rateCents !== null) {
+    const fill = make("span", "list-bar-fill");
+    fill.style.width = projectTimeline.barShare(row.rateCents, scale) * 100 + "%";
+    track.appendChild(fill);
+  }
+  const mark = make("span", "list-bar-mark");
+  mark.style.left = projectTimeline.barShare(row.targetCents, scale) * 100 + "%";
+  track.appendChild(mark);
+  wrap.appendChild(track);
+  return wrap;
+}
+
 function renderProjects() {
   const list = projectStore.sortByEdited(projectList);
   const now = new Date();
   show(byId("projects-empty"), list.length === 0);
-  show(byId("project-table"), list.length > 0);
+  show(byId("project-groups"), list.length > 0);
   show(byId("all-projects-title"), list.length > 0);
   renderBackButton();
   renderDashboard(list);
   renderBackupRow();
 
-  const body = byId("project-rows");
-  body.textContent = "";
-  list.forEach(function (project) {
-    const row = document.createElement("tr");
-    row.setAttribute("role", "row");
-    row.dataset.id = project.id;
-    const summary = projectSummary(project);
-    const mode = rowMode && rowMode.id === project.id ? rowMode.mode : null;
+  const rows = list.map(function (project) { return listRow(project, now); });
+  const groups = {};
+  GROUP_ORDER.forEach(function (stage) {
+    groups[stage] = rows.filter(function (row) { return row.stage === stage; });
+  });
 
-    const nameCell = document.createElement("th");
-    nameCell.scope = "row";
-    nameCell.setAttribute("role", "rowheader");
-    nameCell.className = "project-name";
-    row.appendChild(nameCell);
-    if (mode === "rename") {
-      const input = document.createElement("input");
-      input.type = "text";
-      input.className = "row-rename";
-      input.maxLength = projectStore.NAME_MAX;
-      input.value = project.name;
-      input.setAttribute("aria-label", "Project name");
-      nameCell.appendChild(input);
-    } else {
-      rowButton(nameCell, "open", project.name, null, "project-open");
-    }
+  // The pills: only with two or more stages. A stage that ran out of
+  // projects (deleted, or moved back) goes back to All.
+  const stagesShown = GROUP_ORDER.filter(function (stage) { return groups[stage].length > 0; });
+  if (stagesShown.length < 2 || (stageFilter !== "all" && !groups[stageFilter].length)) stageFilter = "all";
+  renderStagePills(rows.length, groups, stagesShown.length >= 2);
 
-    cell(row, "project-job", calc.JOBS[project.job].name);
-    cell(row, "project-estimate", summary.estimate);
-    cell(row, "project-offer", summary.offer);
-    cell(row, "project-edited", "Edited " + projectStore.formatEdited(project.edited, now));
+  // One scale for the whole page, from every project, so the bars don't
+  // move when a pill is pressed.
+  const barRows = rows.filter(function (row) { return row.hasBar; });
+  const rates = barRows.map(function (row) { return row.rateCents; }).filter(function (rate) { return rate !== null; });
+  const largestTarget = Math.max.apply(null, [0].concat(barRows.map(function (row) { return row.targetCents; })));
+  const scale = projectTimeline.barScaleCents(rates, largestTarget);
 
-    const actions = cell(row, "project-actions");
-    if (mode === "delete") {
-      const question = document.createElement("span");
-      question.className = "delete-question";
-      question.textContent = "Delete " + project.name + "? This can't be undone.";
-      actions.appendChild(question);
-      rowButton(actions, "confirm-delete", "Delete", null, "action-button");
-      rowButton(actions, "cancel-delete", "Cancel", null, "action-button outline");
-    } else {
-      rowButton(actions, "edit", "Edit", "Edit " + project.name);
-      rowButton(actions, "rename", "Rename", "Rename " + project.name);
-      rowButton(actions, "duplicate", "Duplicate", "Duplicate " + project.name);
-      rowButton(actions, "delete", "Delete", "Delete " + project.name);
-    }
-    body.appendChild(row);
+  const intro = byId("projects-intro");
+  show(intro, barRows.length > 0);
+  const pageTarget = sharedTarget(rows);
+  intro.textContent = "Every rate is after expenses. The bars start at $0, and the mark is " +
+    (pageTarget !== null ? "your " + centsPrice(pageTarget) + " target." : "each project's target.");
+
+  GROUP_ORDER.forEach(function (stage) {
+    renderGroup(stage, groups[stage], scale, now);
   });
   renderHeader();
+}
+
+function renderStagePills(total, groups, visible) {
+  const pills = byId("stage-pills");
+  show(pills, visible);
+  pills.querySelectorAll("button").forEach(function (button) {
+    const filter = button.dataset.filter;
+    const count = filter === "all" ? total : groups[filter].length;
+    button.querySelector(".stage-pill-count").textContent = count;
+    button.setAttribute("aria-pressed", String(filter === stageFilter));
+    show(button, count > 0);
+  });
+}
+
+function renderGroup(stage, rows, scale, now) {
+  const section = byId("group-" + stage);
+  show(section, rows.length > 0 && (stageFilter === "all" || stageFilter === stage));
+  byId("group-" + stage + "-note").textContent = rows.length + " · " + GROUP_NOTES[stage];
+
+  // "Target $25" in the header when every bar in this table has the same
+  // target; otherwise each row says its own.
+  const target = sharedTarget(rows);
+  const headLabel = section.querySelector(".list-bar-head-label");
+  if (target !== null) placeTargetLabel(headLabel, "Target " + centsPrice(target), projectTimeline.barShare(target, scale));
+  else headLabel.textContent = "";
+
+  const body = section.querySelector("tbody");
+  body.textContent = "";
+  let labelled = false;
+  rows.forEach(function (item) {
+    body.appendChild(projectRow(item, scale, target, labelled ? null : target));
+    if (item.hasBar) labelled = true;
+  });
+}
+
+// firstTarget: the shared target for the label above the first bar below
+// 1024px, where the column headers are hidden. Null for every other row.
+function projectRow(item, scale, tableTarget, firstTarget) {
+  const project = item.project;
+  const row = document.createElement("tr");
+  row.setAttribute("role", "row");
+  row.dataset.id = project.id;
+  const mode = rowMode && rowMode.id === project.id ? rowMode.mode : null;
+
+  const nameCell = document.createElement("th");
+  nameCell.scope = "row";
+  nameCell.setAttribute("role", "rowheader");
+  nameCell.className = "project-name";
+  row.appendChild(nameCell);
+  if (mode === "rename") {
+    const input = document.createElement("input");
+    input.type = "text";
+    input.className = "row-rename";
+    input.maxLength = projectStore.NAME_MAX;
+    input.value = project.name;
+    input.setAttribute("aria-label", "Project name");
+    nameCell.appendChild(input);
+  } else {
+    rowButton(nameCell, "open", project.name, null, "project-open");
+  }
+
+  cell(row, "project-job", calc.JOBS[project.job].name);
+
+  const number = cell(row, "project-number");
+  number.append(make("span", "list-label", NUMBER_LABELS[item.stage]), make("span", "list-number", item.number));
+  number.firstChild.setAttribute("aria-hidden", "true");
+
+  const rate = cell(row, "project-rate");
+  if (item.rate) {
+    rate.append(make("span", "list-label", RATE_LABELS[item.stage]), make("span", "list-rate", item.rate));
+    rate.firstChild.setAttribute("aria-hidden", "true");
+  }
+  if (item.hasBar && tableTarget === null) rate.appendChild(make("span", "list-target", "Target " + centsPrice(item.targetCents)));
+
+  const bar = cell(row, "project-bar");
+  if (item.hasBar) bar.appendChild(listBar(item, scale, firstTarget !== null ? "Target " + centsPrice(firstTarget) : null));
+
+  // On phones the job shows here, "Menu · Nov 21", from a copy hidden from
+  // screen readers; the job cell stays for them.
+  const date = cell(row, "project-date");
+  const job = make("span", "list-job", calc.JOBS[project.job].name + " · ");
+  job.setAttribute("aria-hidden", "true");
+  date.append(job, item.date);
+  if (item.canSayYes) {
+    // " · They said yes" wraps as one piece, never leaving the dot behind.
+    const pair = make("span", "said-yes-pair", "· ");
+    rowButton(pair, "said-yes", "They said yes", "They said yes to " + project.name, "said-yes");
+    date.append(" ", pair);
+  }
+
+  const actions = cell(row, "project-actions");
+  if (mode === "delete") {
+    const question = document.createElement("span");
+    question.className = "delete-question";
+    question.textContent = "Delete " + project.name + "? This can't be undone.";
+    actions.appendChild(question);
+    rowButton(actions, "confirm-delete", "Delete", null, "action-button");
+    rowButton(actions, "cancel-delete", "Cancel", null, "action-button outline");
+  } else {
+    rowButton(actions, "edit", "Edit", "Edit " + project.name);
+    rowButton(actions, "rename", "Rename", "Rename " + project.name);
+    rowButton(actions, "duplicate", "Duplicate", "Duplicate " + project.name);
+    rowButton(actions, "delete", "Delete", "Delete " + project.name);
+  }
+  return row;
+}
+
+// A stage pill: show only that stage, or every stage for All.
+function onStagePill(event) {
+  const button = event.target.closest("button[data-filter]");
+  if (!button) return;
+  stageFilter = button.dataset.filter;
+  renderProjects();
 }
 
 // Backup (backup.js): download the projects as a file, or restore one.
@@ -287,7 +466,7 @@ function confirmRestore() {
 }
 
 function rowElement(id, selector) {
-  const row = byId("project-rows").querySelector('tr[data-id="' + CSS.escape(id) + '"]');
+  const row = byId("project-groups").querySelector('tr[data-id="' + CSS.escape(id) + '"]');
   return row ? row.querySelector(selector) : null;
 }
 
@@ -324,10 +503,19 @@ function onRowClick(event) {
     const input = rowElement(id, ".row-rename");
     input.focus();
     input.select();
+  } else if (action === "said-yes") {
+    // Opens the result with "They said yes" open (sayYesOnOpen, in route).
+    sayYesOnOpen = true;
+    go({ screen: "results", project: id });
   } else if (action === "duplicate") {
     const copyId = projectStore.newProjectId();
     projectList = projectStore.duplicateProject(projectList, id, copyId, new Date());
     persist();
+    // The copy starts Quoted; if the pressed pill would hide it, show All.
+    const copy = projectStore.findProject(projectList, copyId);
+    const copyTimeline = copy ? projectTimeline.timelineOf(copy) : null;
+    const copyStage = copyTimeline ? copyTimeline.stage : "quoted";
+    if (stageFilter !== "all" && stageFilter !== copyStage) stageFilter = "all";
     setRowMode(null);
     rowElement(copyId, ".project-open").focus();
   } else if (action === "delete") {
@@ -337,10 +525,18 @@ function onRowClick(event) {
     setRowMode(null);
     rowElement(id, '[data-action="delete"]').focus();
   } else if (action === "confirm-delete") {
-    // Focus moves to the next row's name, or the previous one, or New calculation.
-    const rows = Array.prototype.slice.call(byId("project-rows").children);
-    const index = rows.indexOf(button.closest("tr"));
-    const neighbor = rows[index + 1] || rows[index - 1];
+    // Focus moves to the next row's name on the page, or the previous one, or
+    // New calculation. Rows in a section the pills hide don't count, unless
+    // this was the last row showing: then the stage empties, the list goes
+    // back to All, and every row shows again.
+    const row = button.closest("tr");
+    const all = Array.prototype.slice.call(byId("project-groups").querySelectorAll("tbody tr"));
+    const showing = all.filter(function (item) { return !item.closest("[hidden]"); });
+    function around(rows) {
+      const index = rows.indexOf(row);
+      return rows[index + 1] || rows[index - 1];
+    }
+    const neighbor = around(showing) || around(all);
     const nextId = neighbor ? neighbor.dataset.id : null;
     projectList = projectStore.deleteProject(projectList, id);
     persist();
@@ -432,6 +628,9 @@ let bulletAsTable = false;
 // "Fix [project]": a one-time flag, never in history, so Back, Forward, and
 // reload don't jump to the gap again.
 let landOnGap = false;
+
+// "They said yes" on a Quoted row: a one-time flag like landOnGap.
+let sayYesOnOpen = false;
 
 function renderDashboard(list) {
   const s = projectStore.pricingSummary(list);
@@ -762,6 +961,17 @@ function landOnGapSection() {
   if (section.hidden) return;
   section.scrollIntoView({ behavior: reduceMotion.matches ? "instant" : "smooth", block: "start" });
   byId("gap-heading").focus({ preventScroll: true });
+}
+
+// After "They said yes" on a row opens screen 2: open the same dialog the
+// stage bar opens, if the project is still Quoted. Cancel or Escape returns
+// focus to the stage bar's "They said yes".
+function openSayYesFromRow() {
+  if (!sayYesOnOpen) return;
+  sayYesOnOpen = false;
+  const timeline = currentTimeline();
+  if (!timeline || timeline.stage !== "quoted" || projectsReadOnly) return;
+  openWorkingDialog(byId("stage-forward"));
 }
 
 // "Check the offer": with errors, go to the first one. Otherwise show the result

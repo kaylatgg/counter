@@ -193,7 +193,8 @@ PANEL_DIALOGS.forEach(function (id) {
     else dismissDialog();
   });
 });
-byId("project-rows").addEventListener("click", onRowClick);
+byId("project-groups").addEventListener("click", onRowClick);
+byId("stage-pills").addEventListener("click", onStagePill);
 // Project stages (app/stages.js).
 byId("stage-forward").addEventListener("click", onStageForward);
 byId("stage-back").addEventListener("click", openBackDialog);
@@ -236,8 +237,8 @@ byId("pricing-card-link").addEventListener("click", function (event) {
   event.preventDefault();
   go({ screen: "projects" });
 });
-byId("project-rows").addEventListener("keydown", onRowKey);
-byId("project-rows").addEventListener("focusout", function (event) {
+byId("project-groups").addEventListener("keydown", onRowKey);
+byId("project-groups").addEventListener("focusout", function (event) {
   if (event.target.classList.contains("row-rename")) {
     finishRowRename(event.target.closest("tr").dataset.id, true);
   }
