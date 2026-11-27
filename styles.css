@@ -1654,6 +1654,10 @@ legend {
   display: none;
 }
 
+.said-yes-pair {
+  white-space: nowrap;
+}
+
 .said-yes {
   display: inline-flex;
   align-items: center;

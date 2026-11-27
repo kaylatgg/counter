@@ -267,8 +267,10 @@ function projectRow(item, scale, tableTarget, firstTarget) {
   job.setAttribute("aria-hidden", "true");
   date.append(job, item.date);
   if (item.canSayYes) {
-    date.append(" · ");
-    rowButton(date, "said-yes", "They said yes", "They said yes to " + project.name, "said-yes");
+    // " · They said yes" wraps as one piece, never leaving the dot behind.
+    const pair = make("span", "said-yes-pair", "· ");
+    rowButton(pair, "said-yes", "They said yes", "They said yes to " + project.name, "said-yes");
+    date.append(" ", pair);
   }
 
   const actions = cell(row, "project-actions");
